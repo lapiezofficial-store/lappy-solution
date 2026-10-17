@@ -18,13 +18,19 @@ export const metadata: Metadata = {
     "Jharkhand laptop store"
   ],
   authors: [{ name: "Lapiez Garhwa" }],
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Lapiez',
+  },
   icons: {
     icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/favicon.ico', sizes: '32x32' },
     ],
     shortcut: '/favicon.ico',
-    apple: '/icon.svg',
+    apple: '/apple-touch-icon.png',
   },
   openGraph: {
     title: "Lapiez Garhwa | Best Deals on Laptops, Desktops & CCTV",

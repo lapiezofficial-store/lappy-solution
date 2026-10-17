@@ -20,6 +20,23 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: '/downloads/:path*.apk',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/vnd.android.package-archive',
+          },
+          {
+            key: 'Content-Disposition',
+            value: 'attachment; filename="Lapiez-Garhwa-App.apk"',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=43200',
+          },
+        ],
+      },
+      {
         source: '/:all*(svg|jpg|jpeg|png|webp|avif|ico|woff2)',
         headers: [
           {
