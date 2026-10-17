@@ -108,7 +108,7 @@ export async function GET(request: Request) {
       id: siteSettings.id,
       siteName: siteSettings.siteName || 'Lapiez',
       tagline: siteSettings.tagline || '',
-      logo: siteSettings.logo || '/images/logo.png',
+      logo: siteSettings.logo || '',
       favicon: siteSettings.favicon || '/favicon.ico',
       phone: siteSettings.phone || '',
       whatsapp: siteSettings.whatsapp || '',

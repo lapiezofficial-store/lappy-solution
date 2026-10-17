@@ -143,7 +143,7 @@ export const DEFAULT_INVOICE_SETTINGS: InvoiceSettings = {
   phone: '+91 9608828288',
   email: 'lappysolution2018@gmail.com',
   website: 'www.lappysolution.com',
-  logoUrl: '/images/logo.png',
+  logoUrl: '',
 
   prefix: 'INV',
   financialYear: '2026-27',

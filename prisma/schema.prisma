@@ -13,7 +13,7 @@ model SiteSettings {
   id               String   @id @default("default")
   siteName         String   @default("Lapiez")
   tagline          String   @default("Technology • Security • Solutions")
-  logo             String   @default("/images/logo.png")
+  logo             String   @default("")
   favicon          String   @default("/favicon.ico")
   phone            String   @default("+91 9608828288")
   whatsapp         String   @default("919608828288")

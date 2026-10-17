@@ -453,7 +453,7 @@ export const CORE_STORE_DEPARTMENTS: CMSCategory[] = DEFAULT_SHOP_BY_CATEGORIES;
 const defaultSiteSettings: SiteSettings = {
   siteName: STORE_INFO.name,
   tagline: STORE_INFO.tagline,
-  logo: '/images/logo.png',
+  logo: '',
   favicon: '/favicon.ico',
   phone: STORE_INFO.phone,
   whatsapp: STORE_INFO.whatsapp,

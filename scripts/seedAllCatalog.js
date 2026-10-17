@@ -15,7 +15,7 @@ async function main() {
       id: 'default',
       siteName: 'Lapiez',
       tagline: 'Technology • Security • Solutions',
-      logo: '/images/logo.png',
+      logo: '',
       favicon: '/favicon.ico',
       phone: '+91 9608828288',
       whatsapp: '919608828288',

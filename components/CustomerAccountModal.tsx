@@ -122,7 +122,7 @@ export const CustomerAccountModal: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setIsAccountOpen(false);
-                  router.push('/account');
+                  signInWithGoogle('/account');
                 }}
                 className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 shadow-xs hover:shadow transition-all flex items-center justify-center gap-2.5 flex-shrink-0 cursor-pointer active:scale-[0.99]"
               >

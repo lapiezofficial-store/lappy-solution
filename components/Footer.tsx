@@ -111,7 +111,7 @@ export const Footer: React.FC = () => {
               
               {/* Brand Logo */}
               <Link href="/" className="inline-flex items-center gap-3 group">
-                {!footerLogoError && siteSettings?.logo && siteSettings.logo.trim() !== '' ? (
+                {!footerLogoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
                   <div className="flex items-center gap-3">
                     <img 
                       src={siteSettings.logo} 
