@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Layers, Sparkles, Tag, ChevronRight } from 'lucide-react';
+import { ArrowRight, Layers, ChevronRight } from 'lucide-react';
 import { useStore, DEFAULT_SHOP_BY_CATEGORIES } from '../context/StoreContext';
 
 function formatCategoryStartingPrice(raw?: string | null): string {
@@ -32,7 +32,7 @@ function formatCategoryStartingPrice(raw?: string | null): string {
   return val;
 }
 
-// Category visual theme mapping for soft, modern e-commerce cards
+// Category visual theme mapping for soft, modern e-commerce cards on tablet/desktop
 const CATEGORY_THEMES: Record<string, { bg: string; border: string; badge: string }> = {
   'laptops': { bg: 'from-blue-50/70 to-indigo-50/40', border: 'border-blue-100', badge: 'Popular' },
   'cctv': { bg: 'from-emerald-50/70 to-teal-50/40', border: 'border-emerald-100', badge: 'Top Security' },
@@ -44,7 +44,7 @@ const CATEGORY_THEMES: Record<string, { bg: string; border: string; badge: strin
 };
 
 export const CategoryGrid: React.FC = () => {
-  const { categories, products } = useStore();
+  const { categories } = useStore();
 
   const displayCategories = useMemo(() => {
     const visible = (categories || []).filter((c) => c.status !== 'inactive' && !c.parentId);
@@ -59,7 +59,7 @@ export const CategoryGrid: React.FC = () => {
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6">
         
         {/* Header section matching Indian e-commerce style */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-3.5 pb-0.5">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1.5 sm:gap-2 mb-3 pb-0.5">
           <div>
             <div className="flex items-center gap-1.5 text-[10.5px] sm:text-[11.5px] font-bold text-[#1A56DB] uppercase tracking-wider mb-0.5">
               <Layers className="w-3.5 h-3.5" />
@@ -68,24 +68,25 @@ export const CategoryGrid: React.FC = () => {
             <h2 className="text-[18px] sm:text-[24px] font-black text-[#111827] tracking-tight leading-tight">
               Shop by Category
             </h2>
-            <p className="text-[11.5px] sm:text-[13px] text-[#4B5563] mt-0.5">
-              Original laptops, CCTV setups, custom gaming rigs, monitors &amp; spares with 18% GST bill.
+            <p className="text-[11px] sm:text-[13px] text-[#4B5563] mt-0.5">
+              Genuine laptops, CCTV setups, custom gaming rigs, monitors &amp; spares with 18% GST bill.
             </p>
           </div>
 
           <Link
             href="/shop"
-            className="text-[12px] sm:text-[13px] font-bold text-[#1A56DB] hover:text-[#1E40AF] flex items-center gap-1 self-start sm:self-auto group flex-shrink-0"
+            className="text-[11.5px] sm:text-[13px] font-bold text-[#1A56DB] hover:text-[#1E40AF] flex items-center gap-1 self-start sm:self-auto group flex-shrink-0"
           >
             <span>View All Categories</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
 
-        {/* 1. Quick Story Bubbles for Mobile & Tablets (Horizontal Rail) */}
-        <div className="flex items-center gap-2.5 overflow-x-auto pb-3 mb-2 no-scrollbar pt-0.5 px-0.5">
+        {/* 1. Mobile Category Stories (Horizontal Swipe Rail with badges & non-truncated 2-line names) */}
+        <div className="flex sm:hidden items-start gap-3 overflow-x-auto pb-2 pt-0.5 px-0.5 no-scrollbar snap-x snap-mandatory">
           {displayCategories.map((cat) => {
             const title = cat.name || cat.title || 'Category';
+            const price = formatCategoryStartingPrice(cat.startingPrice);
             const img = cat.image || cat.imageUrl || '/images/categories/laptop-adapters.png';
             const cleanSearchQuery = (cat.name || '').replace(/^Laptop\s*/i, '').trim();
             const href = cat.href || `/shop?search=${encodeURIComponent(cleanSearchQuery || cat.slug)}`;
@@ -94,17 +95,25 @@ export const CategoryGrid: React.FC = () => {
               <Link
                 key={`bubble-${cat.id || cat.slug}`}
                 href={href}
-                className="flex flex-col items-center flex-shrink-0 group active:scale-95 transition-transform w-[72px] sm:w-[84px] text-center"
+                className="flex flex-col items-center flex-shrink-0 group active:scale-95 transition-transform w-[76px] text-center snap-start"
               >
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border border-gray-200/90 shadow-2xs group-hover:border-blue-500 p-1.5 flex items-center justify-center transition-all">
+                {/* Rounded Icon with floating Price Badge */}
+                <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200/90 shadow-2xs group-hover:border-blue-500 p-2 flex items-center justify-center transition-all relative">
                   <img
                     src={img}
                     alt={title}
                     loading="lazy"
                     className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
                   />
+                  {price && price !== 'From Showroom' && (
+                    <span className="absolute -bottom-1.5 px-1.5 py-0.2 rounded-full bg-emerald-600 text-white font-extrabold text-[8px] shadow-2xs whitespace-nowrap">
+                      {price}
+                    </span>
+                  )}
                 </div>
-                <span className="text-[10.5px] sm:text-[11px] font-bold text-gray-800 group-hover:text-blue-600 truncate w-full mt-1.5 leading-tight">
+
+                {/* 2-line clean category title (never truncated with ugly ...) */}
+                <span className="text-[11px] font-bold text-gray-800 group-hover:text-blue-600 leading-tight w-full mt-2.5 line-clamp-2 min-h-[26px]">
                   {title}
                 </span>
               </Link>
@@ -112,8 +121,8 @@ export const CategoryGrid: React.FC = () => {
           })}
         </div>
 
-        {/* 2. Main Visual Category Grid (2 cols on mobile, 3 on tablet, 5 on desktop) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+        {/* 2. Desktop & Tablet Category Grid (Hidden on mobile to eliminate duplication and screen clutter) */}
+        <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
           {displayCategories.map((cat) => {
             const title = cat.name || cat.title || 'Category';
             const price = formatCategoryStartingPrice(cat.startingPrice);
@@ -121,7 +130,6 @@ export const CategoryGrid: React.FC = () => {
             const cleanSearchQuery = (cat.name || '').replace(/^Laptop\s*/i, '').trim();
             const href = cat.href || `/shop?search=${encodeURIComponent(cleanSearchQuery || cat.slug)}`;
 
-            // Determine matching theme
             const slugKey = (cat.slug || cat.name || '').toLowerCase();
             const themeKey = Object.keys(CATEGORY_THEMES).find(k => slugKey.includes(k)) || 'accessories';
             const theme = CATEGORY_THEMES[themeKey];
@@ -131,26 +139,26 @@ export const CategoryGrid: React.FC = () => {
                 key={cat.id || cat.slug}
                 href={href}
                 title={cat.title || cat.name}
-                className={`group bg-gradient-to-br ${theme.bg} hover:bg-white border ${theme.border} hover:border-[#1A56DB] rounded-2xl p-2.5 sm:p-3.5 flex items-center justify-between min-h-[84px] sm:min-h-[96px] transition-all shadow-2xs hover:shadow-sm relative overflow-hidden active:scale-[0.98]`}
+                className={`group bg-gradient-to-br ${theme.bg} hover:bg-white border ${theme.border} hover:border-[#1A56DB] rounded-2xl p-3 sm:p-3.5 flex items-center justify-between min-h-[92px] sm:min-h-[98px] transition-all shadow-2xs hover:shadow-sm relative overflow-hidden active:scale-[0.98]`}
               >
                 {/* Left side text and starting price */}
                 <div className="pr-1.5 z-10 flex-1 min-w-0">
-                  <span className="block text-[12.5px] sm:text-[14px] font-extrabold text-[#111827] group-hover:text-[#1A56DB] transition-colors leading-snug truncate">
+                  <span className="block text-[13px] sm:text-[14px] font-extrabold text-[#111827] group-hover:text-[#1A56DB] transition-colors leading-snug truncate">
                     {title}
                   </span>
                   {price && (
-                    <span className="inline-block text-[10.5px] sm:text-[11px] font-bold text-[#15803D] mt-0.5">
+                    <span className="inline-block text-[11px] font-bold text-[#15803D] mt-0.5">
                       {price}
                     </span>
                   )}
-                  <div className="flex items-center gap-0.5 text-[9.5px] text-blue-600 font-bold mt-1 group-hover:translate-x-0.5 transition-transform">
-                    <span>Shop</span>
+                  <div className="flex items-center gap-0.5 text-[10px] text-blue-600 font-bold mt-1 group-hover:translate-x-0.5 transition-transform">
+                    <span>Explore</span>
                     <ChevronRight className="w-2.5 h-2.5" />
                   </div>
                 </div>
 
                 {/* Right side product cutout image */}
-                <div className="w-13 h-13 sm:w-16 sm:h-16 flex-shrink-0 flex items-center justify-center z-10 bg-white/70 rounded-xl p-1 shadow-2xs border border-white/60">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 flex items-center justify-center z-10 bg-white/80 rounded-xl p-1 shadow-2xs border border-white/60">
                   <img
                     src={img}
                     alt={title}
