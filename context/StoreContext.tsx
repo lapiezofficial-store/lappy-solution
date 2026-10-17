@@ -15,6 +15,7 @@ import { supabase, signInWithGoogle, signOutCustomer, User } from '../lib/supaba
 import { Coupon, INITIAL_COUPONS, calculateCouponDiscount } from '../data/coupons';
 import { CMSBrand, DEFAULT_BRANDS } from '../data/brands';
 import { CATEGORIES } from '../data/categories';
+import { INITIAL_BANNERS } from '../data/banners';
 
 export interface CMSSubcategory {
   id: string;
@@ -229,6 +230,7 @@ interface StoreContextType {
   addBanner: (banner: Partial<CMSBanner>) => Promise<void>;
   editBanner: (banner: CMSBanner) => Promise<void>;
   deleteBanner: (id: string) => Promise<void>;
+  resetBannersToDefault: () => Promise<boolean>;
   addProductToDb: (prod: Partial<Product>) => Promise<Product | void>;
   updateProductInDb: (id: string, updatedFields: Partial<Product>) => Promise<boolean>;
   deleteProductFromDb: (id: string, permanent?: boolean) => Promise<void>;
@@ -547,7 +549,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(defaultThemeSettings);
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>(defaultPaymentSettings);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(DEFAULT_BANK_ACCOUNTS);
-  const [banners, setBanners] = useState<CMSBanner[]>([]);
+  const [banners, setBanners] = useState<CMSBanner[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('ls_banners');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return INITIAL_BANNERS;
+  });
   const [homepageSections, setHomepageSections] = useState<CMSSection[]>([]);
   const [customPages, setCustomPages] = useState<CMSCustomPage[]>([]);
   const [blogPosts, setBlogPosts] = useState<CMSBlogPost[]>([]);
@@ -721,6 +734,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           try {
             localStorage.setItem('ls_banners', JSON.stringify(initData.banners));
           } catch (e) {}
+        } else {
+          setBanners((prev) => (prev && prev.length > 0 ? prev : INITIAL_BANNERS));
         }
 
         // 4. Homepage Sections
@@ -1531,6 +1546,32 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {
       console.error('Failed to delete banner:', e);
     }
+  };
+
+  const resetBannersToDefault = async () => {
+    try {
+      const res = await fetch('/api/cms/banners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'seed_defaults' }),
+      });
+      if (res.ok) {
+        setBanners(INITIAL_BANNERS);
+        try {
+          localStorage.setItem('ls_banners', JSON.stringify(INITIAL_BANNERS));
+        } catch (e) {}
+        showToast('All 6 official storefront banners restored!');
+        return true;
+      }
+    } catch (e) {
+      console.error('Failed to reset banners in DB:', e);
+    }
+    setBanners(INITIAL_BANNERS);
+    try {
+      localStorage.setItem('ls_banners', JSON.stringify(INITIAL_BANNERS));
+    } catch (e) {}
+    showToast('Official banners restored!');
+    return true;
   };
 
   const addProductToDb = async (prod: Partial<Product>) => {
@@ -2578,6 +2619,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addBanner,
         editBanner,
         deleteBanner,
+        resetBannersToDefault,
         addProductToDb,
         updateProductInDb,
         deleteProductFromDb,

@@ -92,7 +92,8 @@ export default function AdminPage() {
     updateSubcategory,
     deleteSubcategory,
     reorderCategories,
-    resetCategoriesToDefault
+    resetCategoriesToDefault,
+    resetBannersToDefault,
   } = useStore();
 
   type AdminTab = 
@@ -355,6 +356,9 @@ export default function AdminPage() {
   const [newBannerBtnText, setNewBannerBtnText] = useState('Shop Now');
   const [newBannerBtnUrl, setNewBannerBtnUrl] = useState('/shop?cat=Laptops');
   const [newBannerGradient, setNewBannerGradient] = useState('from-[#0A1633] via-[#0F2960] to-[#1A56DB]');
+
+  // Edit Banner Modal State
+  const [editingBanner, setEditingBanner] = useState<CMSBanner | null>(null);
 
   // Theme Form State
   const [themePrimary, setThemePrimary] = useState(themeSettings?.primaryColor || '#1A56DB');
@@ -928,6 +932,18 @@ export default function AdminPage() {
     e.target.value = '';
   };
 
+  const handleEditBannerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !editingBanner) return;
+    const file = files[0];
+    const url = await uploadFileToCloudinary(file, 'banners');
+    if (url) {
+      setEditingBanner((prev) => prev ? ({ ...prev, desktopImage: url, mobileImage: url }) : null);
+      showToast('Banner photo uploaded to Cloudinary!');
+    }
+    e.target.value = '';
+  };
+
   const handleProductFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -1057,6 +1073,19 @@ export default function AdminPage() {
     setNewBannerTitle('');
     setNewBannerHighlight('');
     setNewBannerSubtitle('');
+  };
+
+  // Edit Banner Submit
+  const handleEditBannerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBanner) return;
+    if (!editingBanner.title.trim()) {
+      showToast('Please enter banner title');
+      return;
+    }
+    await editBanner(editingBanner);
+    showToast('Banner updated in database!');
+    setEditingBanner(null);
   };
 
   // Move Section Up/Down in Page Builder
@@ -5233,6 +5262,19 @@ export default function AdminPage() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => {
+                    if (confirm('Restore all 6 official showroom banners? This will reset banners to standard showcase offers.')) {
+                      resetBannersToDefault();
+                    }
+                  }}
+                  className="h-9 px-3.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                  title="Restore 6 official showroom banners"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Restore Official Banners</span>
+                </button>
+
                 <label className="cursor-pointer h-9 px-3.5 rounded-lg bg-blue-50 border border-blue-200 text-[#1A56DB] hover:bg-blue-100 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs">
                   <Upload className="w-3.5 h-3.5" />
                   <span>Upload Banner Photo</span>
@@ -5269,10 +5311,18 @@ export default function AdminPage() {
                         <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">
                           Position #{b.position || idx + 1}
                         </span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setEditingBanner(b)}
+                            className="px-2.5 py-1 rounded text-[11px] font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Edit banner details"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
                           <button
                             onClick={() => editBanner({ ...b, status: b.status === 'active' ? 'inactive' : 'active' })}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                            className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors cursor-pointer ${
                               b.status === 'active'
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : 'bg-gray-100 text-gray-500 border-gray-200'
@@ -5286,7 +5336,7 @@ export default function AdminPage() {
                                 deleteBanner(b.id);
                               }
                             }}
-                            className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                             title="Delete banner"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -10277,6 +10327,194 @@ export default function AdminPage() {
                   className="px-5 py-2 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-xs"
                 >
                   Save Banner to Database
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: EDIT HERO BANNER                                   */}
+      {/* ========================================================= */}
+      {editingBanner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div>
+                <h3 className="font-extrabold text-base text-[#111827]">
+                  Edit Hero Carousel Banner
+                </h3>
+                <span className="text-[10px] text-gray-400 font-mono">
+                  ID: {editingBanner.id}
+                </span>
+              </div>
+              <button
+                onClick={() => setEditingBanner(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-900 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditBannerSubmit} className="space-y-3.5 text-xs">
+              
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Banner Title *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Upgrade to 12th & 13th Gen Laptops"
+                  value={editingBanner.title}
+                  onChange={(e) => setEditingBanner({ ...editingBanner, title: e.target.value })}
+                  className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Highlight Offer Tag</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Save Up to 45% + 18% GST Bill"
+                  value={editingBanner.titleHighlight || ''}
+                  onChange={(e) => setEditingBanner({ ...editingBanner, titleHighlight: e.target.value })}
+                  className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Subtitle / Details</label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. HP 15s, Dell Inspiron, Lenovo in stock with 16GB RAM..."
+                  value={editingBanner.subtitle || ''}
+                  onChange={(e) => setEditingBanner({ ...editingBanner, subtitle: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Badge Text</label>
+                  <input
+                    type="text"
+                    value={editingBanner.badge || ''}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, badge: e.target.value })}
+                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Button Text</label>
+                  <input
+                    type="text"
+                    value={editingBanner.buttonText || ''}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, buttonText: e.target.value })}
+                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Button Target Link</label>
+                  <input
+                    type="text"
+                    value={editingBanner.buttonUrl || ''}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, buttonUrl: e.target.value })}
+                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Display Position</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={editingBanner.position ?? 1}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, position: parseInt(e.target.value) || 1 })}
+                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Status</label>
+                  <select
+                    value={editingBanner.status}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, status: e.target.value })}
+                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-2 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                  >
+                    <option value="active">Active (Visible)</option>
+                    <option value="inactive">Inactive (Hidden)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Gradient Theme</label>
+                  <select
+                    value={editingBanner.bgGradient}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, bgGradient: e.target.value })}
+                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-2 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                  >
+                    <option value="from-[#0A1633] via-[#0E2A68] to-[#1E3A8A]">Refurbished Deep Navy</option>
+                    <option value="from-[#0A1633] via-[#0D224E] to-[#1E3A8A]">Frontech Ultima Navy</option>
+                    <option value="from-[#0A1633] via-[#0F2960] to-[#1A56DB]">Royal Navy Blue</option>
+                    <option value="from-[#03241C] via-[#064E3B] to-[#047857]">Emerald Forest</option>
+                    <option value="from-[#171033] via-[#2E1065] to-[#4338CA]">Cyber Purple</option>
+                    <option value="from-[#381504] via-[#78350F] to-[#EA580C]">Sunset Amber</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-gray-700 block">Banner Image</label>
+                  <label className="cursor-pointer text-[#1A56DB] hover:text-[#1E40AF] font-bold text-xs flex items-center gap-1">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload New Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditBannerFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Enter image URL or upload from device..."
+                    value={editingBanner.desktopImage}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, desktopImage: e.target.value, mobileImage: e.target.value })}
+                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                  />
+                  {editingBanner.desktopImage && (
+                    <div className="h-24 w-full rounded-xl border border-gray-200 overflow-hidden bg-slate-900/5 p-1 flex items-center justify-center">
+                      <img src={editingBanner.desktopImage} alt="Banner Preview" className="h-full w-full object-contain" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingBanner(null)}
+                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-xs cursor-pointer"
+                >
+                  Save Changes
                 </button>
               </div>
 

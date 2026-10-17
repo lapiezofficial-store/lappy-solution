@@ -190,31 +190,50 @@ export const TopBannerSlider: React.FC = () => {
     if (cmsBanners && cmsBanners.length > 0) {
       const active = cmsBanners
         .filter((b) => b.status !== 'inactive')
-        .sort((a, b) => a.position - b.position);
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
       if (active.length > 0) {
-        return [DEFAULT_BANNERS[0], ...active.map((b, idx) => ({
-          id: b.id || `banner-${idx}`,
-          badge: b.badge || 'FESTIVAL SPECIAL • GARHWA SHOWROOM',
-          badgeIcon: <Flame className="w-3.5 h-3.5 fill-[#EF4444] text-[#EF4444]" />,
-          badgeBg: 'bg-red-500/20 border-red-400/40 text-red-200',
-          badgeText: 'text-red-300',
-          title: b.title,
-          titleHighlight: b.titleHighlight || '',
-          subtitle: b.subtitle || 'Authorized sales & repair center on Chiniya Road, Garhwa.',
-          perks: [
-            '100% Brand Sealed Pack',
-            'Official Brand Warranty All-India',
-            'Same-Day Garhwa Delivery'
-          ],
-          priceTag: 'Verified Showroom Price',
-          priceNote: '18% GST ITC Bill Included',
-          ctaText: b.buttonText || 'Shop Now',
-          ctaLink: b.buttonUrl || '/shop',
-          whatsappMessage: b.whatsappMsg || 'Hello Lapiez Garhwa, I want to inquire about this offer.',
-          image: b.desktopImage || 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=700&auto=format&fit=crop&q=80',
-          bgGradient: b.bgGradient || 'from-[#0A1633] via-[#0F2960] to-[#1A56DB]',
-          accentBorder: 'border-blue-400/30'
-        }))];
+        return active.map((b, idx) => {
+          const defaultMatch = DEFAULT_BANNERS.find((d) => d.id === b.id);
+          if (defaultMatch) {
+            return {
+              ...defaultMatch,
+              title: b.title || defaultMatch.title,
+              titleHighlight: b.titleHighlight !== undefined ? b.titleHighlight : defaultMatch.titleHighlight,
+              subtitle: b.subtitle || defaultMatch.subtitle,
+              badge: b.badge || defaultMatch.badge,
+              image: b.desktopImage || defaultMatch.image,
+              ctaText: b.buttonText || defaultMatch.ctaText,
+              ctaLink: b.buttonUrl || defaultMatch.ctaLink,
+              whatsappMessage: b.whatsappMsg || defaultMatch.whatsappMessage,
+              bgGradient: b.bgGradient || defaultMatch.bgGradient,
+            };
+          }
+
+          return {
+            id: b.id || `banner-${idx}`,
+            badge: b.badge || 'FESTIVAL SPECIAL • GARHWA SHOWROOM',
+            badgeIcon: <Flame className="w-3.5 h-3.5 fill-[#EF4444] text-[#EF4444]" />,
+            badgeBg: 'bg-red-500/20 border-red-400/40 text-red-200',
+            badgeText: 'text-red-300',
+            title: b.title,
+            titleHighlight: b.titleHighlight || '',
+            subtitle: b.subtitle || 'Authorized sales & repair center on Chiniya Road, Garhwa.',
+            perks: [
+              '100% Brand Sealed Pack',
+              'Official Brand Warranty All-India',
+              'Same-Day Garhwa Delivery'
+            ],
+            priceTag: 'Verified Showroom Price',
+            priceNote: '18% GST ITC Bill Included',
+            ctaText: b.buttonText || 'Shop Now',
+            ctaLink: b.buttonUrl || '/shop',
+            whatsappMessage: b.whatsappMsg || 'Hello Lapiez Garhwa, I want to inquire about this offer.',
+            image: b.desktopImage || 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=700&auto=format&fit=crop&q=80',
+            bgGradient: b.bgGradient || 'from-[#0A1633] via-[#0F2960] to-[#1A56DB]',
+            accentBorder: 'border-blue-400/30'
+          };
+        });
       }
     }
     return DEFAULT_BANNERS;

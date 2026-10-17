@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { CATEGORIES } from '@/data/categories';
 import { PRODUCTS } from '@/data/products';
 import { INITIAL_COUPONS } from '@/data/coupons';
+import { INITIAL_BANNERS } from '@/data/banners';
 
 // Server-side in-memory cache for ultra-low latency & database relief
 interface CachedInitData {
@@ -175,11 +176,13 @@ export async function GET(request: Request) {
         }))
       : INITIAL_COUPONS;
 
+    const effectiveBanners = (banners && banners.length > 0) ? banners : INITIAL_BANNERS;
+
     const payload = {
       siteSettings: cleanSiteSettings,
       paymentSettings: cleanPaymentSettings,
       themeSettings: themeSettings || null,
-      banners: banners || [],
+      banners: effectiveBanners,
       homepageSections: homepageSections || [],
       categories: categoriesTree,
       products: formattedProducts,
@@ -213,7 +216,7 @@ export async function GET(request: Request) {
         siteSettings: null,
         paymentSettings: null,
         themeSettings: null,
-        banners: [],
+        banners: INITIAL_BANNERS,
         homepageSections: [],
         categories: CATEGORIES,
         products: PRODUCTS,
