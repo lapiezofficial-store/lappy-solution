@@ -118,6 +118,7 @@ model Product {
   status        String   @default("active")
   gstRate       Int?     @default(18)
   hsnCode       String?  @default("8471")
+  deletedAt     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

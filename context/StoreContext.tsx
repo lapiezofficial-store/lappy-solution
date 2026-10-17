@@ -231,7 +231,13 @@ interface StoreContextType {
   deleteBanner: (id: string) => Promise<void>;
   addProductToDb: (prod: Partial<Product>) => Promise<Product | void>;
   updateProductInDb: (id: string, updatedFields: Partial<Product>) => Promise<boolean>;
-  deleteProductFromDb: (id: string) => Promise<void>;
+  deleteProductFromDb: (id: string, permanent?: boolean) => Promise<void>;
+  trashProducts: Product[];
+  isLoadingTrash: boolean;
+  fetchTrashProducts: () => Promise<void>;
+  restoreProductFromDb: (id: string) => Promise<void>;
+  restoreAllTrash: () => Promise<void>;
+  emptyTrashDb: () => Promise<void>;
   updateHomepageSections: (sections: CMSSection[]) => Promise<void>;
   updateHomepageSectionDetails: (sectionKey: string, details: Partial<CMSSection>) => Promise<void>;
   updateHomepageSectionProducts: (sectionKey: string, productIds: string[]) => Promise<void>;
@@ -531,6 +537,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     return PRODUCTS.filter(p => !isDemoProduct(p)).map(normalizeProduct);
   });
+  const [trashProducts, setTrashProducts] = useState<Product[]>([]);
+  const [isLoadingTrash, setIsLoadingTrash] = useState<boolean>(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -1596,41 +1604,164 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const deleteProductFromDb = async (id: string) => {
+  const fetchTrashProducts = async () => {
     try {
-      const prodToDelete = products.find(p => p.id === id || p.sku === id || (p as any).dbId === id);
+      setIsLoadingTrash(true);
+      const res = await fetch('/api/cms/products?trash=true', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.products)) {
+          setTrashProducts(data.products.map(normalizeProduct));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch trash products:', e);
+    } finally {
+      setIsLoadingTrash(false);
+    }
+  };
+
+  const deleteProductFromDb = async (id: string, permanent = false) => {
+    try {
+      const prodToDelete = products.find(p => p.id === id || p.sku === id || (p as any).dbId === id)
+        || trashProducts.find(p => p.id === id || p.sku === id || (p as any).dbId === id);
       const sku = prodToDelete?.sku;
       const targetId = prodToDelete?.id || id;
 
-      // 1. Instant optimistic state & localStorage update so UI updates immediately
-      setProducts((prev) => {
-        const next = prev.filter((p) => 
-          p.id !== id && 
-          p.id !== targetId && 
-          (p as any).dbId !== id && 
-          (p as any).dbId !== targetId && 
-          (!sku || !p.sku || p.sku.toLowerCase() !== sku.toLowerCase())
-        );
-        try { 
-          localStorage.setItem('ls_products', JSON.stringify(next)); 
-        } catch (e) {}
-        return next;
-      });
+      if (!permanent) {
+        // Soft-delete: Move to Dustbin (15 Days Retention)
+        setProducts((prev) => {
+          const next = prev.filter((p) => 
+            p.id !== id && 
+            p.id !== targetId && 
+            (p as any).dbId !== id && 
+            (p as any).dbId !== targetId && 
+            (!sku || !p.sku || p.sku.toLowerCase() !== sku.toLowerCase())
+          );
+          try { 
+            localStorage.setItem('ls_products', JSON.stringify(next)); 
+          } catch (e) {}
+          return next;
+        });
 
-      // 2. Persist delete to database
-      const res = await fetch(`/api/cms/products?id=${encodeURIComponent(targetId)}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (res.ok) {
-        showToast('Product permanently deleted from database!');
+        if (prodToDelete) {
+          const trashedItem: Product = {
+            ...prodToDelete,
+            status: 'trash',
+            deletedAt: new Date().toISOString()
+          };
+          setTrashProducts(prev => [trashedItem, ...prev.filter(p => p.id !== targetId)]);
+        }
+
+        const res = await fetch(`/api/cms/products?id=${encodeURIComponent(targetId)}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        if (res.ok) {
+          showToast('Product moved to Dustbin! Kept safely for 15 days.');
+        } else {
+          showToast('Product moved to Dustbin locally');
+        }
       } else {
-        const err = await res.json().catch(() => ({}));
-        showToast(err.error || 'Product deleted locally');
+        // Hard delete: Permanent deletion from database
+        setTrashProducts(prev => prev.filter(p => p.id !== id && p.id !== targetId));
+        setProducts(prev => prev.filter(p => p.id !== id && p.id !== targetId));
+        try {
+          const saved = localStorage.getItem('ls_products');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            const filtered = parsed.filter((p: any) => p.id !== id && p.id !== targetId);
+            localStorage.setItem('ls_products', JSON.stringify(filtered));
+          }
+        } catch (e) {}
+
+        const res = await fetch(`/api/cms/products?id=${encodeURIComponent(targetId)}&permanent=true`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        if (res.ok) {
+          showToast('Product permanently deleted from database!');
+        } else {
+          showToast('Product permanently deleted');
+        }
       }
     } catch (e) {
       console.error('Failed to delete product:', e);
-      showToast('Product deleted locally');
+      showToast('Action completed locally');
+    }
+  };
+
+  const restoreProductFromDb = async (id: string) => {
+    try {
+      const prodToRestore = trashProducts.find(p => p.id === id || p.sku === id || (p as any).dbId === id);
+      const targetId = prodToRestore?.id || id;
+
+      setTrashProducts(prev => prev.filter(p => p.id !== id && p.id !== targetId));
+
+      if (prodToRestore) {
+        const restored: Product = {
+          ...prodToRestore,
+          status: 'active',
+          deletedAt: null
+        };
+        setProducts(prev => {
+          const exists = prev.some(p => p.id === targetId || (p.sku && prodToRestore.sku && p.sku.toLowerCase() === prodToRestore.sku.toLowerCase()));
+          const next = exists ? prev : [restored, ...prev];
+          try { localStorage.setItem('ls_products', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
+      }
+
+      const res = await fetch(`/api/cms/products?action=restore&id=${encodeURIComponent(targetId)}`, {
+        method: 'PATCH',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        showToast('Product restored to Active Catalog!');
+      } else {
+        showToast('Product restored locally');
+      }
+    } catch (e) {
+      console.error('Failed to restore product:', e);
+      showToast('Product restored locally');
+    }
+  };
+
+  const restoreAllTrash = async () => {
+    try {
+      const items = [...trashProducts];
+      setTrashProducts([]);
+      setProducts(prev => {
+        const restored = items.map(p => ({ ...p, status: 'active', deletedAt: null }));
+        const next = [...restored, ...prev];
+        try { localStorage.setItem('ls_products', JSON.stringify(next)); } catch (e) {}
+        return next;
+      });
+
+      const res = await fetch('/api/cms/products?action=restoreAll', {
+        method: 'PATCH',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        showToast('All products restored to active catalog!');
+      }
+    } catch (e) {
+      console.error('Failed to restore all trash:', e);
+    }
+  };
+
+  const emptyTrashDb = async () => {
+    try {
+      setTrashProducts([]);
+      const res = await fetch('/api/cms/products?emptyTrash=true', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        showToast('Dustbin emptied permanently!');
+      }
+    } catch (e) {
+      console.error('Failed to empty dustbin:', e);
     }
   };
 
@@ -2450,6 +2581,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addProductToDb,
         updateProductInDb,
         deleteProductFromDb,
+        trashProducts,
+        isLoadingTrash,
+        fetchTrashProducts,
+        restoreProductFromDb,
+        restoreAllTrash,
+        emptyTrashDb,
         updateHomepageSections,
         updateHomepageSectionDetails,
         updateHomepageSectionProducts,

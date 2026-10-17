@@ -40,6 +40,10 @@ export interface Product {
   reviews?: ProductReview[];
   gstRate?: number;
   hsnCode?: string;
+  status?: string;
+  deletedAt?: string | null;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }
 
 const BASE_PRODUCTS: Product[] = [

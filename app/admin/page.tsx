@@ -9,7 +9,7 @@ import {
   RefreshCw, Plus, Edit2, ArrowRight, BarChart3, Layers, 
   QrCode, Receipt, Store, Sparkles, Copy, Eye, EyeOff, 
   ArrowUp, ArrowDown, Palette, Sliders, Image as ImageIcon, 
-  Trash2, Save, Lock, Key, FileText, Printer, Building2, Percent, DollarSign,
+  Trash2, Save, Lock, Key, FileText, Printer, Building2, Percent, DollarSign, RotateCcw,
   BookOpen, Star, Crown, Laptop, Box, Award, AlertTriangle, MoreVertical,
   SlidersHorizontal, ArrowUpDown, Pencil, ChevronDown, ChevronRight, ChevronLeft, Download, Upload, Tag,
   Share2, Globe, ArrowLeft, LayoutDashboard, Menu, Wrench, Terminal, Database, Radio, HardDrive, FolderTree, CheckSquare, FileCode
@@ -65,6 +65,12 @@ export default function AdminPage() {
     addProductToDb,
     updateProductInDb,
     deleteProductFromDb,
+    trashProducts,
+    isLoadingTrash,
+    fetchTrashProducts,
+    restoreProductFromDb,
+    restoreAllTrash,
+    emptyTrashDb,
     syncWithDatabase,
     showToast,
     coupons,
@@ -93,6 +99,7 @@ export default function AdminPage() {
     | 'dashboard' 
     | 'orders' 
     | 'inventory' 
+    | 'trash'
     | 'categories' 
     | 'brands' 
     | 'scraper' 
@@ -218,12 +225,13 @@ export default function AdminPage() {
   const [footerTimings, setFooterTimings] = useState(siteSettings?.timings || STORE_INFO.timings);
   const [footerCopyright, setFooterCopyright] = useState('© 2026 Lapiez IT Showroom. All Rights Reserved. 100% Genuine Hardware.');
 
-  // Support direct URL query parameter
+  // Support direct URL query parameter and load initial trash
   useEffect(() => {
+    fetchTrashProducts();
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam && ['dashboard', 'orders', 'inventory', 'categories', 'brands', 'scraper', 'billing', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads'].includes(tabParam)) {
+      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads'].includes(tabParam)) {
         setActiveTab(tabParam as any);
       }
     }
@@ -244,6 +252,24 @@ export default function AdminPage() {
   const [inventorySort, setInventorySort] = useState<'newest' | 'price_asc' | 'price_desc' | 'name_asc' | 'stock_asc'>('newest');
   const [inventorySelectedIds, setInventorySelectedIds] = useState<string[]>([]);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+
+  // Dustbin (Trash / Recycle Bin - 15 Days Retention) States
+  const [trashSearch, setTrashSearch] = useState('');
+  const [trashCategory, setTrashCategory] = useState('All');
+  const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
+
+  const filteredTrash = useMemo(() => {
+    return trashProducts.filter((p) => {
+      const matchCat = trashCategory === 'All' || p.category === trashCategory;
+      const q = trashSearch.trim().toLowerCase();
+      const matchSearch = !q || 
+        p.name.toLowerCase().includes(q) || 
+        (p.sku && p.sku.toLowerCase().includes(q)) || 
+        (p.brand && p.brand.toLowerCase().includes(q)) ||
+        p.category.toLowerCase().includes(q);
+      return matchCat && matchSearch;
+    });
+  }, [trashProducts, trashCategory, trashSearch]);
 
   // Live Inline Price Editing State
   const [inlineEditingPriceId, setInlineEditingPriceId] = useState<string | null>(null);
@@ -739,11 +765,11 @@ export default function AdminPage() {
 
   const handleBulkDelete = async () => {
     if (inventorySelectedIds.length === 0) return;
-    if (!confirm(`Are you sure you want to delete ${inventorySelectedIds.length} selected products? This action cannot be undone.`)) return;
+    if (!confirm(`Move ${inventorySelectedIds.length} selected products to Dustbin (Trash)? They will be kept safely for 15 days before permanent deletion.`)) return;
     for (const id of inventorySelectedIds) {
       await deleteProductFromDb(id);
     }
-    showToast(`Deleted ${inventorySelectedIds.length} products!`);
+    showToast(`Moved ${inventorySelectedIds.length} products to Dustbin!`);
     setInventorySelectedIds([]);
   };
 
@@ -2648,6 +2674,23 @@ export default function AdminPage() {
                   </button>
 
                   <button
+                    onClick={() => { setActiveTab('trash'); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${
+                      activeTab === 'trash' ? 'bg-[#b32d2e] text-white shadow-xs' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Trash2 className="w-4 h-4 text-rose-400" />
+                      <span>Dustbin (Trash)</span>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      trashProducts.length > 0 ? 'bg-rose-600 text-white' : 'bg-[#3c434a] text-gray-300'
+                    }`}>
+                      {trashProducts.length}
+                    </span>
+                  </button>
+
+                  <button
                     onClick={() => { setActiveTab('categories'); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${
                       activeTab === 'categories' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
@@ -2945,6 +2988,28 @@ export default function AdminPage() {
               </button>
 
               <button
+                onClick={() => setActiveTab('trash')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'trash'
+                    ? 'bg-[#b32d2e] text-white shadow-xs'
+                    : 'text-[#c3c4c7] hover:bg-[#8a2424] hover:text-white'
+                }`}
+                title="Dustbin / Trash (Saved for 15 Days)"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Trash2 className="w-4 h-4 flex-shrink-0 text-rose-300" />
+                  {!isWpSidebarCollapsed && <span>Dustbin (Trash)</span>}
+                </div>
+                {!isWpSidebarCollapsed && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                    trashProducts.length > 0 ? 'bg-rose-600 text-white' : 'bg-[#3c434a] text-gray-300'
+                  }`}>
+                    {trashProducts.length}
+                  </span>
+                )}
+              </button>
+
+              <button
                 onClick={() => setActiveTab('categories')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'categories'
@@ -3159,6 +3224,7 @@ export default function AdminPage() {
                 <h1 className="text-xl sm:text-2xl font-black text-[#1d2327] tracking-tight">
                   {activeTab === 'dashboard' && 'Dashboard'}
                   {activeTab === 'inventory' && `All Products (${products.length} SKUs)`}
+                  {activeTab === 'trash' && `Dustbin / Recycle Bin (${trashProducts.length} Items - 15 Days Retention)`}
                   {activeTab === 'categories' && `Categories & Subcategories (${categories.length})`}
                   {activeTab === 'brands' && `Top Brands Showcase (${brands.length})`}
                   {activeTab === 'scraper' && 'Live Web Scraper & Crawler Engine'}
@@ -4273,11 +4339,20 @@ export default function AdminPage() {
             {/* 1. Header Toolbar (Title, Count Badge, Subtitle, Actions) */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <h2 className="text-2xl font-black text-gray-900 tracking-tight">Inventory</h2>
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
-                    {products.length.toLocaleString('en-IN')} Items
+                    {products.length.toLocaleString('en-IN')} Active
                   </span>
+                  <button
+                    onClick={() => setActiveTab('trash')}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all cursor-pointer shadow-2xs"
+                    title="View Trashed Products (Kept for 15 days)"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Dustbin ({trashProducts.length})</span>
+                    <span className="text-[10px] text-rose-500 font-medium hidden sm:inline">• 15 Days Retention</span>
+                  </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-0.5">
                   Manage your products, stock, brands and categories — all in one place.
@@ -5039,15 +5114,15 @@ export default function AdminPage() {
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
 
-                                  {/* Delete Product */}
+                                  {/* Delete Product (Move to Dustbin) */}
                                   <button
                                     onClick={() => {
-                                      if (confirm(`Delete "${product.name}" from database?`)) {
+                                      if (confirm(`Move "${product.name}" to Dustbin (Trash)? It will be kept safely for 15 days.`)) {
                                         deleteProductFromDb(product.id);
                                       }
                                     }}
                                     className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-rose-50 text-gray-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer"
-                                    title="Delete Product"
+                                    title="Move to Dustbin (Saved for 15 Days)"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -5515,8 +5590,282 @@ export default function AdminPage() {
         )}
 
         {/* ========================================================= */}
-        {/* TAB: SHOP BY CATEGORY & SUBCATEGORIES CMS (ADD, EDIT, DEL) */}
+        {/* TAB: DUSTBIN / RECYCLE BIN (15 DAYS AUTO RETENTION)        */}
         {/* ========================================================= */}
+        {activeTab === 'trash' && (
+          <div className="space-y-5 animate-in fade-in duration-150">
+            {/* 1. Header Toolbar */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shadow-2xs">
+                    <Trash2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                        Dustbin / Recycle Bin (कचरा पेटी)
+                      </h2>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                        {trashProducts.length} Items in Trash
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        <span>15 Days Auto-Purge</span>
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Deleted products stay here safely for 15 days. You can restore them anytime with 1 click, or delete them permanently.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => fetchTrashProducts()}
+                  className="h-9 px-3.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Refresh Trash & Check Expired Items"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-gray-500 ${isLoadingTrash ? 'animate-spin' : ''}`} />
+                  <span>Refresh</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={trashProducts.length === 0}
+                  onClick={() => {
+                    if (confirm(`Restore all ${trashProducts.length} products to active catalog?`)) {
+                      restoreAllTrash();
+                    }
+                  }}
+                  className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                  title="Restore all trashed products to active catalog"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Restore All ({trashProducts.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={trashProducts.length === 0}
+                  onClick={() => {
+                    if (confirm(`WARNING: Are you sure you want to permanently delete all ${trashProducts.length} items from dustbin? This action CANNOT be undone.`)) {
+                      emptyTrashDb();
+                    }
+                  }}
+                  className="h-9 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                  title="Empty dustbin permanently"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Empty Dustbin</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Explanatory Banner */}
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-xl p-3.5 text-xs text-amber-900 flex items-start gap-3 shadow-2xs">
+              <ShieldCheck className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-bold">15-Day Auto-Purge & Storefront Protection:</span>
+                <p className="text-amber-800 leading-relaxed">
+                  Jab bhi aap inventory se koi product delete karte hain, wo turant website aur customers se hide ho jata hai aur is Dustbin me aa jata hai. Yaha ye <strong>15 din</strong> tak surakshit rehta hai jisse galti se delete hua koi bhi product 1 click me restore ho sake. 15 din poore hote hi ye database se <strong>khud-b-khud (automatically) permanently delete</strong> ho jayega.
+                </p>
+              </div>
+            </div>
+
+            {/* 3. Search and Category Filter Toolbar */}
+            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-72">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search dustbin by name, SKU, brand..."
+                  value={trashSearch}
+                  onChange={(e) => setTrashSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="text-xs font-bold text-gray-500 whitespace-nowrap">Filter:</span>
+                <select
+                  value={trashCategory}
+                  onChange={(e) => setTrashCategory(e.target.value)}
+                  className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-rose-500 cursor-pointer"
+                >
+                  <option value="All">All Categories</option>
+                  {Array.from(new Set(trashProducts.map(p => p.category))).map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('inventory')}
+                  className="ml-auto text-xs font-bold text-[#1A56DB] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Go to Active Inventory</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* 4. Trashed Products List */}
+            {trashProducts.length === 0 ? (
+              <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center shadow-xs">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto mb-3 shadow-2xs">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-black text-gray-900">Dustbin is Clean!</h3>
+                <p className="text-xs text-gray-500 max-w-md mx-auto mt-1 mb-4">
+                  There are no deleted products in the dustbin right now. When you delete any product from inventory, it will safely appear here for 15 days.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('inventory')}
+                  className="px-4 py-2 rounded-xl bg-[#2271b1] hover:bg-[#135e96] text-white text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Back to Inventory
+                </button>
+              </div>
+            ) : filteredTrash.length === 0 ? (
+              <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center text-xs text-gray-500">
+                No trashed products matched your filter query.
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50/80 border-b border-gray-200 text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
+                        <th className="py-3 px-4">Product Details</th>
+                        <th className="py-3 px-3">Category & Brand</th>
+                        <th className="py-3 px-3">Price</th>
+                        <th className="py-3 px-3">Deleted Date</th>
+                        <th className="py-3 px-3">Retention Status</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-xs">
+                      {filteredTrash.map((item) => {
+                        const delDate = item.deletedAt ? new Date(item.deletedAt) : (item.updatedAt ? new Date(item.updatedAt) : new Date());
+                        const daysInTrash = Math.floor((Date.now() - delDate.getTime()) / (1000 * 60 * 60 * 24));
+                        const daysRemaining = Math.max(0, 15 - daysInTrash);
+
+                        return (
+                          <tr key={item.id} className="hover:bg-rose-50/30 transition-colors">
+                            {/* Product Info */}
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 flex-shrink-0 overflow-hidden flex items-center justify-center p-1">
+                                  {item.image ? (
+                                    <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                                  ) : (
+                                    <Package className="w-5 h-5 text-gray-400" />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="font-bold text-gray-900 truncate max-w-xs" title={item.name}>
+                                    {item.name}
+                                  </h4>
+                                  <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400 font-mono">
+                                    <span>SKU: {item.sku || 'N/A'}</span>
+                                    <span>•</span>
+                                    <span>ID: {item.id}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Category & Brand */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-bold text-gray-800">{item.category}</span>
+                                <span className="text-[10px] text-gray-400 font-medium">{item.brand}</span>
+                              </div>
+                            </td>
+
+                            {/* Price */}
+                            <td className="py-3 px-3 whitespace-nowrap font-bold text-gray-900">
+                              ₹{item.price?.toLocaleString('en-IN')}
+                              {item.mrp > item.price && (
+                                <span className="text-[10px] text-gray-400 line-through ml-1.5 font-normal">
+                                  ₹{item.mrp?.toLocaleString('en-IN')}
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Deleted Date */}
+                            <td className="py-3 px-3 whitespace-nowrap text-gray-600">
+                              <div className="text-[11px] font-medium">
+                                {delDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </div>
+                              <div className="text-[10px] text-gray-400 font-mono">
+                                {delDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </td>
+
+                            {/* Retention Status */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              {daysRemaining > 7 ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  <span>{daysRemaining} days left</span>
+                                </span>
+                              ) : daysRemaining > 2 ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                  <span>{daysRemaining} days left</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping" />
+                                  <span>{daysRemaining <= 0 ? 'Purging today' : `${daysRemaining} day left!`}</span>
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-3 px-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => restoreProductFromDb(item.id)}
+                                  className="h-8 px-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                                  title="Restore to Active Inventory"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                  <span>Restore</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (confirm(`Permanently delete "${item.name}" from database right now? This cannot be undone.`)) {
+                                      deleteProductFromDb(item.id, true);
+                                    }
+                                  }}
+                                  className="h-8 px-2.5 rounded-lg bg-gray-100 hover:bg-rose-50 text-gray-500 hover:text-rose-600 border border-gray-200 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Permanently Delete Now"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span className="hidden sm:inline">Delete</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         {activeTab === 'categories' && (
           <div className="space-y-5">
             {/* Header Card */}
@@ -9541,7 +9890,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm(`Delete "${editingProduct.name}" completely from database?`)) {
+                    if (confirm(`Move "${editingProduct.name}" to Dustbin (Trash)? It will be safely kept for 15 days.`)) {
                       deleteProductFromDb(editingProduct.id);
                       setIsEditProductModalOpen(false);
                       setEditingProduct(null);
@@ -9550,7 +9899,7 @@ export default function AdminPage() {
                   className="px-3.5 py-2 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Product</span>
+                  <span>Move to Dustbin</span>
                 </button>
 
                 <div className="flex items-center gap-2">

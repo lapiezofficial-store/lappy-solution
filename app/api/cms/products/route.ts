@@ -4,9 +4,55 @@ import { prisma } from '@/lib/prisma';
 import { hasAdminSession } from '@/lib/adminAuth';
 import { invalidateInitCache } from '@/app/api/cms/init/route';
 
+export async function purgeExpiredTrash() {
+  try {
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    const result = await prisma.product.deleteMany({
+      where: {
+        status: 'trash',
+        OR: [
+          { deletedAt: { lte: fifteenDaysAgo } },
+          { deletedAt: null, updatedAt: { lte: fifteenDaysAgo } }
+        ]
+      }
+    });
+    if (result.count > 0) {
+      console.log(`[Auto-Purge] Cleaned ${result.count} products from dustbin older than 15 days.`);
+      invalidateInitCache();
+    }
+    return result.count;
+  } catch (err) {
+    console.error('Error auto-purging expired trash:', err);
+    return 0;
+  }
+}
+
 export async function GET(request: Request) {
   try {
+    // 1. Auto-clean any product in dustbin older than 15 days
+    await purgeExpiredTrash();
+
     const { searchParams } = new URL(request.url);
+    const isTrash = searchParams.get('trash') === 'true';
+
+    // 2. If dustbin/trash is requested by admin
+    if (isTrash) {
+      if (!hasAdminSession(request)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      const trashed = await prisma.product.findMany({
+        where: { status: 'trash' },
+        orderBy: { updatedAt: 'desc' }
+      });
+
+      return NextResponse.json({ 
+        products: trashed.map(p => formatProductPayload(p)),
+        count: trashed.length,
+        retentionDays: 15
+      });
+    }
+
     const id = searchParams.get('id');
     const slug = searchParams.get('slug');
     const category = searchParams.get('category');
@@ -95,6 +141,8 @@ export function formatProductPayload(p: any, rich?: any) {
 
   return {
     ...p,
+    status: p.status || 'active',
+    deletedAt: p.deletedAt ? new Date(p.deletedAt).toISOString() : null,
     image: primaryImage,
     images: galleryImages.length > 0 ? galleryImages : (primaryImage ? [primaryImage] : []),
     reviews: rich?.reviews || p.reviews || [],
@@ -262,6 +310,18 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const permanent = searchParams.get('permanent') === 'true';
+    const emptyTrash = searchParams.get('emptyTrash') === 'true';
+
+    // 1. Empty entire dustbin permanently
+    if (emptyTrash) {
+      const res = await prisma.product.deleteMany({
+        where: { status: 'trash' }
+      });
+      invalidateInitCache();
+      return NextResponse.json({ success: true, count: res.count, message: 'Dustbin emptied permanently!' });
+    }
+
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
     const matchFilter: Prisma.ProductWhereInput = {
@@ -272,22 +332,92 @@ export async function DELETE(request: Request) {
       ]
     };
 
-    try {
+    if (permanent) {
+      // Hard delete permanently from database
       await prisma.product.deleteMany({
         where: matchFilter
       });
-    } catch (dbErr) {
-      console.warn('Prisma hard delete failed, marking status deleted:', dbErr);
+      invalidateInitCache();
+      return NextResponse.json({ success: true, permanent: true, deletedId: id });
+    } else {
+      // Soft delete: Move to Dustbin (Trash) for 15 days
+      const now = new Date();
       await prisma.product.updateMany({
         where: matchFilter,
-        data: { status: 'deleted' }
-      }).catch(() => {});
+        data: {
+          status: 'trash',
+          deletedAt: now
+        }
+      });
+      invalidateInitCache();
+      return NextResponse.json({
+        success: true,
+        trash: true,
+        deletedId: id,
+        deletedAt: now.toISOString(),
+        expiresInDays: 15,
+        message: 'Product moved to Dustbin. Kept safely for 15 days.'
+      });
     }
-
-    invalidateInitCache();
-    return NextResponse.json({ success: true, deletedId: id });
   } catch (error) {
     console.error('Error deleting product:', error);
     return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  if (!hasAdminSession(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action');
+    const id = searchParams.get('id');
+
+    // 1. Restore a single product from Dustbin back to Active Catalog
+    if (action === 'restore') {
+      if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+      const matchFilter: Prisma.ProductWhereInput = {
+        OR: [
+          { id },
+          { sku: id },
+          { slug: id }
+        ]
+      };
+
+      await prisma.product.updateMany({
+        where: matchFilter,
+        data: {
+          status: 'active',
+          deletedAt: null
+        }
+      });
+
+      invalidateInitCache();
+      return NextResponse.json({ success: true, restoredId: id, message: 'Product successfully restored from Dustbin!' });
+    }
+
+    // 2. Restore all products from Dustbin back to Active Catalog
+    if (action === 'restoreAll') {
+      const res = await prisma.product.updateMany({
+        where: { status: 'trash' },
+        data: {
+          status: 'active',
+          deletedAt: null
+        }
+      });
+
+      invalidateInitCache();
+      return NextResponse.json({ success: true, count: res.count, message: 'All products restored to active catalog!' });
+    }
+
+    // 3. Trigger manual auto-purge check
+    if (action === 'purgeExpired') {
+      const count = await purgeExpiredTrash();
+      return NextResponse.json({ success: true, purgedCount: count });
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  } catch (error) {
+    console.error('Error in PATCH product:', error);
+    return NextResponse.json({ error: 'Failed to process action' }, { status: 500 });
   }
 }
