@@ -228,17 +228,18 @@ export const Navbar: React.FC<NavbarProps> = () => {
               <Smartphone className="w-3 h-3 text-emerald-300" />
               <span>Download App</span>
             </button>
-            <span className="hidden sm:inline text-blue-300">|</span>
+            <span className="hidden md:inline text-blue-300">|</span>
             <a 
               href={`tel:${siteSettings?.phone || STORE_INFO.phone}`} 
-              className="flex items-center gap-1 text-white hover:text-yellow-200 font-medium transition-colors"
+              className="hidden md:flex items-center gap-1 text-white hover:text-yellow-200 font-medium transition-colors"
             >
               <Phone className="w-3 h-3 text-yellow-300" />
               <span>{siteSettings?.phone || STORE_INFO.phone}</span>
             </a>
+            <span className="hidden sm:inline text-blue-300">|</span>
             <Link 
               href="/account" 
-              className="text-white hover:text-yellow-200 font-medium transition-colors"
+              className="hidden sm:inline-block text-white hover:text-yellow-200 font-medium transition-colors"
             >
               Track Order
             </Link>
@@ -488,12 +489,12 @@ export const Navbar: React.FC<NavbarProps> = () => {
               )}
             </Link>
 
-            {/* WhatsApp Support Button */}
+            {/* WhatsApp Support Button (Visible on tablet/desktop, docked on mobile bottom bar) */}
             <a
               href={`https://wa.me/${getCleanWhatsAppNumber(siteSettings?.whatsapp)}?text=${encodeURIComponent(`Hello ${siteSettings?.siteName || 'Lapiez'}, I want to inquire about products.`)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-full text-[#16A34A] hover:bg-emerald-50 transition-colors"
+              className="p-2 rounded-full text-[#16A34A] hover:bg-emerald-50 transition-colors hidden sm:flex"
               title="Chat on WhatsApp"
             >
               <MessageSquare className="w-5 h-5" />
