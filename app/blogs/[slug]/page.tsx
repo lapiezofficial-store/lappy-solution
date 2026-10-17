@@ -10,24 +10,45 @@ import {
   ExternalLink, CheckCircle2, ShoppingBag 
 } from 'lucide-react';
 import { useStore } from '../../../context/StoreContext';
-import { STORE_INFO } from '../../../data/storeData';
+import { STORE_INFO, getCleanWhatsAppNumber } from '../../../data/storeData';
+import { DEFAULT_BLOGS } from '../../../data/blogData';
 
 export default function SingleBlogPostPage() {
   const params = useParams();
   const router = useRouter();
   const slug = (params?.slug as string) || '';
-  const { blogPosts, products } = useStore();
+  const { blogPosts, products, siteSettings } = useStore();
+
+  const allBlogs = useMemo(() => {
+    const list: any[] = [];
+    const seen = new Set<string>();
+    if (blogPosts && Array.isArray(blogPosts)) {
+      blogPosts.forEach((b: any) => {
+        if (b && b.slug && !seen.has(b.slug)) {
+          seen.add(b.slug);
+          list.push(b);
+        }
+      });
+    }
+    DEFAULT_BLOGS.forEach((d) => {
+      if (!seen.has(d.slug)) {
+        seen.add(d.slug);
+        list.push(d);
+      }
+    });
+    return list;
+  }, [blogPosts]);
 
   const blog = useMemo(() => {
-    return blogPosts.find((b) => b.slug === slug);
-  }, [blogPosts, slug]);
+    return allBlogs.find((b) => b.slug === slug);
+  }, [allBlogs, slug]);
 
   const relatedBlogs = useMemo(() => {
     if (!blog) return [];
-    return blogPosts
-      .filter((b) => b.id !== blog.id)
+    return allBlogs
+      .filter((b) => b.id !== blog.id && b.slug !== blog.slug)
       .slice(0, 3);
-  }, [blogPosts, blog]);
+  }, [allBlogs, blog]);
 
   // Suggested products to buy based on blog category or tags
   const relatedProducts = useMemo(() => {
@@ -66,11 +87,11 @@ export default function SingleBlogPostPage() {
   };
 
   const handleWhatsAppConsult = () => {
-    const phone = STORE_INFO.phone.replace(/[^0-9]/g, '');
+    const phone = getCleanWhatsAppNumber(siteSettings?.whatsapp);
     const text = encodeURIComponent(
       `Hello Lapiez! I just read your article "${blog?.title}" on your website and would like expert guidance on recommended hardware.`
     );
-    window.open(`https://wa.me/91${phone}?text=${text}`, '_blank');
+    window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
   };
 
   if (!blog) {
@@ -237,7 +258,7 @@ export default function SingleBlogPostPage() {
                 <span className="text-xs font-bold text-gray-500 flex items-center gap-1">
                   <Tag className="w-3.5 h-3.5" /> Tags:
                 </span>
-                {blog.tags.split(',').map((tag, i) => (
+                {blog.tags.split(',').map((tag: string, i: number) => (
                   <span
                     key={i}
                     className="px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 text-[11px] font-medium"
