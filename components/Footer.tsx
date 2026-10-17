@@ -6,7 +6,7 @@ import {
   Phone, Mail, MapPin, Clock, MessageSquare, ArrowUp, 
   X, ChevronRight, FileText, ShieldCheck, 
   Truck, Receipt, Store, ExternalLink, Check,
-  Smartphone, Download
+  Smartphone, Download, HelpCircle, Info
 } from 'lucide-react';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore } from '../context/StoreContext';
@@ -327,15 +327,27 @@ export const Footer: React.FC = () => {
             {/* ----------------------------------------------------- */}
             <div className="lg:col-span-3 space-y-3">
               <h4 className="text-[13px] font-bold uppercase tracking-wider text-[#0F172A] border-b border-[#E2E8F0] pb-2">
-                Customer Support
+                Customer Support & Help
               </h4>
               <ul className="space-y-2 text-[13px]">
                 <li>
+                  <Link href="/pages/about-us" className="flex items-center gap-1.5 text-[#1A56DB] font-bold hover:underline transition-colors block">
+                    <Info className="w-3.5 h-3.5 text-[#1A56DB] flex-shrink-0" />
+                    <span>About Us</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/faq" className="flex items-center gap-1.5 text-[#1A56DB] font-bold hover:underline transition-colors block">
+                    <HelpCircle className="w-3.5 h-3.5 text-[#1A56DB] flex-shrink-0" />
+                    <span>FAQ & Helpdesk</span>
+                  </Link>
+                </li>
+                <li>
                   <button 
                     onClick={() => setIsAppModalOpen(true)}
-                    className="flex items-center gap-1.5 text-[#1A56DB] font-bold hover:underline transition-colors text-left cursor-pointer"
+                    className="flex items-center gap-1.5 text-gray-700 hover:text-[#1A56DB] font-medium hover:underline transition-colors text-left cursor-pointer"
                   >
-                    <Smartphone className="w-3.5 h-3.5" />
+                    <Smartphone className="w-3.5 h-3.5 text-[#1A56DB] flex-shrink-0" />
                     <span>Download Our App</span>
                   </button>
                 </li>
@@ -355,12 +367,7 @@ export const Footer: React.FC = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/faq" className="text-[#2563EB] font-bold hover:underline block">
-                    FAQ & Helpdesk
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/blogs" className="text-[#2563EB] font-bold hover:underline block">
+                  <Link href="/blogs" className="hover:text-[#2563EB] transition-colors block">
                     Tech Guides & Blog
                   </Link>
                 </li>
@@ -377,11 +384,6 @@ export const Footer: React.FC = () => {
                 <li>
                   <Link href="/pages/warranty-policy" className="hover:text-[#2563EB] transition-colors block">
                     Warranty & Replacement
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/pages/about-us" className="hover:text-[#2563EB] transition-colors block">
-                    About Lapiez
                   </Link>
                 </li>
                 {/* Dynamically render any additional CMS pages created in Admin */}
@@ -465,7 +467,19 @@ export const Footer: React.FC = () => {
               <span className="hidden sm:inline"> In front of G P Plaza, Chiniya Road, Garhwa, Jharkhand 822114.</span>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3.5 sm:gap-4">
+              <Link
+                href="/pages/about-us"
+                className="hover:text-[#0F172A] font-medium transition-colors"
+              >
+                About Us
+              </Link>
+              <Link
+                href="/faq"
+                className="hover:text-[#0F172A] font-medium transition-colors"
+              >
+                FAQ
+              </Link>
               <button
                 onClick={() => setIsAppModalOpen(true)}
                 className="hover:text-[#1A56DB] text-[#1A56DB] font-semibold transition-colors flex items-center gap-1 cursor-pointer"

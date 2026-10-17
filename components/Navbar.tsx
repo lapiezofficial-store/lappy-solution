@@ -248,10 +248,10 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
       {/* 2. Main E-Commerce Header Bar */}
       <div className="border-b border-[#E5E7EB] bg-white px-4 sm:px-8 py-3 relative">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 relative">
           
-          {/* LEFT: Nav Links (Home, Categories ^, Refurbished v, About Us, FAQ, More v) */}
-          <nav className="hidden lg:flex items-center gap-6 xl:gap-7 text-[14.5px] font-semibold text-[#1E3A8A]">
+          {/* LEFT: Nav Links (Home, Categories ^, Refurbished v, Support, More v) */}
+          <nav className="hidden lg:flex items-center gap-5 xl:gap-7 text-[14.5px] font-semibold text-[#1E3A8A] flex-1 justify-start">
             
             {/* Home Link */}
             <Link 
@@ -351,24 +351,6 @@ export const Navbar: React.FC<NavbarProps> = () => {
               )}
             </div>
 
-            {/* FAQ Link */}
-            <Link 
-              href="/faq" 
-              className={`hover:text-[#2563EB] transition-colors flex items-center gap-1 ${
-                pathname === '/faq' ? 'text-[#2563EB] font-bold' : ''
-              }`}
-            >
-              <span>FAQ</span>
-            </Link>
-
-            {/* About Us Link */}
-            <Link 
-              href="/contact" 
-              className={`hover:text-[#2563EB] transition-colors ${pathname === '/contact' ? 'text-[#2563EB] font-bold' : ''}`}
-            >
-              About Us
-            </Link>
-
             {/* Support Link */}
             <Link 
               href="/contact" 
@@ -432,48 +414,50 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
           </nav>
 
-          {/* CENTER: Dynamic Site Logo with fallback */}
-          <Link href="/" className="flex flex-col items-center justify-center group mx-auto lg:mx-0">
-            {!logoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
-              <div className="flex items-center gap-2 py-0.5">
-                <img 
-                  src={siteSettings.logo} 
-                  alt={siteSettings?.siteName || "Lapiez"} 
-                  onError={() => setLogoError(true)}
-                  className="h-8 sm:h-9 w-auto max-w-[150px] sm:max-w-[200px] object-contain group-hover:scale-[1.02] transition-transform"
-                />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <div className="relative flex items-center justify-center">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1A56DB] to-[#0A2560] text-white flex items-center justify-center shadow-sm transform group-hover:scale-105 transition-transform">
-                    <ShoppingCart className="w-5 h-5 text-white" />
+          {/* CENTER: Dynamic Site Logo - Guaranteed Dead Center on Desktop */}
+          <div className="flex items-center justify-center lg:absolute lg:left-1/2 lg:-translate-x-1/2 z-10 flex-shrink-0">
+            <Link href="/" className="flex flex-col items-center justify-center group">
+              {!logoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
+                <div className="flex items-center gap-2 py-0.5">
+                  <img 
+                    src={siteSettings.logo} 
+                    alt={siteSettings?.siteName || "Lapiez"} 
+                    onError={() => setLogoError(true)}
+                    className="h-8 sm:h-9 w-auto max-w-[150px] sm:max-w-[200px] object-contain group-hover:scale-[1.02] transition-transform"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="relative flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1A56DB] to-[#0A2560] text-white flex items-center justify-center shadow-sm transform group-hover:scale-105 transition-transform">
+                      <ShoppingCart className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
                   </div>
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
-                </div>
 
-                <div className="flex flex-col">
-                  <span className="text-[20px] sm:text-[22px] font-black tracking-tight text-[#111827] leading-none">
-                    {siteSettings?.siteName ? (
-                      siteSettings.siteName.toLowerCase().includes('lapiez') ? (
-                        <>LAP<span className="text-[#1A56DB]">IEZ</span></>
+                  <div className="flex flex-col">
+                    <span className="text-[20px] sm:text-[22px] font-black tracking-tight text-[#111827] leading-none">
+                      {siteSettings?.siteName ? (
+                        siteSettings.siteName.toLowerCase().includes('lapiez') ? (
+                          <>LAP<span className="text-[#1A56DB]">IEZ</span></>
+                        ) : (
+                          <span className="text-[#111827]">{siteSettings.siteName}</span>
+                        )
                       ) : (
-                        <span className="text-[#111827]">{siteSettings.siteName}</span>
-                      )
-                    ) : (
-                      <>LAP<span className="text-[#1A56DB]">IEZ</span></>
-                    )}
-                  </span>
-                  <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold leading-none mt-0.5">
-                    {siteSettings?.tagline || 'Garhwa Hardware Store'}
-                  </span>
+                        <>LAP<span className="text-[#1A56DB]">IEZ</span></>
+                      )}
+                    </span>
+                    <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold leading-none mt-0.5">
+                      {siteSettings?.tagline || 'Garhwa Hardware Store'}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
-          </Link>
+              )}
+            </Link>
+          </div>
 
           {/* RIGHT: Action Icons (Search, User, WhatsApp, Cart) */}
-          <div className="flex items-center gap-2 sm:gap-3.5">
+          <div className="flex items-center gap-2 sm:gap-3.5 flex-1 justify-end">
             
             {/* Search Toggle Button */}
             <button
