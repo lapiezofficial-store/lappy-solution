@@ -59,7 +59,7 @@ async function main() {
   console.log('\n🌐 Step 3: Deploying to Vercel (https://vercel.com/lapiez-solution/lappy-solution)...');
   try {
     const tokenFlag = process.env.VERCEL_TOKEN ? `--token ${process.env.VERCEL_TOKEN}` : '';
-    const deployCmd = `npx vercel --prod --yes --scope lapiez-solution ${tokenFlag}`.trim();
+    const deployCmd = `npx vercel --prod --yes ${tokenFlag}`.trim();
     console.log(`Executing: ${deployCmd.replace(/--token [^\s]+/, '--token [HIDDEN]')}`);
     execSync(deployCmd, { stdio: 'inherit' });
     console.log('✅ Successfully deployed to vercel.com/lapiez-solution/lappy-solution.');
