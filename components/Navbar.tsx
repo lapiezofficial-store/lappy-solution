@@ -201,8 +201,147 @@ export const Navbar: React.FC<NavbarProps> = () => {
   return (
     <header ref={headerRef} className="sticky top-0 z-50 w-full bg-white shadow-xs">
       
-      {/* 1. Top Announcement Bar */}
-      <div className="bg-[#1A56DB] text-white text-[11px] sm:text-[12px] py-1 px-3 sm:px-6">
+      {/* ========================================================= */}
+      {/* MOBILE HEADER (lg:hidden) - EXACT 3 LINES FROM SCREENSHOT */}
+      {/* ========================================================= */}
+      <div className="lg:hidden bg-white border-b border-gray-200 shadow-2xs">
+        {/* LINE 1: Top Micro Announcement Strip */}
+        <div className="bg-[#1A56DB] text-white text-[10.5px] py-1 px-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 truncate">
+            <MapPin className="w-3 h-3 text-[#FEF08A] flex-shrink-0" />
+            <span className="truncate font-semibold">Garhwa & Palamu Delivery • 100% Genuine</span>
+          </div>
+          <a 
+            href={`tel:${siteSettings?.phone || STORE_INFO.phone}`}
+            className="text-yellow-200 font-extrabold text-[10.5px] flex-shrink-0 ml-2 hover:underline"
+          >
+            {siteSettings?.phone || STORE_INFO.phone}
+          </a>
+        </div>
+
+        {/* LINE 2: Brand Logo (Left) + Notification Bell & Hamburger Menu (Right) */}
+        <div className="px-3.5 py-2.5 flex items-center justify-between">
+          {/* Left: Brand Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            {!logoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
+              <img 
+                src={siteSettings.logo} 
+                alt={siteSettings?.siteName || "Lapiez"} 
+                onError={() => setLogoError(true)}
+                className="h-7 sm:h-8 w-auto max-w-[140px] object-contain"
+              />
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#1A56DB] to-[#0A2560] text-white flex items-center justify-center shadow-xs">
+                  <ShoppingCart className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[20px] font-black tracking-tight text-[#111827] leading-none">
+                    LAP<span className="text-[#1A56DB]">IEZ</span>
+                  </span>
+                  <span className="text-[8.5px] uppercase tracking-wider text-gray-400 font-bold leading-none mt-0.5">
+                    {siteSettings?.tagline || 'IT Showroom Garhwa'}
+                  </span>
+                </div>
+              </div>
+            )}
+          </Link>
+
+          {/* Right: Bell Icon + Hamburger Menu */}
+          <div className="flex items-center gap-1.5">
+            {/* Notification Bell */}
+            <button
+              type="button"
+              onClick={() => setIsAppModalOpen(true)}
+              className="relative p-2 rounded-full text-gray-700 hover:text-[#1A56DB] hover:bg-gray-100 transition-colors cursor-pointer"
+              aria-label="App & Notifications"
+              title="Lapiez Android App & Offers"
+            >
+              <Bell className="w-5 h-5 text-gray-700 stroke-[1.8]" />
+              <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 ring-2 ring-white"></span>
+              </span>
+            </button>
+
+            {/* Hamburger Menu Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-gray-800 hover:text-[#1A56DB] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6 stroke-[2]" /> : <Menu className="w-6 h-6 stroke-[2]" />}
+            </button>
+          </div>
+        </div>
+
+        {/* LINE 3: Full-Width Curved Search Bar (Try search here.. 🔍) */}
+        <div className="px-3 pb-2.5 pt-0.5 relative">
+          <form onSubmit={handleSearchSubmit} className="relative w-full">
+            <input
+              id="mobile-header-search-input"
+              type="text"
+              placeholder="Try search here.."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setTimeout(() => setIsSearchFocused(false), 250)}
+              className="w-full h-10 pl-4 pr-10 rounded-2xl bg-[#F8FAFC] border border-[#CBD5E1] text-[13px] text-gray-900 placeholder-gray-400 focus:bg-white focus:border-[#1A56DB] focus:outline-none shadow-2xs transition-all"
+            />
+            <button
+              type="submit"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1A56DB] p-1 cursor-pointer transition-colors"
+              aria-label="Submit Search"
+            >
+              <Search className="w-4 h-4 stroke-[2]" />
+            </button>
+          </form>
+
+          {/* Instant Search Suggestions Dropdown on Mobile */}
+          {isSearchFocused && searchResults.length > 0 && (
+            <div className="absolute left-3 right-3 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl p-2 z-50 divide-y divide-gray-50 max-h-80 overflow-y-auto">
+              {searchResults.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => {
+                    setIsSearchFocused(false);
+                    setSearchQuery('');
+                    setSelectedProduct(null);
+                    router.push(`/product/${encodeURIComponent(p.id)}`);
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="p-2 hover:bg-blue-50/60 rounded-lg cursor-pointer flex items-center justify-between transition-colors group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                    <div className="w-9 h-9 bg-gray-50 rounded-lg border border-gray-100 p-1 flex-shrink-0 flex items-center justify-center">
+                      <img 
+                        src={p.image || '/images/product-placeholder.svg'} 
+                        alt={p.name} 
+                        className="max-h-full max-w-full object-contain" 
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-gray-900 group-hover:text-[#1A56DB] truncate">{p.name}</div>
+                      <div className="text-[10px] text-gray-500 font-semibold truncate">{p.category} • {p.brand}</div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-extrabold text-[#1A56DB] flex-shrink-0">
+                    ₹{Number(p.price || 0).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* DESKTOP HEADER (hidden lg:block)                           */}
+      {/* ========================================================= */}
+      <div className="hidden lg:block">
+        {/* 1. Top Announcement Bar */}
+        <div className="bg-[#1A56DB] text-white text-[11px] sm:text-[12px] py-1 px-3 sm:px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-1.5 text-[11px] sm:text-xs">
             <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FEF08A] flex-shrink-0" />
@@ -833,6 +972,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
         )}
 
       </div>
+    </div>
 
       {/* 4. Mobile Drawer Menu */}
       {mobileMenuOpen && (

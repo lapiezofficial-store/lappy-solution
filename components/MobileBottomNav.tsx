@@ -2,116 +2,139 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
-  Home, ShoppingBag, Flame, MessageSquare, ShoppingCart, User
+  Home, Search, LayoutGrid, ShoppingCart, User
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 
 export const MobileBottomNav: React.FC = () => {
   const pathname = usePathname();
-  const { cart, setIsCartOpen, setIsAccountOpen, setAccountTab, siteSettings } = useStore();
+  const router = useRouter();
+  const { cart, setIsCartOpen, customer } = useStore();
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const navItems = [
-    {
-      label: 'Home',
-      icon: Home,
-      href: '/',
-      isActive: pathname === '/'
-    },
-    {
-      label: 'Catalog',
-      icon: ShoppingBag,
-      href: '/shop',
-      isActive: pathname === '/shop'
-    },
-    {
-      label: 'Deals',
-      icon: Flame,
-      href: '/shop?search=Deal',
-      isActive: false,
-      isSpecial: true
-    },
-    {
-      label: 'WhatsApp',
-      icon: MessageSquare,
-      href: `https://wa.me/${getCleanWhatsAppNumber(siteSettings?.whatsapp)}?text=${encodeURIComponent(`Hello ${siteSettings?.siteName || 'Lapiez'}, I want to inquire about products.`)}`,
-      isExternal: true,
-      isGreen: true
+  const handleSearchClick = () => {
+    // If on homepage or shop, smoothly scroll to top and focus mobile search input
+    const searchInput = document.getElementById('mobile-header-search-input') as HTMLInputElement | null;
+    if (searchInput) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => {
+        searchInput.focus();
+      }, 150);
+    } else {
+      router.push('/shop?focus=search');
     }
-  ];
+  };
+
+  const isHomeActive = pathname === '/';
+  const isSearchActive = pathname === '/shop' && !pathname.includes('cat');
+  const isCategoriesActive = pathname.startsWith('/shop') && (pathname.includes('cat') || pathname.includes('category'));
+  const isAccountActive = pathname.startsWith('/account');
 
   return (
     <nav 
       aria-label="Mobile Bottom Navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E5E7EB] px-2 py-1.5 flex items-center justify-around shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-t border-[#E5E7EB] px-1 py-1.5 flex items-center justify-around shadow-[0_-2px_12px_rgba(0,0,0,0.06)]"
       style={{ paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}
     >
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        if (item.isExternal) {
-          return (
-            <a
-              key={item.label}
-              href={item.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center justify-center flex-1 py-1 text-center group active:scale-95 transition-transform"
-            >
-              <div className="w-5 h-5 flex items-center justify-center text-[#16A34A] group-hover:scale-110 transition-transform">
-                <Icon className="w-4 h-4 fill-emerald-100" />
-              </div>
-              <span className="text-[10px] font-bold text-[#16A34A] mt-0.5 leading-tight">
-                {item.label}
-              </span>
-            </a>
-          );
-        }
+      {/* 1. Home */}
+      <Link
+        href="/"
+        className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-all active:scale-95 ${
+          isHomeActive
+            ? 'text-[#EA580C] font-extrabold'
+            : 'text-[#64748B] hover:text-[#0F172A]'
+        }`}
+      >
+        <div className="relative w-6 h-6 flex items-center justify-center">
+          <Home className={`w-5 h-5 ${isHomeActive ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        </div>
+        <span className={`text-[10px] mt-0.5 tracking-tight ${isHomeActive ? 'font-bold' : 'font-medium'}`}>
+          Home
+        </span>
+      </Link>
 
-        return (
-          <Link
-            key={item.label}
-            href={item.href}
-            className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-colors active:scale-95 ${
-              item.isActive
-                ? 'text-[#1A56DB] font-extrabold'
-                : item.isSpecial
-                ? 'text-[#DC2626] font-bold'
-                : 'text-[#4B5563] hover:text-[#111827]'
-            }`}
-          >
-            <div className="relative w-5 h-5 flex items-center justify-center">
-              <Icon className={`w-4 h-4 ${item.isSpecial ? 'fill-[#DC2626]' : ''}`} />
-            </div>
-            <span className={`text-[10px] mt-0.5 leading-tight ${item.isActive ? 'font-extrabold' : 'font-semibold'}`}>
-              {item.label}
-            </span>
-          </Link>
-        );
-      })}
+      {/* 2. Search */}
+      <button
+        type="button"
+        onClick={handleSearchClick}
+        className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-all active:scale-95 cursor-pointer ${
+          isSearchActive
+            ? 'text-[#EA580C] font-extrabold'
+            : 'text-[#64748B] hover:text-[#0F172A]'
+        }`}
+      >
+        <div className="relative w-6 h-6 flex items-center justify-center">
+          <Search className={`w-5 h-5 ${isSearchActive ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        </div>
+        <span className={`text-[10px] mt-0.5 tracking-tight ${isSearchActive ? 'font-bold' : 'font-medium'}`}>
+          Search
+        </span>
+      </button>
 
-      {/* Cart Button with Counter */}
+      {/* 3. Categories */}
+      <Link
+        href="/shop"
+        className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-all active:scale-95 ${
+          isCategoriesActive
+            ? 'text-[#EA580C] font-extrabold'
+            : 'text-[#64748B] hover:text-[#0F172A]'
+        }`}
+      >
+        <div className="relative w-6 h-6 flex items-center justify-center">
+          <LayoutGrid className={`w-5 h-5 ${isCategoriesActive ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        </div>
+        <span className={`text-[10px] mt-0.5 tracking-tight ${isCategoriesActive ? 'font-bold' : 'font-medium'}`}>
+          Categories
+        </span>
+      </Link>
+
+      {/* 4. Cart */}
       <button
         type="button"
         onClick={() => setIsCartOpen(true)}
-        className="flex flex-col items-center justify-center flex-1 py-1 text-center transition-transform active:scale-95 text-[#FB641B]"
+        className="flex flex-col items-center justify-center flex-1 py-1 text-center transition-all active:scale-95 text-[#64748B] hover:text-[#0F172A] cursor-pointer"
         aria-label="View Shopping Cart"
       >
-        <div className="relative w-5 h-5 flex items-center justify-center">
-          <ShoppingCart className="w-4 h-4" />
+        <div className="relative w-6 h-6 flex items-center justify-center">
+          <ShoppingCart className="w-5 h-5 stroke-[1.8]" />
           {cartCount > 0 && (
-            <span className="absolute -top-1.5 -right-2.5 bg-[#DC2626] text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
+            <span className="absolute -top-1.5 -right-2 bg-[#EA580C] text-white text-[9px] font-extrabold min-w-4 h-4 px-1 rounded-full flex items-center justify-center shadow-xs">
               {cartCount > 99 ? '99+' : cartCount}
             </span>
           )}
         </div>
-        <span className="text-[10px] font-bold text-[#FB641B] mt-0.5 leading-tight">
+        <span className="text-[10px] font-medium text-[#64748B] mt-0.5 tracking-tight">
           Cart
         </span>
       </button>
+
+      {/* 5. Account / Customer */}
+      <Link
+        href="/account"
+        className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-all active:scale-95 ${
+          isAccountActive
+            ? 'text-[#EA580C] font-extrabold'
+            : 'text-[#64748B] hover:text-[#0F172A]'
+        }`}
+      >
+        <div className="relative w-6 h-6 flex items-center justify-center">
+          {customer?.user_metadata?.avatar_url ? (
+            <img 
+              src={customer.user_metadata.avatar_url} 
+              alt="Account" 
+              className="w-5 h-5 rounded-full object-cover border border-gray-300" 
+            />
+          ) : (
+            <User className={`w-5 h-5 ${isAccountActive ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+          )}
+        </div>
+        <span className={`text-[10px] mt-0.5 tracking-tight ${isAccountActive ? 'font-bold' : 'font-medium'}`}>
+          Account
+        </span>
+      </Link>
     </nav>
   );
 };

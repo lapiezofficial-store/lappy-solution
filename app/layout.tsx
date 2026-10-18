@@ -39,7 +39,10 @@ export const metadata: Metadata = {
     siteName: "Lapiez",
     locale: "en_IN",
     type: "website",
-  }
+  },
+  verification: {
+    google: "cVa9vz4V6nTk7hzoQZyfohEDOWKBpJHwi9-cmMIy228",
+  },
 };
 
 export default function RootLayout({
@@ -50,6 +53,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <head>
+        <meta name="google-site-verification" content="cVa9vz4V6nTk7hzoQZyfohEDOWKBpJHwi9-cmMIy228" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
