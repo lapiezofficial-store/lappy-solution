@@ -156,16 +156,7 @@ function AccountContent() {
             },
           });
 
-          const btnEl = document.getElementById('google-gsi-container');
-          if (btnEl) {
-            google.accounts.id.renderButton(btnEl, {
-              theme: 'outline',
-              size: 'large',
-              width: '280',
-              text: 'continue_with',
-              shape: 'rectangular',
-            });
-          }
+          // One-tap prompt initialized without duplicate button render
         } catch (err) {
           console.log('Google Identity init note:', err);
         }
@@ -461,10 +452,7 @@ function AccountContent() {
                   <span>Continue with Google</span>
                 </button>
 
-                {/* Google Native GSI Button Mount */}
-                <div id="google-gsi-container" className="min-h-[40px] flex items-center justify-center overflow-hidden empty:hidden" />
-
-                <div className="pt-1">
+                <div className="pt-0.5">
                   <button
                     type="button"
                     onClick={() => setIsGuestModalOpen(true)}

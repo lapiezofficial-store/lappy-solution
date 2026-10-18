@@ -20,19 +20,25 @@ function getSafeTarget(redirectTo?: string): string {
 }
 
 export async function signInWithGoogle(redirectTo?: string) {
-  const target = getSafeTarget(redirectTo);
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: target,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'select_account',
+  // If Google provider is enabled in Supabase it can be used, otherwise handled gracefully by client StoreContext
+  try {
+    const target = getSafeTarget(redirectTo);
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: target,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'select_account',
+        },
       },
-    },
-  });
-  if (error) throw error;
-  return data;
+    });
+    if (error) throw error;
+    return data;
+  } catch (err: any) {
+    console.warn('Supabase OAuth notice:', err?.message || err);
+    throw err;
+  }
 }
 
 export async function signOutCustomer() {

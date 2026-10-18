@@ -12,7 +12,7 @@ import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore } from '../context/StoreContext';
 
 export const Footer: React.FC = () => {
-  const { setIsAccountOpen, setAccountTab, customPages, siteSettings, setIsAppModalOpen } = useStore();
+  const { setIsAccountOpen, setAccountTab, customPages, siteSettings, setIsAppModalOpen, isApp } = useStore();
 
   // Policy Modal state
   const [activePolicy, setActivePolicy] = useState<'privacy' | 'refund' | 'shipping' | 'terms' | 'gst' | null>(null);
@@ -40,6 +40,87 @@ export const Footer: React.FC = () => {
 
   return (
     <>
+      {isApp ? (
+        <footer className="bg-white text-[#475569] font-sans border-t border-[#E2E8F0] pb-24 pt-6 px-4">
+          <div className="max-w-md mx-auto text-center space-y-4">
+            {/* App Brand Header */}
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#1A56DB] to-[#0A2560] text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                LP
+              </div>
+              <div className="text-left">
+                <span className="font-black text-[#111827] text-base tracking-tight block leading-none">
+                  LAP<span className="text-[#1A56DB]">IEZ</span>
+                </span>
+                <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold block leading-none mt-0.5">
+                  Official Android App Edition
+                </span>
+              </div>
+            </div>
+
+            {/* Showroom Direct Connect Card */}
+            <div className="bg-[#F8FAFC] p-3.5 rounded-2xl border border-slate-200 space-y-2 text-left shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Store className="w-4 h-4 text-[#1A56DB]" />
+                  Garhwa Showroom Desk
+                </span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  10 AM - 8:30 PM
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 leading-snug">
+                {siteSettings?.address || `${STORE_INFO.address}, ${STORE_INFO.city}, ${STORE_INFO.state} - ${STORE_INFO.pincode}`}
+              </p>
+              <div className="flex items-center gap-2 pt-1">
+                <a
+                  href={`tel:${siteSettings?.phone || STORE_INFO.phone}`}
+                  className="flex-1 py-2 px-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
+                >
+                  <Phone className="w-3.5 h-3.5 text-blue-600" />
+                  Call Desk
+                </a>
+                <a
+                  href={`https://wa.me/${getCleanWhatsAppNumber(siteSettings?.whatsapp)}?text=${encodeURIComponent(`Hello ${siteSettings?.siteName || 'Lapiez'}, I need quick assistance from the app.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-2 px-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  WhatsApp
+                </a>
+                <a
+                  href={siteSettings?.googleMapsUrl || siteSettings?.twitterUrl || STORE_INFO.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                  Map
+                </a>
+              </div>
+            </div>
+
+            {/* Quick Policies & Store Links */}
+            <div className="flex flex-wrap items-center justify-center gap-x-3.5 gap-y-1.5 text-[11px] text-slate-500">
+              <button type="button" onClick={() => setActivePolicy('privacy')} className="hover:text-blue-600 cursor-pointer">Privacy</button>
+              <span>•</span>
+              <button type="button" onClick={() => setActivePolicy('terms')} className="hover:text-blue-600 cursor-pointer">Terms</button>
+              <span>•</span>
+              <button type="button" onClick={() => setActivePolicy('refund')} className="hover:text-blue-600 cursor-pointer">7-Day Replacement</button>
+              <span>•</span>
+              <button type="button" onClick={() => setActivePolicy('gst')} className="hover:text-blue-600 cursor-pointer">GST 18% ITC</button>
+              <span>•</span>
+              <Link href="/contact" className="hover:text-blue-600 font-semibold text-blue-700">Support</Link>
+            </div>
+
+            <div className="text-[10.5px] text-slate-400 space-y-0.5 pt-1">
+              <p>© 2026 Lapiez Garhwa • 100% Brand Sealed Genuine Hardware</p>
+              <p className="text-[9.5px] text-slate-400">Official Mobile App Edition v1.0.0</p>
+            </div>
+          </div>
+        </footer>
+      ) : (
       <footer className="bg-white text-[#475569] font-sans border-t border-[#E2E8F0]">
         
         {/* ========================================================= */}
@@ -518,8 +599,8 @@ export const Footer: React.FC = () => {
 
           </div>
         </div>
-
       </footer>
+      )}
 
       {/* ========================================================= */}
       {/* 5. POLICY DETAILS MODAL                                   */}

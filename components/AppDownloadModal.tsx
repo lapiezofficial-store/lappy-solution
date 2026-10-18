@@ -15,7 +15,7 @@ interface AppDownloadModalProps {
 }
 
 export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onClose }) => {
-  const { siteSettings, showToast } = useStore();
+  const { siteSettings, showToast, isApp } = useStore();
   const [downloadStarted, setDownloadStarted] = useState(false);
   const [activeTab, setActiveTab] = useState<'download' | 'guide'>('download');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -34,7 +34,7 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
     };
   }, []);
 
-  if (!isOpen) return null;
+  if (!isOpen || isApp) return null;
 
   const downloadUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/api/download/app`

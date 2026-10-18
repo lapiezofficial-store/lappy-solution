@@ -273,6 +273,7 @@ interface StoreContextType {
   signInWithGoogle: (redirectTo?: string) => Promise<void>;
   loginCustomerManually: (userData: { id?: string; email: string; name?: string; picture?: string }) => void;
   signOutCustomer: () => Promise<void>;
+  isApp: boolean;
   coupons: Coupon[];
   appliedCoupon: Coupon | null;
   couponDiscount: number;
@@ -559,6 +560,25 @@ export function serializeBankAccountsWithConfig(accounts: BankAccount[], config:
 }
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isApp, setIsApp] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const ua = navigator.userAgent || '';
+    const searchParams = new URLSearchParams(window.location.search);
+    const isFromUrl = searchParams.get('app') === 'true' || searchParams.get('isApp') === 'true';
+    const isSavedApp = localStorage.getItem('isLapiezApp') === 'true';
+    const isNativeUA = /LapiezApp|LapiezAndroidApp/i.test(ua);
+    const isWebView = /wv|Android.*Version\/[0-9.]+/i.test(ua) && !/Chrome\/[0-9.]+ Mobile/i.test(ua);
+
+    if (isFromUrl || isSavedApp || isNativeUA || isWebView) {
+      setIsApp(true);
+      try {
+        localStorage.setItem('isLapiezApp', 'true');
+      } catch (e) {}
+    }
+  }, []);
+
   const [products, setProducts] = useState<Product[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -686,10 +706,60 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const handleSignInWithGoogle = async (redirectTo?: string) => {
     try {
-      await signInWithGoogle(redirectTo);
+      const google = typeof window !== 'undefined' ? (window as any).google : null;
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '888729719943-farrlhra2vsr5dvgmdl4te3226g469l7.apps.googleusercontent.com';
+
+      // 1. Primary: Use Google Identity Services OAuth2 Token Client (Popup)
+      if (google?.accounts?.oauth2) {
+        const tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'email profile openid',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse?.error) {
+              console.warn('Google sign-in token note:', tokenResponse);
+              if (tokenResponse.error === 'popup_closed_by_user') {
+                showToast('Sign-in popup closed');
+              } else {
+                showToast('Google sign-in could not complete. You can use Instant Sign-in.');
+              }
+              return;
+            }
+            if (tokenResponse?.access_token) {
+              try {
+                const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                });
+                const profile = await res.json();
+                if (profile?.email) {
+                  loginCustomerManually({
+                    id: profile.sub,
+                    email: profile.email,
+                    name: profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim(),
+                    picture: profile.picture,
+                  });
+                  return;
+                }
+              } catch (err: any) {
+                console.error('Error fetching Google profile:', err);
+                showToast('Error getting profile details from Google.');
+              }
+            }
+          },
+        });
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
+        return;
+      }
+
+      // 2. Secondary: If google.accounts.id is available, prompt One Tap
+      if (google?.accounts?.id) {
+        google.accounts.id.prompt();
+        return;
+      }
+
+      showToast('Google Sign-in is initializing. Please try again or use Instant Guest Sign-in.');
     } catch (err: any) {
-      showToast(err?.message || 'Google sign-in failed');
-      throw err;
+      console.warn('handleSignInWithGoogle error:', err);
+      showToast('Google Sign-in could not be completed. You can use Instant Guest Sign-in.');
     }
   };
 
@@ -2822,6 +2892,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         signInWithGoogle: handleSignInWithGoogle,
         loginCustomerManually,
         signOutCustomer: handleSignOutCustomer,
+        isApp,
         coupons,
         appliedCoupon,
         couponDiscount,
