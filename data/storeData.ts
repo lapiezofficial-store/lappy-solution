@@ -22,8 +22,8 @@ export interface StoreInfo {
 export const STORE_INFO: StoreInfo = {
   name: 'Lapiez',
   tagline: 'Technology • Security • Solutions',
-  address: 'In front of G P Plaza, Chiniya Road',
-  landmark: 'Opposite G P Plaza',
+  address: 'Chiniya Rd, Bishunpur, Opp G P Plaza',
+  landmark: 'Chiniya Road, Bishunpur',
   city: 'Garhwa',
   district: 'Garhwa',
   state: 'Jharkhand',
@@ -33,11 +33,11 @@ export const STORE_INFO: StoreInfo = {
   email: 'lappysolution2018@gmail.com',
   timings: 'Monday - Saturday: 10:00 AM - 8:30 PM',
   established: '2018',
-  mapsUrl: 'https://www.google.com/maps/place/LAPIEZ/@24.1579639,83.7987063,17z/',
-  directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=24.1579639,83.7987063',
-  embedMapUrl: 'https://maps.google.com/maps?q=24.1579639,83.7987063+(LAPIEZ)&t=&z=16&ie=UTF8&iwloc=B&output=embed',
-  lat: 24.1579639,
-  lng: 83.7987063
+  mapsUrl: 'https://www.google.com/maps/place/LAPPY+SOLUTION/@24.1624844,83.7994142,14.58z/data=!4m19!1m12!4m11!1m3!2m2!1d85.0827707!2d25.6822957!1m6!1m2!1s0x398c0f004ce430c7:0xe58fa9332947c20e!2sLAPPY+SOLUTION,+Chiniya+Rd,+Bishunpur,+Garhwa,+Jharkhand+822114!2m2!1d83.8030729!2d24.1581205!3m5!1s0x398c0f004ce430c7:0xe58fa9332947c20e!8m2!3d24.1581205!4d83.8030729!16s%2Fg%2F11vj3g_7j2?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D',
+  directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=24.1581205,83.8030729',
+  embedMapUrl: 'https://maps.google.com/maps?q=24.1581205,83.8030729+(LAPPY+SOLUTION)&t=&z=16&ie=UTF8&iwloc=B&output=embed',
+  lat: 24.1581205,
+  lng: 83.8030729
 };
 
 /**

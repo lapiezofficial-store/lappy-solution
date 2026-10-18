@@ -12,7 +12,8 @@ import {
   Trash2, Save, Lock, Key, FileText, Printer, Building2, Percent, DollarSign, RotateCcw,
   BookOpen, Star, Crown, Laptop, Box, Award, AlertTriangle, MoreVertical,
   SlidersHorizontal, ArrowUpDown, Pencil, ChevronDown, ChevronRight, ChevronLeft, Download, Upload, Tag,
-  Share2, Globe, ArrowLeft, LayoutDashboard, Menu, Wrench, Terminal, Database, Radio, HardDrive, FolderTree, CheckSquare, FileCode
+  Share2, Globe, ArrowLeft, LayoutDashboard, Menu, Wrench, Terminal, Database, Radio, HardDrive, FolderTree, CheckSquare, FileCode,
+  Banknote
 } from 'lucide-react';
 import { useStore, CMSBanner, CMSSection, CMSCustomPage, CMSBlogPost, CMSBrand, CMSCategory, CMSSubcategory, DEFAULT_SHOP_BY_CATEGORIES } from '../../context/StoreContext';
 import { BrandLogoRenderer, PRESET_BRANDS_CONFIG } from '../../components/BrandLogoRenderer';
@@ -49,6 +50,8 @@ export default function AdminPage() {
     themeSettings,
     updateThemeSettings,
     paymentSettings,
+    paymentMethodsConfig,
+    updatePaymentMethodsConfig,
     bankAccounts,
     addBankAccount,
     updateBankAccount,
@@ -398,6 +401,7 @@ export default function AdminPage() {
   const [instagramUrl, setInstagramUrl] = useState(siteSettings?.instagramUrl || '');
   const [youtubeUrl, setYoutubeUrl] = useState(siteSettings?.youtubeUrl || '');
   const [twitterUrl, setTwitterUrl] = useState(siteSettings?.twitterUrl || '');
+  const [googleMapsUrl, setGoogleMapsUrl] = useState(siteSettings?.googleMapsUrl || siteSettings?.twitterUrl || STORE_INFO.mapsUrl);
 
   // Admin Password Change State
   const [currentAdminPassword, setCurrentAdminPassword] = useState('');
@@ -414,6 +418,12 @@ export default function AdminPage() {
   const [gstin, setGstin] = useState(paymentSettings?.gstin || '20AABCL1234F1Z5');
   const [codEnabled, setCodEnabled] = useState(paymentSettings?.codEnabled ?? true);
 
+  // 4 Core Dynamic Payment Methods State (Admin Configurable)
+  const [enableUPI, setEnableUPI] = useState(paymentMethodsConfig?.enableUPI ?? true);
+  const [enableBankTransfer, setEnableBankTransfer] = useState(paymentMethodsConfig?.enableBankTransfer ?? true);
+  const [enableStorePickup, setEnableStorePickup] = useState(paymentMethodsConfig?.enableStorePickup ?? true);
+  const [enableCOD, setEnableCOD] = useState(paymentMethodsConfig?.enableCOD ?? paymentSettings?.codEnabled ?? true);
+
   useEffect(() => {
     if (siteSettings) {
       setStoreName(siteSettings.siteName);
@@ -424,6 +434,7 @@ export default function AdminPage() {
       setStoreWhatsapp(siteSettings.whatsapp);
       setStoreEmail(siteSettings.email);
       setStoreAddress(siteSettings.address);
+      setGoogleMapsUrl(siteSettings.googleMapsUrl || siteSettings.twitterUrl || STORE_INFO.mapsUrl);
       setStoreTimings(siteSettings.timings);
       setFacebookUrl(siteSettings.facebookUrl || '');
       setInstagramUrl(siteSettings.instagramUrl || '');
@@ -437,7 +448,13 @@ export default function AdminPage() {
       setGstin(paymentSettings.gstin);
       setCodEnabled(paymentSettings.codEnabled);
     }
-  }, [siteSettings, paymentSettings]);
+    if (paymentMethodsConfig) {
+      setEnableUPI(paymentMethodsConfig.enableUPI !== false);
+      setEnableBankTransfer(paymentMethodsConfig.enableBankTransfer !== false);
+      setEnableStorePickup(paymentMethodsConfig.enableStorePickup !== false);
+      setEnableCOD(paymentMethodsConfig.enableCOD !== false && paymentSettings?.codEnabled !== false);
+    }
+  }, [siteSettings, paymentSettings, paymentMethodsConfig]);
 
   // Security Gatekeeper States
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -1895,14 +1912,21 @@ export default function AdminPage() {
           facebookUrl,
           instagramUrl,
           youtubeUrl,
-          twitterUrl,
+          twitterUrl: googleMapsUrl || twitterUrl,
+          googleMapsUrl: googleMapsUrl || STORE_INFO.mapsUrl,
         },
         {
           upiId,
           upiName,
           gstRate: Number(gstRate),
           gstin,
-          codEnabled,
+          codEnabled: enableCOD,
+        },
+        {
+          enableUPI,
+          enableBankTransfer,
+          enableStorePickup,
+          enableCOD,
         }
       );
     } catch (err: any) {
@@ -7671,17 +7695,143 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="codEnabled"
-                  checked={codEnabled}
-                  onChange={(e) => setCodEnabled(e.target.checked)}
-                  className="w-4 h-4 rounded text-[#1A56DB] cursor-pointer"
-                />
-                <label htmlFor="codEnabled" className="font-bold text-gray-700 cursor-pointer">
-                  Enable Cash on Delivery / Counter Pickup (Pay at showroom in Garhwa)
-                </label>
+              {/* Payment Methods Activation Panel */}
+              <div className="pt-3 border-t border-gray-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-xs">
+                      Active Customer Checkout Payment Methods
+                    </h4>
+                    <p className="text-[11px] text-gray-500">
+                      Enable or disable any payment option. Only active methods will appear on the customer checkout page.
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                    {[enableUPI, enableBankTransfer, enableStorePickup, enableCOD].filter(Boolean).length} / 4 Active
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Option 1: UPI Dynamic QR */}
+                  <div className={`p-3.5 rounded-xl border transition-all ${
+                    enableUPI ? 'bg-blue-50/50 border-blue-300 shadow-2xs' : 'bg-gray-50/80 border-gray-200 opacity-60'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <QrCode className={`w-4 h-4 ${enableUPI ? 'text-blue-600' : 'text-gray-400'}`} />
+                        <strong className="text-xs font-bold text-gray-900">UPI Dynamic QR Code</strong>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={enableUPI}
+                          onChange={(e) => setEnableUPI(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-gray-600">
+                      Live QR generation (GPay, PhonePe, Paytm, BHIM) with 90s timer.
+                    </p>
+                    <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                      enableUPI ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {enableUPI ? 'Enabled in Checkout' : 'Disabled / Hidden'}
+                    </span>
+                  </div>
+
+                  {/* Option 2: Bank Transfer / IMPS */}
+                  <div className={`p-3.5 rounded-xl border transition-all ${
+                    enableBankTransfer ? 'bg-emerald-50/50 border-emerald-300 shadow-2xs' : 'bg-gray-50/80 border-gray-200 opacity-60'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <Building2 className={`w-4 h-4 ${enableBankTransfer ? 'text-emerald-600' : 'text-gray-400'}`} />
+                        <strong className="text-xs font-bold text-gray-900">Bank Transfer / IMPS / NEFT</strong>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={enableBankTransfer}
+                          onChange={(e) => setEnableBankTransfer(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-gray-600">
+                      Displays official showroom bank account (Union Bank) for direct settlement.
+                    </p>
+                    <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                      enableBankTransfer ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {enableBankTransfer ? 'Enabled in Checkout' : 'Disabled / Hidden'}
+                    </span>
+                  </div>
+
+                  {/* Option 3: Pickup from Store */}
+                  <div className={`p-3.5 rounded-xl border transition-all ${
+                    enableStorePickup ? 'bg-purple-50/50 border-purple-300 shadow-2xs' : 'bg-gray-50/80 border-gray-200 opacity-60'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <Store className={`w-4 h-4 ${enableStorePickup ? 'text-purple-600' : 'text-gray-400'}`} />
+                        <strong className="text-xs font-bold text-gray-900">Pickup from Store (Counter Pay)</strong>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={enableStorePickup}
+                          onChange={(e) => setEnableStorePickup(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-gray-600">
+                      Customer inspects hardware at Chiniya Road showroom counter and pays in person.
+                    </p>
+                    <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                      enableStorePickup ? 'bg-purple-100 text-purple-800' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {enableStorePickup ? 'Enabled in Checkout' : 'Disabled / Hidden'}
+                    </span>
+                  </div>
+
+                  {/* Option 4: Cash on Delivery (COD) */}
+                  <div className={`p-3.5 rounded-xl border transition-all ${
+                    enableCOD ? 'bg-amber-50/50 border-amber-300 shadow-2xs' : 'bg-gray-50/80 border-gray-200 opacity-60'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <Banknote className={`w-4 h-4 ${enableCOD ? 'text-amber-600' : 'text-gray-400'}`} />
+                        <strong className="text-xs font-bold text-gray-900">Cash on Delivery (COD)</strong>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          id="codEnabled"
+                          checked={enableCOD}
+                          onChange={(e) => {
+                            setEnableCOD(e.target.checked);
+                            setCodEnabled(e.target.checked);
+                          }}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-gray-600">
+                      Zero advance required; customer pays cash or QR to delivery agent in Garhwa.
+                    </p>
+                    <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                      enableCOD ? 'bg-amber-100 text-amber-800' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {enableCOD ? 'Enabled in Checkout' : 'Disabled / Hidden'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -7771,8 +7921,50 @@ export default function AdminPage() {
                     type="text"
                     value={storeAddress}
                     onChange={(e) => setStoreAddress(e.target.value)}
+                    placeholder="e.g. LAPPY SOLUTION, Chiniya Rd, Bishunpur, Garhwa, Jharkhand 822114"
                     className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
                   />
+                  <span className="text-[10.5px] text-gray-400 mt-0.5 block">Official physical address printed on invoices and shown on storefront</span>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-gray-700 block">Google Maps Location / Directions URL</label>
+                    <div className="flex items-center gap-2">
+                      {googleMapsUrl && (
+                        <a 
+                          href={googleMapsUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[10.5px] font-bold text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>Test / Open Map</span>
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGoogleMapsUrl(STORE_INFO.mapsUrl);
+                          setStoreAddress(`${STORE_INFO.address}, ${STORE_INFO.city}, ${STORE_INFO.state} - ${STORE_INFO.pincode}`);
+                          showToast('Reset to official Lappy Solution Google Maps link & Bishunpur address!');
+                        }}
+                        className="text-[10.5px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 cursor-pointer"
+                      >
+                        Set Official Garhwa Location
+                      </button>
+                    </div>
+                  </div>
+                  <input
+                    type="url"
+                    value={googleMapsUrl}
+                    onChange={(e) => setGoogleMapsUrl(e.target.value)}
+                    placeholder="https://www.google.com/maps/place/LAPPY+SOLUTION/..."
+                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs font-mono text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                  />
+                  <span className="text-[10.5px] text-gray-500 mt-1 block">
+                    Paste any Google Maps link or coordinates here. Changes immediately sync across Contact Page driving directions, Footer map buttons, and showroom info.
+                  </span>
                 </div>
               </div>
 

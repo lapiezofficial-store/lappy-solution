@@ -369,7 +369,7 @@ export default function ContactPage() {
                   <MapPin className="w-4 h-4 text-[#1A56DB] flex-shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-slate-900 block font-semibold">{siteName} Showroom</strong>
-                    <span>In front of G P Plaza, Chiniya Road, Garhwa, Jharkhand - 822114</span>
+                    <span>{siteSettings?.address || `${STORE_INFO.address}, ${STORE_INFO.city}, ${STORE_INFO.state} - ${STORE_INFO.pincode}`}</span>
                   </div>
                 </div>
 
@@ -377,7 +377,7 @@ export default function ContactPage() {
                   <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-slate-900 block font-semibold">Store Working Hours</strong>
-                    <span>Monday - Saturday: 10:00 AM - 8:30 PM</span>
+                    <span>{siteSettings?.timings || STORE_INFO.timings}</span>
                     <span className="block text-slate-400 text-[11px] mt-0.5">Sunday: Open by appointment / emergency</span>
                   </div>
                 </div>
@@ -386,14 +386,14 @@ export default function ContactPage() {
                   <Phone className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-slate-900 block font-semibold">Customer Support Line</strong>
-                    <span>+91 9608828288</span>
+                    <span>{phone}</span>
                   </div>
                 </div>
               </div>
 
               <div className="pt-2">
                 <a
-                  href={STORE_INFO.directionsUrl}
+                  href={siteSettings?.googleMapsUrl || siteSettings?.twitterUrl || STORE_INFO.mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs inline-flex items-center justify-center gap-2 transition-colors shadow-xs"
@@ -410,7 +410,7 @@ export default function ContactPage() {
               <div className="rounded-xl overflow-hidden aspect-[4/3] w-full bg-slate-100 relative">
                 <iframe
                   title="Lapiez Garhwa Showroom Map"
-                  src="https://maps.google.com/maps?q=24.1579639,83.7987063+(LAPIEZ%20GARHWA)&t=&z=16&ie=UTF8&iwloc=B&output=embed"
+                  src={STORE_INFO.embedMapUrl}
                   className="w-full h-full border-0"
                   loading="lazy"
                   allowFullScreen

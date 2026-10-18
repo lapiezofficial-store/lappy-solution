@@ -66,7 +66,22 @@ export interface SiteSettings {
   instagramUrl?: string;
   youtubeUrl?: string;
   twitterUrl?: string;
+  googleMapsUrl?: string;
 }
+
+export interface PaymentMethodsConfig {
+  enableUPI: boolean;
+  enableBankTransfer: boolean;
+  enableStorePickup: boolean;
+  enableCOD: boolean;
+}
+
+export const DEFAULT_PAYMENT_METHODS_CONFIG: PaymentMethodsConfig = {
+  enableUPI: true,
+  enableBankTransfer: true,
+  enableStorePickup: true,
+  enableCOD: true,
+};
 
 export interface ThemeSettings {
   primaryColor: string;
@@ -180,6 +195,7 @@ interface StoreContextType {
   siteSettings: SiteSettings;
   themeSettings: ThemeSettings;
   paymentSettings: PaymentSettings;
+  paymentMethodsConfig: PaymentMethodsConfig;
   bankAccounts: BankAccount[];
   addBankAccount: (account: Omit<BankAccount, 'id' | 'createdAt'>) => Promise<BankAccount>;
   updateBankAccount: (id: string, updates: Partial<BankAccount>) => Promise<boolean>;
@@ -218,7 +234,8 @@ interface StoreContextType {
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
   updateThemeSettings: (theme: Partial<ThemeSettings>) => Promise<void>;
   updatePaymentSettings: (payment: Partial<PaymentSettings>) => Promise<void>;
-  updateStoreAndPaymentSettings: (site: Partial<SiteSettings>, payment: Partial<PaymentSettings>) => Promise<void>;
+  updatePaymentMethodsConfig: (config: Partial<PaymentMethodsConfig>) => Promise<void>;
+  updateStoreAndPaymentSettings: (site: Partial<SiteSettings>, payment: Partial<PaymentSettings>, methodsConfig?: Partial<PaymentMethodsConfig>) => Promise<void>;
   updateInvoiceSettings: (settings: Partial<InvoiceSettings>) => void;
   createInvoiceFromOrder: (order: any, buyerGstin?: string, isInterstate?: boolean) => Invoice;
   createManualInvoice: (invoice: Partial<Invoice>) => Invoice;
@@ -468,7 +485,8 @@ const defaultSiteSettings: SiteSettings = {
   facebookUrl: 'https://facebook.com',
   instagramUrl: 'https://instagram.com',
   youtubeUrl: 'https://youtube.com',
-  twitterUrl: 'https://twitter.com',
+  twitterUrl: STORE_INFO.mapsUrl,
+  googleMapsUrl: STORE_INFO.mapsUrl,
 };
 
 const defaultThemeSettings: ThemeSettings = {
@@ -525,6 +543,21 @@ export function normalizeProduct(p: any): Product {
   };
 }
 
+export function serializeBankAccountsWithConfig(accounts: BankAccount[], config: PaymentMethodsConfig): string {
+  const clean = accounts.filter(a => a.id !== '__payment_methods_config__');
+  const payload = [
+    ...clean,
+    {
+      id: '__payment_methods_config__',
+      enableUPI: config.enableUPI !== false,
+      enableBankTransfer: config.enableBankTransfer !== false,
+      enableStorePickup: config.enableStorePickup !== false,
+      enableCOD: config.enableCOD !== false,
+    }
+  ];
+  return JSON.stringify(payload);
+}
+
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>(() => {
     if (typeof window !== 'undefined') {
@@ -555,6 +588,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(defaultSiteSettings);
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(defaultThemeSettings);
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>(defaultPaymentSettings);
+  const [paymentMethodsConfig, setPaymentMethodsConfig] = useState<PaymentMethodsConfig>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('ls_payment_methods_config');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return DEFAULT_PAYMENT_METHODS_CONFIG;
+  });
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(DEFAULT_BANK_ACCOUNTS);
   const [banners, setBanners] = useState<CMSBanner[]>(() => {
     if (typeof window !== 'undefined') {
@@ -689,6 +731,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const site = {
             ...initData.siteSettings,
             siteName: initData.siteSettings.siteName || 'Lapiez',
+            googleMapsUrl: initData.siteSettings.googleMapsUrl || initData.siteSettings.twitterUrl || STORE_INFO.mapsUrl,
+            twitterUrl: initData.siteSettings.twitterUrl || STORE_INFO.mapsUrl,
           };
           setSiteSettings(site);
           try {
@@ -710,20 +754,43 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             try {
               const parsedBanks = JSON.parse(initData.paymentSettings.bankAccountsJson);
               if (Array.isArray(parsedBanks) && parsedBanks.length > 0) {
-                setBankAccounts(parsedBanks);
-                try {
-                  localStorage.setItem('ls_bank_accounts', JSON.stringify(parsedBanks));
-                } catch (e) {}
-                const primary = parsedBanks.find((b: any) => b.isPrimary) || parsedBanks[0];
-                if (primary) {
-                  setInvoiceSettings((prev) => ({
+                const configObj = parsedBanks.find((b: any) => b.id === '__payment_methods_config__');
+                const realBanks = parsedBanks.filter((b: any) => b.id !== '__payment_methods_config__');
+
+                if (configObj) {
+                  const resolvedConfig: PaymentMethodsConfig = {
+                    enableUPI: configObj.enableUPI !== false,
+                    enableBankTransfer: configObj.enableBankTransfer !== false,
+                    enableStorePickup: configObj.enableStorePickup !== false,
+                    enableCOD: configObj.enableCOD !== false && initData.paymentSettings.codEnabled !== false,
+                  };
+                  setPaymentMethodsConfig(resolvedConfig);
+                  try {
+                    localStorage.setItem('ls_payment_methods_config', JSON.stringify(resolvedConfig));
+                  } catch (e) {}
+                } else if (initData.paymentSettings.codEnabled !== undefined) {
+                  setPaymentMethodsConfig((prev) => ({
                     ...prev,
-                    accountHolderName: primary.accountHolderName || prev.accountHolderName,
-                    bankName: primary.bankName || prev.bankName,
-                    accountNumber: primary.accountNumber || prev.accountNumber,
-                    ifscCode: primary.ifscCode || prev.ifscCode,
-                    branch: primary.branch || prev.branch,
+                    enableCOD: Boolean(initData.paymentSettings.codEnabled),
                   }));
+                }
+
+                if (realBanks.length > 0) {
+                  setBankAccounts(realBanks);
+                  try {
+                    localStorage.setItem('ls_bank_accounts', JSON.stringify(realBanks));
+                  } catch (e) {}
+                  const primary = realBanks.find((b: any) => b.isPrimary) || realBanks[0];
+                  if (primary) {
+                    setInvoiceSettings((prev) => ({
+                      ...prev,
+                      accountHolderName: primary.accountHolderName || prev.accountHolderName,
+                      bankName: primary.bankName || prev.bankName,
+                      accountNumber: primary.accountNumber || prev.accountNumber,
+                      ifscCode: primary.ifscCode || prev.ifscCode,
+                      branch: primary.branch || prev.branch,
+                    }));
+                  }
                 }
               }
             } catch (e) {}
@@ -1281,7 +1348,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updatePaymentSettings = async (payment: Partial<PaymentSettings>) => {
-    const updated = { ...paymentSettings, ...payment };
+    const updated = { 
+      ...paymentSettings, 
+      ...payment,
+      bankAccountsJson: serializeBankAccountsWithConfig(bankAccounts, paymentMethodsConfig),
+    };
     setPaymentSettings(updated);
     try {
       localStorage.setItem('ls_payment_settings', JSON.stringify(updated));
@@ -1304,12 +1375,73 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const updatePaymentMethodsConfig = async (config: Partial<PaymentMethodsConfig>) => {
+    const updatedMethods = { ...paymentMethodsConfig, ...config };
+    setPaymentMethodsConfig(updatedMethods);
+    try {
+      localStorage.setItem('ls_payment_methods_config', JSON.stringify(updatedMethods));
+    } catch (e) {}
+
+    const updatedPayment = {
+      ...paymentSettings,
+      codEnabled: updatedMethods.enableCOD,
+      bankAccountsJson: serializeBankAccountsWithConfig(bankAccounts, updatedMethods),
+    };
+    setPaymentSettings(updatedPayment);
+    try {
+      localStorage.setItem('ls_payment_settings', JSON.stringify(updatedPayment));
+    } catch (e) {}
+
+    try {
+      const res = await fetch('/api/cms/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ paymentSettings: updatedPayment }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      showToast('Payment methods configuration saved!');
+    } catch (e: any) {
+      console.error('Failed to update payment methods in DB:', e);
+      showToast(`Saved locally! (DB: ${e.message || 'notice'})`);
+    }
+  };
+
   const updateStoreAndPaymentSettings = async (
     site: Partial<SiteSettings>,
-    payment: Partial<PaymentSettings>
+    payment: Partial<PaymentSettings>,
+    methodsConfig?: Partial<PaymentMethodsConfig>
   ) => {
-    const updatedSite = { ...siteSettings, ...site };
-    const updatedPayment = { ...paymentSettings, ...payment };
+    const updatedMethods = methodsConfig ? { ...paymentMethodsConfig, ...methodsConfig } : paymentMethodsConfig;
+    if (methodsConfig) {
+      setPaymentMethodsConfig(updatedMethods);
+      try {
+        localStorage.setItem('ls_payment_methods_config', JSON.stringify(updatedMethods));
+      } catch (e) {}
+    }
+
+    const updatedSite = { 
+      ...siteSettings, 
+      ...site,
+      twitterUrl: site.googleMapsUrl || site.twitterUrl || siteSettings.googleMapsUrl || siteSettings.twitterUrl || STORE_INFO.mapsUrl,
+      googleMapsUrl: site.googleMapsUrl || site.twitterUrl || siteSettings.googleMapsUrl || siteSettings.twitterUrl || STORE_INFO.mapsUrl,
+    };
+
+    const combinedBankJson = serializeBankAccountsWithConfig(
+      bankAccounts,
+      updatedMethods
+    );
+
+    const updatedPayment = { 
+      ...paymentSettings, 
+      ...payment,
+      codEnabled: methodsConfig ? updatedMethods.enableCOD : (payment.codEnabled !== undefined ? payment.codEnabled : paymentSettings.codEnabled),
+      bankAccountsJson: combinedBankJson,
+    };
+
     setSiteSettings(updatedSite);
     setPaymentSettings(updatedPayment);
     try {
@@ -1368,7 +1500,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         body: JSON.stringify({
           paymentSettings: {
             ...paymentSettings,
-            bankAccountsJson: JSON.stringify(updated),
+            bankAccountsJson: serializeBankAccountsWithConfig(updated, paymentMethodsConfig),
           },
         }),
       });
@@ -1412,7 +1544,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         body: JSON.stringify({
           paymentSettings: {
             ...paymentSettings,
-            bankAccountsJson: JSON.stringify(updated),
+            bankAccountsJson: serializeBankAccountsWithConfig(updated, paymentMethodsConfig),
           },
         }),
       });
@@ -1452,7 +1584,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         body: JSON.stringify({
           paymentSettings: {
             ...paymentSettings,
-            bankAccountsJson: JSON.stringify(updated),
+            bankAccountsJson: serializeBankAccountsWithConfig(updated, paymentMethodsConfig),
           },
         }),
       });
@@ -1491,7 +1623,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         body: JSON.stringify({
           paymentSettings: {
             ...paymentSettings,
-            bankAccountsJson: JSON.stringify(updated),
+            bankAccountsJson: serializeBankAccountsWithConfig(updated, paymentMethodsConfig),
           },
         }),
       });
@@ -2612,6 +2744,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         siteSettings,
         themeSettings,
         paymentSettings,
+        paymentMethodsConfig,
         bankAccounts,
         addBankAccount,
         updateBankAccount,
@@ -2650,6 +2783,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateSiteSettings,
         updateThemeSettings,
         updatePaymentSettings,
+        updatePaymentMethodsConfig,
         updateStoreAndPaymentSettings,
         updateInvoiceSettings,
         createInvoiceFromOrder,

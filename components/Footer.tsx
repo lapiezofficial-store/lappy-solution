@@ -84,7 +84,7 @@ export const Footer: React.FC = () => {
                 </a>
 
                 <a
-                  href={STORE_INFO.directionsUrl}
+                  href={siteSettings?.googleMapsUrl || siteSettings?.twitterUrl || STORE_INFO.mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="h-[40px] px-3.5 rounded-[8px] bg-white hover:bg-slate-50 text-[#334155] text-[13px] font-medium inline-flex items-center gap-1.5 transition-colors border border-[#CBD5E1]"

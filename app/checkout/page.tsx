@@ -7,7 +7,7 @@ import {
   ShieldCheck, Truck, Store, Check, ArrowLeft, 
   ArrowRight, QrCode, CreditCard, Banknote, Smartphone, 
   Copy, CheckCircle2, Lock, Building, UploadCloud, AlertCircle, Tag,
-  User, UserCheck, LogIn, LogOut, Clock, RotateCcw, Sparkles
+  User, UserCheck, LogIn, LogOut, Clock, RotateCcw, Sparkles, ExternalLink
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useStore } from '../../context/StoreContext';
@@ -19,7 +19,9 @@ export default function CheckoutPage() {
     cart, 
     placeOrder, 
     showToast, 
+    siteSettings,
     paymentSettings,
+    paymentMethodsConfig,
     bankAccounts,
     invoiceSettings,
     coupons,
@@ -60,7 +62,7 @@ export default function CheckoutPage() {
   const [poNumber, setPoNumber] = useState('');
 
   // Payment State
-  const [paymentMethod, setPaymentMethod] = useState<'upi_qr' | 'cod' | 'netbanking'>('upi_qr');
+  const [paymentMethod, setPaymentMethod] = useState<'upi_qr' | 'cod' | 'netbanking' | 'store_pickup'>('upi_qr');
   const [utrNumber, setUtrNumber] = useState('');
   const [selectedBank, setSelectedBank] = useState('State Bank of India (SBI)');
   const [copiedUpi, setCopiedUpi] = useState(false);
@@ -68,6 +70,32 @@ export default function CheckoutPage() {
   const [tempOrderId, setTempOrderId] = useState('');
   const [inputCouponCode, setInputCouponCode] = useState('');
   const [couponError, setCouponError] = useState('');
+
+  // Fallback if current payment method is disabled by admin in CMS
+  useEffect(() => {
+    const isUpiActive = paymentMethodsConfig?.enableUPI !== false;
+    const isBankActive = paymentMethodsConfig?.enableBankTransfer !== false;
+    const isPickupActive = paymentMethodsConfig?.enableStorePickup !== false;
+    const isCodActive = paymentMethodsConfig?.enableCOD !== false && paymentSettings?.codEnabled !== false;
+
+    if (paymentMethod === 'upi_qr' && !isUpiActive) {
+      if (isCodActive) setPaymentMethod('cod');
+      else if (isBankActive) setPaymentMethod('netbanking');
+      else if (isPickupActive) setPaymentMethod('store_pickup');
+    } else if (paymentMethod === 'cod' && !isCodActive) {
+      if (isUpiActive) setPaymentMethod('upi_qr');
+      else if (isBankActive) setPaymentMethod('netbanking');
+      else if (isPickupActive) setPaymentMethod('store_pickup');
+    } else if (paymentMethod === 'netbanking' && !isBankActive) {
+      if (isUpiActive) setPaymentMethod('upi_qr');
+      else if (isCodActive) setPaymentMethod('cod');
+      else if (isPickupActive) setPaymentMethod('store_pickup');
+    } else if (paymentMethod === 'store_pickup' && !isPickupActive) {
+      if (isUpiActive) setPaymentMethod('upi_qr');
+      else if (isCodActive) setPaymentMethod('cod');
+      else if (isBankActive) setPaymentMethod('netbanking');
+    }
+  }, [paymentMethodsConfig, paymentSettings, paymentMethod]);
 
   // 1 min 30 sec (90s) Dynamic Transaction Countdown Timer State
   const [paymentTimerSeconds, setPaymentTimerSeconds] = useState(90);
@@ -226,8 +254,10 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true);
 
-    const fullAddress = deliveryType === 'pickup'
-      ? 'Showroom Counter Pickup (In front of G P Plaza, Chiniya Road, Garhwa)'
+    const showroomAddr = siteSettings?.address || `${STORE_INFO.address}, ${STORE_INFO.city}, ${STORE_INFO.state} - ${STORE_INFO.pincode}`;
+    const isPickup = deliveryType === 'pickup' || paymentMethod === 'store_pickup';
+    const fullAddress = isPickup
+      ? `Showroom Counter Pickup (${showroomAddr})`
       : `${streetAddress}${landmark ? `, Near ${landmark}` : ''}, ${city}, Jharkhand - ${pincode}`;
 
     const newOrder = {
@@ -237,7 +267,7 @@ export default function CheckoutPage() {
       phone,
       email: email || customer?.email || 'customer@lapiez.com',
       address: fullAddress,
-      deliveryType,
+      deliveryType: isPickup ? 'pickup' : 'delivery',
       items: cart.map(item => ({
         id: item.product.id,
         productId: item.product.id,
@@ -252,8 +282,15 @@ export default function CheckoutPage() {
       subtotalAmount: subtotal,
       couponCode: appliedCoupon?.code || null,
       couponDiscount: couponDiscount || 0,
-      paymentMethod: paymentMethod === 'upi_qr' ? 'UPI Dynamic QR (GPay/PhonePe)' : paymentMethod === 'cod' ? 'Cash on Delivery / Pickup' : `NetBanking (${selectedBank})`,
-      paymentStatus: (paymentMethod === 'upi_qr' || paymentMethod === 'netbanking' || Boolean(utrNumber)) ? 'Paid' : (paymentMethod === 'cod' ? 'Pending' : 'Paid'),
+      paymentMethod: 
+        paymentMethod === 'upi_qr' 
+          ? 'UPI Dynamic QR (GPay/PhonePe)' 
+          : paymentMethod === 'cod' 
+          ? 'Cash on Delivery (COD)' 
+          : paymentMethod === 'store_pickup'
+          ? 'Pickup from Store (Counter Payment)'
+          : `NetBanking / Bank Transfer (${selectedBank})`,
+      paymentStatus: (paymentMethod === 'upi_qr' || paymentMethod === 'netbanking' || Boolean(utrNumber)) ? 'Paid' : 'Pending',
       utrNumber: utrNumber || null,
       orderDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
       date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -754,56 +791,90 @@ export default function CheckoutPage() {
                   </p>
                 </div>
 
-                {/* 3 Payment Tabs */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('upi_qr')}
-                    className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                      paymentMethod === 'upi_qr'
-                        ? 'border-blue-600 bg-blue-50/50 shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300 bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <QrCode className="w-6 h-6 text-blue-600" />
-                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Fastest</span>
-                    </div>
-                    <strong className="block text-xs font-bold text-slate-900">UPI Dynamic QR</strong>
-                    <span className="text-[10px] text-slate-500">PhonePe, GPay, Paytm</span>
-                  </button>
+                {/* Dynamic Payment Method Selection Tabs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* Option 1: UPI Dynamic QR */}
+                  {paymentMethodsConfig?.enableUPI !== false && (
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('upi_qr')}
+                      className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                        paymentMethod === 'upi_qr'
+                          ? 'border-blue-600 bg-blue-50/50 shadow-sm'
+                          : 'border-slate-200 hover:border-slate-300 bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <QrCode className="w-6 h-6 text-blue-600" />
+                        <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Fastest</span>
+                      </div>
+                      <strong className="block text-xs font-bold text-slate-900">UPI Dynamic QR</strong>
+                      <span className="text-[10px] text-slate-500">PhonePe, GPay, Paytm</span>
+                    </button>
+                  )}
 
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('cod')}
-                    className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                      paymentMethod === 'cod'
-                        ? 'border-blue-600 bg-blue-50/50 shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300 bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Banknote className="w-6 h-6 text-slate-700" />
-                    </div>
-                    <strong className="block text-xs font-bold text-slate-900">Cash on Delivery / Pickup</strong>
-                    <span className="text-[10px] text-slate-500">Pay when receiving item</span>
-                  </button>
+                  {/* Option 2: Bank Transfer / IMPS */}
+                  {paymentMethodsConfig?.enableBankTransfer !== false && (
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('netbanking')}
+                      className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                        paymentMethod === 'netbanking'
+                          ? 'border-blue-600 bg-blue-50/50 shadow-sm'
+                          : 'border-slate-200 hover:border-slate-300 bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <Building className="w-6 h-6 text-slate-700" />
+                        <span className="text-[10px] font-bold bg-slate-200 text-slate-800 px-2 py-0.5 rounded-full">NEFT/IMPS</span>
+                      </div>
+                      <strong className="block text-xs font-bold text-slate-900">Bank Transfer</strong>
+                      <span className="text-[10px] text-slate-500">Union Bank of India</span>
+                    </button>
+                  )}
 
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('netbanking')}
-                    className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                      paymentMethod === 'netbanking'
-                        ? 'border-blue-600 bg-blue-50/50 shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300 bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Building className="w-6 h-6 text-slate-700" />
-                    </div>
-                    <strong className="block text-xs font-bold text-slate-900">Bank Transfer / IMPS</strong>
-                    <span className="text-[10px] text-slate-500">Direct Showroom Account</span>
-                  </button>
+                  {/* Option 3: Pickup from Store */}
+                  {paymentMethodsConfig?.enableStorePickup !== false && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymentMethod('store_pickup');
+                        setDeliveryType('pickup');
+                      }}
+                      className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                        paymentMethod === 'store_pickup'
+                          ? 'border-purple-600 bg-purple-50/50 shadow-sm'
+                          : 'border-slate-200 hover:border-slate-300 bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <Store className="w-6 h-6 text-purple-600" />
+                        <span className="text-[10px] font-bold bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Garhwa Counter</span>
+                      </div>
+                      <strong className="block text-xs font-bold text-slate-900">Pickup from Store</strong>
+                      <span className="text-[10px] text-slate-500">Inspect & Pay at Showroom</span>
+                    </button>
+                  )}
+
+                  {/* Option 4: Cash on Delivery (COD) */}
+                  {paymentMethodsConfig?.enableCOD !== false && paymentSettings?.codEnabled !== false && (
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('cod')}
+                      className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                        paymentMethod === 'cod'
+                          ? 'border-amber-600 bg-amber-50/50 shadow-sm'
+                          : 'border-slate-200 hover:border-slate-300 bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <Banknote className="w-6 h-6 text-amber-700" />
+                        <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Doorstep</span>
+                      </div>
+                      <strong className="block text-xs font-bold text-slate-900">Cash on Delivery (COD)</strong>
+                      <span className="text-[10px] text-slate-500">Pay when receiving item</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* PAYMENT METHOD A: DYNAMIC UPI QR CODE SYSTEM WITH 90s TRANSACTION TIMER */}
@@ -979,7 +1050,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {/* PAYMENT METHOD B: CASH ON DELIVERY / SHOWROOM PICKUP */}
+                {/* PAYMENT METHOD B: CASH ON DELIVERY (COD) */}
                 {paymentMethod === 'cod' && (
                   <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
                     <div className="flex items-center gap-2 font-bold text-slate-900 text-sm">
@@ -987,7 +1058,7 @@ export default function CheckoutPage() {
                       <span>Zero Advance Required • Pay When Product Reaches You</span>
                     </div>
                     <p className="text-slate-600 leading-relaxed">
-                      You can pay ₹{finalTotal.toLocaleString('en-IN')} by Cash, UPI QR on delivery agent's scanner, or card swipe when your order is delivered to your doorstep in Garhwa or when you inspect the hardware at our Chiniya Road showroom counter.
+                      You can pay ₹{finalTotal.toLocaleString('en-IN')} by Cash, UPI QR on delivery agent's scanner, or card swipe when your order is delivered to your doorstep in Garhwa.
                     </p>
                     <div className="flex items-center gap-2 text-emerald-700 font-bold pt-1">
                       <Check className="w-4 h-4" />
@@ -1048,6 +1119,59 @@ export default function CheckoutPage() {
                         </div>
                       );
                     })()}
+                  </div>
+                )}
+
+                {/* PAYMENT METHOD D: PICKUP FROM STORE (COUNTER PAYMENT) */}
+                {paymentMethod === 'store_pickup' && (
+                  <div className="p-6 rounded-2xl bg-purple-50/40 border-2 border-purple-300 space-y-4 text-xs">
+                    <div className="flex items-center justify-between pb-3 border-b border-purple-100">
+                      <div className="flex items-center gap-2">
+                        <Store className="w-5 h-5 text-purple-700" />
+                        <div>
+                          <strong className="text-sm font-black text-slate-900 block">
+                            Showroom Collection & Counter Payment (Garhwa)
+                          </strong>
+                          <span className="text-[11px] text-slate-500">
+                            Zero advance required. Inspect & test hardware before making payment.
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold px-2.5 py-1 bg-purple-100 text-purple-900 rounded-full">
+                        Ready for Handover
+                      </span>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-white border border-purple-200 space-y-2.5 text-slate-700">
+                      <div className="flex items-start gap-2">
+                        <span className="font-bold text-slate-900 min-w-[110px]">Showroom Address:</span>
+                        <span className="font-medium">{siteSettings?.address || `${STORE_INFO.address}, ${STORE_INFO.city}, ${STORE_INFO.state} - ${STORE_INFO.pincode}`}</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-bold text-slate-900 min-w-[110px]">Store Timings:</span>
+                        <span>{siteSettings?.timings || STORE_INFO.timings}</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-bold text-slate-900 min-w-[110px]">Payment at Counter:</span>
+                        <span>Cash, Card Swipe, or UPI Dynamic QR on billing computer</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
+                      <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                        <Check className="w-4 h-4" />
+                        <span>Pre-flight hardware diagnostic & GST bill ready upon arrival</span>
+                      </div>
+                      <a
+                        href={siteSettings?.googleMapsUrl || siteSettings?.twitterUrl || STORE_INFO.mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-purple-700 hover:text-purple-900 underline inline-flex items-center gap-1"
+                      >
+                        <span>Open Showroom in Google Maps</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
                   </div>
                 )}
 
