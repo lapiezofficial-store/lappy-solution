@@ -603,7 +603,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     <div className="flex items-center gap-3 min-w-0 pr-2">
                       <div className="w-10 h-10 bg-gray-50 rounded-lg border border-gray-100 p-1 flex-shrink-0 flex items-center justify-center">
                         <img 
-                          src={p.image || '/images/categories/laptop-adapters.png'} 
+                          src={p.image || '/images/product-placeholder.svg'} 
                           alt={p.name} 
                           className="max-h-full max-w-full object-contain" 
                         />

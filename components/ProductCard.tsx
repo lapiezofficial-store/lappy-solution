@@ -87,7 +87,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             className="w-full h-full flex items-center justify-center"
           >
             <img 
-              src={primaryImage || '/images/categories/laptop-adapters.png'} 
+              src={primaryImage || '/images/product-placeholder.svg'} 
               alt={product.name}
               className={`max-h-full max-w-full object-contain mx-auto transition-transform duration-300 group-hover:scale-105 ${
                 isOutOfStock ? 'grayscale-[0.4] opacity-80' : ''

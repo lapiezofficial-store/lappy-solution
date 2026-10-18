@@ -156,7 +156,7 @@ export async function GET(request: Request) {
 
     const formattedProducts = (dbProducts && dbProducts.length > 0)
       ? dbProducts.map((p) => formatProduct(p, richSkuMap.get(p.sku) || richIdMap.get(p.id)))
-      : PRODUCTS;
+      : [];
 
     // Format Coupons
     const coupons = (dbCoupons && dbCoupons.length > 0)
@@ -219,7 +219,7 @@ export async function GET(request: Request) {
         banners: INITIAL_BANNERS,
         homepageSections: [],
         categories: CATEGORIES,
-        products: PRODUCTS,
+        products: [],
         customPages: [],
         blogPosts: [],
         coupons: INITIAL_COUPONS,

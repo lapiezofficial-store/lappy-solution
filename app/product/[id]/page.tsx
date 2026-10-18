@@ -81,7 +81,7 @@ export default function ProductDetailPage() {
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [activeTab, setActiveTab] = useState<'specs' | 'reviews' | 'warranty'>('specs');
+  const [activeTab, setActiveTab] = useState<'specs' | 'reviews' | 'whatsapp' | 'warranty'>('specs');
 
   // Loading state while searching database directly
   if (isFetchingDirect && !product) {
@@ -141,7 +141,7 @@ export default function ProductDetailPage() {
     }
     return list.length > 0 ? list : (product.image ? [product.image] : []);
   }, [product]);
-  const activeImage = images[activeImageIndex] || images[0] || product.image || '/images/categories/laptop-adapters.png';
+  const activeImage = images[activeImageIndex] || images[0] || product.image || '';
 
   const priceNum = Number(product.price || 0);
   const mrpNum = Number(product.mrp || 0);
@@ -494,14 +494,15 @@ export default function ProductDetailPage() {
               Full Specifications
             </button>
             <button
-              onClick={() => setActiveTab('warranty')}
-              className={`py-2 px-4 rounded-lg text-xs sm:text-[13px] font-bold transition-all ${
-                activeTab === 'warranty'
-                  ? 'bg-[#1A56DB] text-white shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              onClick={() => setActiveTab('whatsapp')}
+              className={`py-2 px-4 rounded-lg text-xs sm:text-[13px] font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'whatsapp' || activeTab === 'warranty'
+                  ? 'bg-[#25D366] text-white shadow-xs'
+                  : 'text-emerald-700 hover:text-emerald-900 bg-emerald-50/80 hover:bg-emerald-100'
               }`}
             >
-              Warranty & Service Policy
+              <MessageSquare className="w-3.5 h-3.5 fill-current" />
+              <span>WhatsApp: +91 9608828288</span>
             </button>
             <button
               onClick={() => setActiveTab('reviews')}
@@ -561,31 +562,67 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* TAB 2: Warranty & Service */}
-          {activeTab === 'warranty' && (
-            <div className="space-y-4 text-xs sm:text-sm text-slate-600">
-              <h3 className="text-base font-bold text-slate-900">Garhwa Showroom Warranty & Service Support</h3>
-              <p className="leading-relaxed">
-                Every purchase made through Lapiez is backed by official brand warranty and our in-house Garhwa service desk:
-              </p>
-              <ul className="space-y-2.5 pt-2">
-                <li className="flex items-start gap-2 text-slate-700">
-                  <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span><strong>Official Brand Warranty:</strong> Minimum 1 to 3 years warranty valid at all authorized service centres across India.</span>
-                </li>
-                <li className="flex items-start gap-2 text-slate-700">
-                  <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span><strong>7-Day Showroom Replacement:</strong> Instant replacement at our Chiniya Road showroom in case of any manufacturing defect.</span>
-                </li>
-                <li className="flex items-start gap-2 text-slate-700">
-                  <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span><strong>Free Lifetime Software & Driver Support:</strong> Visit our store anytime for OS re-installation, BIOS update, or driver diagnostics.</span>
-                </li>
-                <li className="flex items-start gap-2 text-slate-700">
-                  <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span><strong>GST Tax Invoice:</strong> Official printed invoice with GSTIN for legitimate business tax input credit.</span>
-                </li>
-              </ul>
+          {/* TAB 2: WhatsApp Direct Order & Showroom Assistance */}
+          {(activeTab === 'whatsapp' || activeTab === 'warranty') && (
+            <div className="space-y-5 text-xs sm:text-sm">
+              <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-emerald-50 to-green-50/50 border border-emerald-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                      Garhwa Showroom Live WhatsApp Help
+                    </span>
+                    <h3 className="text-base sm:text-lg font-black text-slate-900">
+                      Direct WhatsApp Assistance & Order: +91 9608828288
+                    </h3>
+                    <p className="text-xs text-slate-600 max-w-xl">
+                      Have questions about <span className="font-bold text-slate-800">{product.name}</span>? Chat directly with our Garhwa showroom team for live photos, counter pickup, best price, or same-day delivery.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+                    <a
+                      href={`https://wa.me/919608828288?text=${encodeURIComponent(`Hello Lapiez Garhwa, I want to inquire about / buy: ${product.name} (SKU: ${product.sku}, Price: ₹${priceNum.toLocaleString('en-IN')})`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-10 px-5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4 fill-white" />
+                      <span>Chat on WhatsApp</span>
+                    </a>
+                    <a
+                      href="tel:+919608828288"
+                      className="h-10 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Call +91 9608828288</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Showroom Warranty & Purchase Protection */}
+              <div className="pt-2 space-y-3">
+                <h4 className="text-sm font-bold text-slate-900">Garhwa Showroom Warranty & Purchase Protection</h4>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-slate-700">
+                  <li className="flex items-start gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <span><strong>Official Brand Warranty:</strong> Minimum 1 to 3 years warranty valid across India.</span>
+                  </li>
+                  <li className="flex items-start gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <span><strong>7-Day Showroom Replacement:</strong> Instant replacement at Chiniya Road showroom for defects.</span>
+                  </li>
+                  <li className="flex items-start gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <span><strong>Free Lifetime Support:</strong> Store support for software, BIOS update, or diagnostics.</span>
+                  </li>
+                  <li className="flex items-start gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <span><strong>GST Tax Invoice:</strong> Official printed invoice with 18% GSTIN for business tax credit.</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           )}
 

@@ -54,7 +54,7 @@ export const ProductDetailModal: React.FC = () => {
 
   if (!selectedProduct) return null;
 
-  const currentImg = activeImage || imagesList[0] || selectedProduct.image || '/images/categories/laptop-adapters.png';
+  const currentImg = activeImage || imagesList[0] || selectedProduct.image || '/images/product-placeholder.svg';
   const isWishlisted = Array.isArray(wishlistIds) && wishlistIds.includes(selectedProduct.id);
   const isOutOfStock = selectedProduct.inStock === false || (selectedProduct.stockQuantity !== undefined && selectedProduct.stockQuantity !== null && Number(selectedProduct.stockQuantity) <= 0);
   const priceNum = Number(selectedProduct.price || 0);

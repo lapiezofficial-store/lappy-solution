@@ -6398,9 +6398,5 @@ const BASE_PRODUCTS: Product[] = [
   }
 ];
 
-export const PRODUCTS: Product[] = [
-  ...BASE_PRODUCTS,
-  ...(frontechProductsData as Product[]),
-  ...(scrapedBrandProductsData as Product[])
-];
+export const PRODUCTS: Product[] = [];
 

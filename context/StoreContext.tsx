@@ -234,6 +234,7 @@ interface StoreContextType {
   addProductToDb: (prod: Partial<Product>) => Promise<Product | void>;
   updateProductInDb: (id: string, updatedFields: Partial<Product>) => Promise<boolean>;
   deleteProductFromDb: (id: string, permanent?: boolean) => Promise<void>;
+  wipeAllProductsFromDb: () => Promise<boolean>;
   trashProducts: Product[];
   isLoadingTrash: boolean;
   fetchTrashProducts: () => Promise<void>;
@@ -515,7 +516,7 @@ export function normalizeProduct(p: any): Product {
     galleryImages = [String(p.image).trim()];
   }
 
-  const primaryImage = galleryImages[0] || (typeof p.image === 'string' ? p.image.split('|||')[0].trim() : '') || '/images/categories/laptop-adapters.png';
+  const primaryImage = galleryImages[0] || (typeof p.image === 'string' ? p.image.split('|||')[0].trim() : '') || '/images/product-placeholder.svg';
 
   return {
     ...p,
@@ -528,16 +529,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [products, setProducts] = useState<Product[]>(() => {
     if (typeof window !== 'undefined') {
       try {
+        const hasReset = localStorage.getItem('ls_catalog_fresh_start_2026');
+        if (!hasReset) {
+          localStorage.removeItem('ls_products');
+          localStorage.setItem('ls_catalog_fresh_start_2026', 'true');
+          return [];
+        }
         const saved = localStorage.getItem('ls_products');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed.filter((p: any) => !isDemoProduct(p)).map(normalizeProduct);
+            return parsed.map(normalizeProduct);
           }
         }
       } catch (e) {}
     }
-    return PRODUCTS.filter(p => !isDemoProduct(p)).map(normalizeProduct);
+    return [];
   });
   const [trashProducts, setTrashProducts] = useState<Product[]>([]);
   const [isLoadingTrash, setIsLoadingTrash] = useState<boolean>(false);
@@ -755,43 +762,50 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
 
         // 6. Products: Database is the authoritative source of truth
-        if (initData.products && Array.isArray(initData.products) && initData.products.length > 0) {
-          const cleanProds = initData.products
-            .filter((p: any) => !isDemoProduct(p))
-            .map(normalizeProduct);
-
-          // Fast DB index maps for exact SKU, Name, and ID matching
-          const dbBySku = new Map<string, Product>();
-          const dbByName = new Map<string, Product>();
-          const dbById = new Map<string, Product>();
-          cleanProds.forEach((p: Product) => {
-            if (p.sku) dbBySku.set(p.sku.trim().toLowerCase(), p);
-            if (p.name) dbByName.set(p.name.trim().toLowerCase(), p);
-            if (p.id) dbById.set(p.id.trim().toLowerCase(), p);
-          });
-
-          setProducts((prev) => {
-            const nextList = cleanProds;
-
-            // Deep check to prevent re-rendering when state is already identical
-            if (
-              prev.length === nextList.length &&
-              prev.every((item, i) => 
-                item.id === nextList[i]?.id && 
-                item.price === nextList[i]?.price && 
-                item.inStock === nextList[i]?.inStock &&
-                item.stockQuantity === nextList[i]?.stockQuantity
-              )
-            ) {
-              return prev;
-            }
-
+        if (initData.products && Array.isArray(initData.products)) {
+          if (initData.products.length === 0) {
+            setProducts([]);
             try {
-              localStorage.setItem('ls_products', JSON.stringify(nextList));
+              localStorage.setItem('ls_products', '[]');
             } catch (e) {}
+          } else {
+            const cleanProds = initData.products
+              .filter((p: any) => !isDemoProduct(p))
+              .map(normalizeProduct);
 
-            return nextList;
-          });
+            // Fast DB index maps for exact SKU, Name, and ID matching
+            const dbBySku = new Map<string, Product>();
+            const dbByName = new Map<string, Product>();
+            const dbById = new Map<string, Product>();
+            cleanProds.forEach((p: Product) => {
+              if (p.sku) dbBySku.set(p.sku.trim().toLowerCase(), p);
+              if (p.name) dbByName.set(p.name.trim().toLowerCase(), p);
+              if (p.id) dbById.set(p.id.trim().toLowerCase(), p);
+            });
+
+            setProducts((prev) => {
+              const nextList = cleanProds;
+
+              // Deep check to prevent re-rendering when state is already identical
+              if (
+                prev.length === nextList.length &&
+                prev.every((item, i) => 
+                  item.id === nextList[i]?.id && 
+                  item.price === nextList[i]?.price && 
+                  item.inStock === nextList[i]?.inStock &&
+                  item.stockQuantity === nextList[i]?.stockQuantity
+                )
+              ) {
+                return prev;
+              }
+
+              try {
+                localStorage.setItem('ls_products', JSON.stringify(nextList));
+              } catch (e) {}
+
+              return nextList;
+            });
+          }
         }
 
         // 7. Custom Pages
@@ -1623,8 +1637,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           discount: prod.discount || 10,
           category: (prod.category || 'Laptops') as any,
           brand: prod.brand || 'Lapiez',
-          image: prod.image || '/images/categories/laptop-adapters.png',
-          images: prod.images || [prod.image || '/images/categories/laptop-adapters.png'],
+          image: prod.image || '/images/product-placeholder.svg',
+          images: prod.images || (prod.image ? [prod.image] : ['/images/product-placeholder.svg']),
           specs: prod.specs || '',
           description: prod.description || '',
           rating: prod.rating || 4.8,
@@ -1803,6 +1817,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } catch (e) {
       console.error('Failed to empty dustbin:', e);
+    }
+  };
+
+  const wipeAllProductsFromDb = async (): Promise<boolean> => {
+    try {
+      setProducts([]);
+      setTrashProducts([]);
+      try {
+        localStorage.setItem('ls_products', '[]');
+      } catch (e) {}
+
+      const res = await fetch('/api/cms/wipe-products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ secret: 'Lapiez@2026#' }),
+      });
+      if (res.ok) {
+        showToast('All products successfully deleted from database!');
+        return true;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || 'Failed to wipe products from database');
+        return false;
+      }
+    } catch (e) {
+      console.error('Failed to wipe all products:', e);
+      showToast('Wipe completed locally');
+      return false;
     }
   };
 
@@ -2623,6 +2666,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addProductToDb,
         updateProductInDb,
         deleteProductFromDb,
+        wipeAllProductsFromDb,
         trashProducts,
         isLoadingTrash,
         fetchTrashProducts,

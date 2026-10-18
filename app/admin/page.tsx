@@ -65,6 +65,7 @@ export default function AdminPage() {
     addProductToDb,
     updateProductInDb,
     deleteProductFromDb,
+    wipeAllProductsFromDb,
     trashProducts,
     isLoadingTrash,
     fetchTrashProducts,
@@ -823,7 +824,11 @@ export default function AdminPage() {
     const discount = Math.round(((mrpNum - priceNum) / mrpNum) * 100);
 
     const validGallery = newProductImages.filter(Boolean);
-    const primaryImg = validGallery[0] || newProductImage.trim() || '/images/categories/laptop-adapters.png';
+    const primaryImg = validGallery[0] || newProductImage.trim();
+    if (!primaryImg) {
+      showToast('Please upload or provide at least 1 image for this product!');
+      return;
+    }
     if (validGallery.length === 0 && primaryImg) {
       validGallery.push(primaryImg);
     }
@@ -884,6 +889,16 @@ export default function AdminPage() {
     setIsNewMenuOpen(false);
   };
 
+  // Helper to immediately display local image preview
+  const readFileAsDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve((e.target?.result as string) || '');
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Image Upload Handlers (Cloudinary Cloud Storage Integration)
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -901,6 +916,7 @@ export default function AdminPage() {
 
       const res = await fetch('/api/cms/upload', {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 
@@ -925,6 +941,10 @@ export default function AdminPage() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const file = files[0];
+    const preview = await readFileAsDataUrl(file);
+    if (preview) {
+      setNewBannerImage(preview);
+    }
     const url = await uploadFileToCloudinary(file, 'banners');
     if (url) {
       setNewBannerImage(url);
@@ -936,6 +956,10 @@ export default function AdminPage() {
     const files = e.target.files;
     if (!files || files.length === 0 || !editingBanner) return;
     const file = files[0];
+    const preview = await readFileAsDataUrl(file);
+    if (preview) {
+      setEditingBanner((prev) => prev ? ({ ...prev, desktopImage: preview, mobileImage: preview }) : null);
+    }
     const url = await uploadFileToCloudinary(file, 'banners');
     if (url) {
       setEditingBanner((prev) => prev ? ({ ...prev, desktopImage: url, mobileImage: url }) : null);
@@ -948,14 +972,24 @@ export default function AdminPage() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const file = files[0];
+    const preview = await readFileAsDataUrl(file);
+    if (preview) {
+      if (isEdit) {
+        setEditImage(preview);
+        setEditImages(prev => [preview, ...prev.filter(u => u !== preview)]);
+      } else {
+        setNewProductImage(preview);
+        setNewProductImages(prev => [preview, ...prev.filter(u => u !== preview)]);
+      }
+    }
     const url = await uploadFileToCloudinary(file, 'products');
     if (url) {
       if (isEdit) {
         setEditImage(url);
-        setEditImages(prev => [url, ...prev.filter(u => u !== url)]);
+        setEditImages(prev => [url, ...prev.filter(u => u !== preview && u !== url)]);
       } else {
         setNewProductImage(url);
-        setNewProductImages(prev => [url, ...prev.filter(u => u !== url)]);
+        setNewProductImages(prev => [url, ...prev.filter(u => u !== preview && u !== url)]);
       }
     }
     e.target.value = '';
@@ -964,25 +998,48 @@ export default function AdminPage() {
   const handleMultipleProductUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    const count = files.length;
-    let uploadedUrls: string[] = [];
+    const fileList = Array.from(files);
 
-    for (let i = 0; i < count; i++) {
-      const file = files[i];
+    // 1. Immediately read as local previews so user sees their actual photos instantly
+    const localPreviews = await Promise.all(fileList.map(readFileAsDataUrl));
+    const validPreviews = localPreviews.filter(Boolean);
+
+    if (validPreviews.length > 0) {
+      if (isEdit) {
+        setEditImages(prev => [...prev, ...validPreviews]);
+        setEditImage(validPreviews[0]);
+      } else {
+        setNewProductImages(prev => [...prev, ...validPreviews]);
+        setNewProductImage(validPreviews[0]);
+      }
+      showToast(`Selected ${validPreviews.length} photo(s). Uploading in background...`);
+    }
+
+    // 2. Upload to Cloudinary in background
+    let uploadedUrls: string[] = [];
+    for (const file of fileList) {
       const url = await uploadFileToCloudinary(file, 'products');
       if (url) {
         uploadedUrls.push(url);
       }
     }
+
+    // 3. Swap local preview data URLs with Cloudinary URLs if upload succeeded
     if (uploadedUrls.length > 0) {
       if (isEdit) {
-        setEditImages(prev => [...prev, ...uploadedUrls]);
+        setEditImages(prev => {
+          const nonData = prev.filter(u => !u.startsWith('data:'));
+          return [...nonData, ...uploadedUrls];
+        });
         setEditImage(uploadedUrls[0]);
       } else {
-        setNewProductImages(prev => [...prev, ...uploadedUrls]);
+        setNewProductImages(prev => {
+          const nonData = prev.filter(u => !u.startsWith('data:'));
+          return [...nonData, ...uploadedUrls];
+        });
         setNewProductImage(uploadedUrls[0]);
       }
-      showToast(`Uploaded ${uploadedUrls.length} product image(s) to gallery!`);
+      showToast(`Saved ${uploadedUrls.length} permanent photo(s) to gallery! ✨`);
     }
     e.target.value = '';
   };
@@ -3292,12 +3349,29 @@ export default function AdminPage() {
                   </button>
                 )}
                 {activeTab === 'inventory' && (
-                  <button
-                    onClick={handleOpenAddProduct}
-                    className="px-3 py-1 rounded bg-[#2271b1] hover:bg-[#135e96] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
-                  >
-                    + Add New Product
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleOpenAddProduct}
+                      className="px-3 py-1 rounded bg-[#2271b1] hover:bg-[#135e96] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                    >
+                      + Add New Product
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const confirmed = window.confirm(
+                          "⚠️ DELETE ALL PRODUCTS?\n\nAre you sure you want to permanently delete ALL products from Database (Supabase PostgreSQL), Vercel & Storefront?\n\nThis will clear the entire product catalog so you can upload fresh products."
+                        );
+                        if (confirmed) {
+                          await wipeAllProductsFromDb();
+                        }
+                      }}
+                      className="px-3 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs flex items-center gap-1"
+                      title="Delete all products from database and store"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Clear All Products</span>
+                    </button>
+                  </div>
                 )}
                 {activeTab === 'brands' && (
                   <button

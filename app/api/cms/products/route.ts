@@ -99,19 +99,10 @@ export async function GET(request: Request) {
       return formatProductPayload(p, rich);
     });
 
-    // If database returned products, DB is the authoritative catalog.
-    // Only if DB returned 0 products (offline/unseeded), fallback to static PRODUCTS.
-    let finalProducts = enrichedProducts;
-    if (finalProducts.length === 0 && !id && !slug && !limit) {
-      finalProducts = PRODUCTS.map(p => formatProductPayload(p));
-    }
-
-    return NextResponse.json({ products: finalProducts });
+    return NextResponse.json({ products: enrichedProducts });
   } catch (error) {
-    console.error('Error fetching products from DB, serving static fallback:', error);
-    // Fallback to static PRODUCTS
-    const { PRODUCTS } = await import('@/data/products');
-    return NextResponse.json({ products: PRODUCTS.map(p => formatProductPayload(p)) });
+    console.error('Error fetching products from DB:', error);
+    return NextResponse.json({ products: [] });
   }
 }
 
@@ -312,6 +303,14 @@ export async function DELETE(request: Request) {
     const id = searchParams.get('id');
     const permanent = searchParams.get('permanent') === 'true';
     const emptyTrash = searchParams.get('emptyTrash') === 'true';
+    const all = searchParams.get('all') === 'true';
+
+    // 0. Wipe all products from database permanently
+    if (all) {
+      const res = await prisma.product.deleteMany({});
+      invalidateInitCache();
+      return NextResponse.json({ success: true, count: res.count, message: 'All products permanently wiped from database!' });
+    }
 
     // 1. Empty entire dustbin permanently
     if (emptyTrash) {
