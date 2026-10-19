@@ -516,8 +516,6 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 export function isDemoProduct(p: any): boolean {
   if (!p) return false;
   if (p.id && (String(p.id).startsWith('prod-flagship-') || String(p.id).startsWith('prod-demo-'))) return true;
-  if (typeof p.image === 'string' && p.image.includes('images.unsplash.com')) return true;
-  if (Array.isArray(p.images) && p.images.some((img: any) => typeof img === 'string' && img.includes('images.unsplash.com'))) return true;
   return false;
 }
 
@@ -875,10 +873,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // 6. Products: Database is the authoritative source of truth
         if (initData.products && Array.isArray(initData.products)) {
           if (initData.products.length === 0) {
-            setProducts([]);
-            try {
-              localStorage.setItem('ls_products', '[]');
-            } catch (e) {}
+            if (options?.forceFresh) {
+              setProducts([]);
+              try {
+                localStorage.setItem('ls_products', '[]');
+              } catch (e) {}
+            }
           } else {
             const cleanProds = initData.products
               .filter((p: any) => !isDemoProduct(p))
@@ -1786,6 +1786,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         credentials: 'include',
         body: JSON.stringify(prod),
       });
+
       if (res.ok) {
         const data = await res.json();
         const created = normalizeProduct(data.product);
@@ -1794,43 +1795,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           try { localStorage.setItem('ls_products', JSON.stringify(updated)); } catch (e) {}
           return updated;
         });
-        showToast(`Product "${created.name}" added to database!`);
+        showToast(`Product "${created.name}" saved to database!`);
         return created;
       } else {
         const err = await res.json().catch(() => ({}));
-        showToast(err.error || 'Failed to add product');
-        throw new Error(err.error || 'Failed to add product');
+        const errorMessage = res.status === 401 
+          ? 'Admin session expired. Please re-login to the Admin Panel.'
+          : (err.error || `Server error (${res.status}): Failed to save product`);
+        showToast(errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (e: any) {
       console.error('Failed to add product to DB:', e);
-      // Fallback local save if offline
-      if (!existing && !e.message?.includes('Duplicate')) {
-        const fallbackProd: Product = {
-          id: `prod-${Date.now()}`,
-          name: prod.name || 'New Product',
-          price: prod.price || 0,
-          mrp: prod.mrp || Math.round((prod.price || 0) * 1.2),
-          discount: prod.discount || 10,
-          category: (prod.category || 'Laptops') as any,
-          brand: prod.brand || 'Lapiez',
-          image: prod.image || '/images/product-placeholder.svg',
-          images: prod.images || (prod.image ? [prod.image] : ['/images/product-placeholder.svg']),
-          specs: prod.specs || '',
-          description: prod.description || '',
-          rating: prod.rating || 4.8,
-          inStock: prod.inStock ?? true,
-          stockQuantity: prod.stockQuantity || 10,
-          sku: prod.sku || `LS-${Date.now()}`,
-          ...prod
-        } as Product;
-        setProducts(prev => {
-          const next = [fallbackProd, ...prev];
-          try { localStorage.setItem('ls_products', JSON.stringify(next)); } catch (err) {}
-          return next;
-        });
-        showToast(`Product "${fallbackProd.name}" saved locally!`);
-        return fallbackProd;
-      }
       throw e;
     }
   };

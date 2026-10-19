@@ -870,20 +870,25 @@ export default function AdminPage() {
       hsnCode: newProductHsnCode.trim() || '8471',
     };
 
-    await addProductToDb(newProd);
-    setIsAddProductOpen(false);
-    setNewProductName('');
-    setNewProductPrice('');
-    setNewProductMrp('');
-    setNewProductSpecs('');
-    setNewProductDescription('');
-    setNewProductSubcategory('');
-    setNewProductImages([]);
-    setNewProductImage('');
-    setNewProductImageInput('');
-    setNewProductGstRate(18);
-    setNewProductHsnCode('8471');
-    showToast('Product added successfully to catalog!');
+    try {
+      await addProductToDb(newProd);
+      setIsAddProductOpen(false);
+      setNewProductName('');
+      setNewProductPrice('');
+      setNewProductMrp('');
+      setNewProductSpecs('');
+      setNewProductDescription('');
+      setNewProductSubcategory('');
+      setNewProductImages([]);
+      setNewProductImage('');
+      setNewProductImageInput('');
+      setNewProductGstRate(18);
+      setNewProductHsnCode('8471');
+    } catch (err: any) {
+      console.error('Failed to save product:', err);
+      // Keep modal open and preserve all user inputs so no work is lost!
+      showToast(err.message || 'Failed to save product to database');
+    }
   };
 
   const handleOpenAddProduct = () => {

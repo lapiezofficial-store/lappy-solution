@@ -180,7 +180,28 @@ export async function POST(request: Request) {
       .flatMap((img: any) => typeof img === 'string' && img.includes('|||') ? img.split('|||') : [img])
       .map((img: any) => String(img).trim())
       .filter(Boolean);
-    const imageToStore = cleanGallery.length > 0 ? cleanGallery.join('|||') : (body.image || '');
+
+    // Auto-convert any base64 images to Cloudinary URLs so PostgreSQL doesn't store bloated data URIs
+    const processedGallery: string[] = [];
+    for (const img of cleanGallery) {
+      if (typeof img === 'string' && img.startsWith('data:image/')) {
+        try {
+          const { uploadToCloudinary } = await import('@/lib/cloudinary');
+          const uploaded = await uploadToCloudinary(img, 'products');
+          if (uploaded.url) {
+            processedGallery.push(uploaded.url);
+          } else {
+            processedGallery.push(img);
+          }
+        } catch (err) {
+          console.error('Server auto-upload to Cloudinary failed:', err);
+          processedGallery.push(img);
+        }
+      } else {
+        processedGallery.push(img);
+      }
+    }
+    const imageToStore = processedGallery.length > 0 ? processedGallery.join('|||') : (body.image || '');
 
     const product = await prisma.product.create({
       data: {
@@ -228,7 +249,24 @@ export async function PUT(request: Request) {
         .flatMap((img: any) => typeof img === 'string' && img.includes('|||') ? img.split('|||') : [img])
         .map((img: any) => String(img).trim())
         .filter(Boolean);
-      data.image = cleanGallery.join('|||');
+      
+      const processedGallery: string[] = [];
+      for (const img of cleanGallery) {
+        if (typeof img === 'string' && img.startsWith('data:image/')) {
+          try {
+            const { uploadToCloudinary } = await import('@/lib/cloudinary');
+            const uploaded = await uploadToCloudinary(img, 'products');
+            if (uploaded.url) processedGallery.push(uploaded.url);
+            else processedGallery.push(img);
+          } catch (err) {
+            console.error('Server auto-upload to Cloudinary failed in PUT:', err);
+            processedGallery.push(img);
+          }
+        } else {
+          processedGallery.push(img);
+        }
+      }
+      data.image = processedGallery.join('|||');
     }
     if (Object.keys(data).length === 0) return NextResponse.json({ error: 'No valid product fields provided.' }, { status: 400 });
 
