@@ -141,8 +141,8 @@ export const DEFAULT_INVOICE_SETTINGS: InvoiceSettings = {
   gstin: '20AABCL1234F1Z5',
   pan: 'AABCL1234F',
   phone: '+91 9608828288',
-  email: 'lappysolution2018@gmail.com',
-  website: 'www.lappysolution.com',
+  email: 'lapiezofficial@gmail.com',
+  website: 'www.lapiez.com',
   logoUrl: '',
 
   prefix: 'INV',
@@ -449,7 +449,7 @@ export function buildInvoiceFromOrder(params: {
 
     buyerName: order.customerName || 'Valued Customer',
     buyerPhone: order.phone || '+91 9608828288',
-    buyerEmail: order.email || 'customer@lappysolution.com',
+    buyerEmail: order.email || 'customer@lapiez.com',
     buyerAddress: order.address || `${settings.city}, ${settings.state}`,
     buyerState: isInterstate ? 'Bihar' : settings.state,
     buyerStateCode: isInterstate ? '10' : settings.stateCode,

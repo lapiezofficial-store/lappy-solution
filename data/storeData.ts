@@ -30,7 +30,7 @@ export const STORE_INFO: StoreInfo = {
   pincode: '822114',
   phone: '+91 9608828288',
   whatsapp: '919608828288',
-  email: 'lappysolution2018@gmail.com',
+  email: 'lapiezofficial@gmail.com',
   timings: 'Monday - Saturday: 10:00 AM - 8:30 PM',
   established: '2018',
   mapsUrl: 'https://www.google.com/maps/place/LAPPY+SOLUTION/@24.1624844,83.7994142,14.58z/data=!4m19!1m12!4m11!1m3!2m2!1d85.0827707!2d25.6822957!1m6!1m2!1s0x398c0f004ce430c7:0xe58fa9332947c20e!2sLAPPY+SOLUTION,+Chiniya+Rd,+Bishunpur,+Garhwa,+Jharkhand+822114!2m2!1d83.8030729!2d24.1581205!3m5!1s0x398c0f004ce430c7:0xe58fa9332947c20e!8m2!3d24.1581205!4d83.8030729!16s%2Fg%2F11vj3g_7j2?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D',

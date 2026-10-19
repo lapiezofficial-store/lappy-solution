@@ -33,12 +33,24 @@ function normalizeToCanonicalCategory(query: string, availableCategories: string
   if (contains) return contains;
 
   // 3. Known taxonomy aliases
-  if (['laptops', 'laptop', 'computers', 'computer', 'desktops', 'desktop', 'pc'].includes(q)) {
-    const found = availableCategories.find(c => c.toLowerCase().includes('computer'));
+  if (['laptops', 'laptop', 'notebooks'].includes(q)) {
+    const found = availableCategories.find(c => c.toLowerCase().includes('laptop'));
     if (found) return found;
   }
-  if (['storage', 'ssd', 'hdd', 'ram', 'storage & memory', 'storage & parts'].includes(q)) {
-    const found = availableCategories.find(c => c.toLowerCase().includes('storage'));
+  if (['computers', 'computer', 'desktops', 'desktop', 'pc', 'custom-pcs'].includes(q)) {
+    const found = availableCategories.find(c => c.toLowerCase().includes('computer') && !c.toLowerCase().includes('peripheral'));
+    if (found) return found;
+  }
+  if (['displays', 'monitors', 'monitor'].includes(q)) {
+    const found = availableCategories.find(c => c.toLowerCase().includes('monitor') || c.toLowerCase().includes('display') || c.toLowerCase().includes('peripheral'));
+    if (found) return found;
+  }
+  if (['peripherals', 'computer peripherals', 'input devices', 'keyboards', 'mouse'].includes(q)) {
+    const found = availableCategories.find(c => c.toLowerCase().includes('peripheral') || c.toLowerCase().includes('keyboard') || c.toLowerCase().includes('input'));
+    if (found) return found;
+  }
+  if (['storage', 'ssd', 'hdd', 'ram', 'memory', 'storage & memory', 'storage & parts'].includes(q)) {
+    const found = availableCategories.find(c => c.toLowerCase().includes('storage') || c.toLowerCase().includes('memory') || c.toLowerCase().includes('peripheral'));
     if (found) return found;
   }
   if (['printers', 'printer', 'printers & parts', 'printers & accessories'].includes(q)) {
@@ -49,20 +61,12 @@ function normalizeToCanonicalCategory(query: string, availableCategories: string
     const found = availableCategories.find(c => c.toLowerCase().includes('cctv') || c.toLowerCase().includes('surveillance'));
     if (found) return found;
   }
-  if (['peripherals', 'computer peripherals', 'input devices', 'keyboards', 'mouse'].includes(q)) {
-    const found = availableCategories.find(c => c.toLowerCase().includes('keyboard') || c.toLowerCase().includes('input'));
-    if (found) return found;
-  }
   if (['antivirus & software', 'antivirus', 'software'].includes(q)) {
     const found = availableCategories.find(c => c.toLowerCase().includes('software') || c.toLowerCase().includes('antivirus'));
     if (found) return found;
   }
   if (['laptop parts', 'laptop spares', 'laptop parts & spares', 'accessories'].includes(q)) {
     const found = availableCategories.find(c => c.toLowerCase().includes('laptop parts') || c.toLowerCase().includes('spares'));
-    if (found) return found;
-  }
-  if (['displays', 'monitors', 'monitor'].includes(q)) {
-    const found = availableCategories.find(c => c.toLowerCase().includes('monitor') || c.toLowerCase().includes('display'));
     if (found) return found;
   }
   if (['networking', 'network', 'wifi', 'wi-fi', 'routers', 'router'].includes(q)) {

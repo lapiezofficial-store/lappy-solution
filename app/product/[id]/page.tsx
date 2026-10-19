@@ -512,7 +512,7 @@ export default function ProductDetailPage() {
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
-              Customer Reviews ({product.reviewsCount || 42})
+              Customer Reviews ({product.reviews?.length || 0})
             </button>
           </div>
 
@@ -632,10 +632,14 @@ export default function ProductDetailPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200">
                 <div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-slate-900">{product.rating || 4.9}</span>
+                    <span className="text-4xl font-black text-slate-900">{product.rating || 5.0}</span>
                     <span className="text-sm text-slate-400">/ 5.0</span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Based on {product.reviewsCount || 42} verified local buyers</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {product.reviews && product.reviews.length > 0 
+                      ? `Based on ${product.reviews.length} customer reviews` 
+                      : 'Verified Showroom Hardware Quality (Garhwa)'}
+                  </p>
                 </div>
                 <div className="flex items-center text-amber-400">
                   {[...Array(5)].map((_, i) => (
@@ -646,65 +650,51 @@ export default function ProductDetailPage() {
 
               {/* Product Reviews List */}
               <div className="space-y-3.5">
-                {(product.reviews && product.reviews.length > 0
-                  ? product.reviews
-                  : [
-                      {
-                        id: 'rev-def-1',
-                        author: 'Amit Verma',
-                        location: 'Garhwa Sadar',
-                        date: '3 days ago',
-                        rating: 5,
-                        title: 'Verified Genuine Purchase',
-                        comment: 'Purchased for my daily work. Quality is super reliable, works flawlessly right out of the box with proper bill and warranty. Lapiez team provided quick support.',
-                        verified: true
-                      },
-                      {
-                        id: 'rev-def-2',
-                        author: 'Dr. S. K. Pandey',
-                        location: 'Rehla, Palamu',
-                        date: '1 week ago',
-                        rating: 5,
-                        title: 'Verified Genuine Purchase',
-                        comment: 'Genuine original sealed box with warranty card and GST bill. Better price than online and got it delivered on the same day without waiting.',
-                        verified: true
-                      },
-                      {
-                        id: 'rev-def-3',
-                        author: 'Vikas Kumar',
-                        location: 'Chiniya Road, Garhwa',
-                        date: '2 weeks ago',
-                        rating: 5,
-                        title: 'Verified Genuine Purchase',
-                        comment: 'Excellent customer service. The staff helped me compare options and gave me the best deal. Highly recommended technology showroom in Garhwa.',
-                        verified: true
-                      }
-                    ]
-                ).map((rev, idx) => (
-                  <div key={rev.id || idx} className="p-4 rounded-xl bg-white border border-slate-200 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900">{rev.author}</span>
-                        {rev.location && (
-                          <span className="text-slate-400 text-[11px]">({rev.location})</span>
-                        )}
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
-                          <Check className="w-2.5 h-2.5" />
-                          <span>Verified Purchase</span>
-                        </span>
+                {product.reviews && product.reviews.length > 0 ? (
+                  product.reviews.map((rev, idx) => (
+                    <div key={rev.id || idx} className="p-4 rounded-xl bg-white border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span>{rev.author}</span>
+                          {rev.verified && (
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
+                              Verified Purchase
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-slate-400">{rev.date}</span>
                       </div>
-                      <span className="text-slate-400 text-[11px]">{rev.date}</span>
+                      <div className="flex items-center text-amber-400">
+                        {[...Array(rev.rating || 5)].map((_, i) => (
+                          <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        ))}
+                      </div>
+                      <p className="text-xs font-semibold text-slate-800">{rev.title}</p>
+                      <p className="text-xs text-slate-600 leading-relaxed">{rev.comment}</p>
                     </div>
-                    <div className="flex items-center text-amber-400">
-                      {[...Array(Math.max(1, Math.min(5, Math.round(Number(rev.rating) || 5))))].map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      ))}
+                  ))
+                ) : (
+                  <div className="p-6 rounded-2xl bg-white border border-slate-200 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-50 text-[#1A56DB] flex items-center justify-center mx-auto">
+                      <Award className="w-6 h-6" />
                     </div>
-                    <p className="text-xs text-slate-700 leading-relaxed">
-                      "{rev.comment}"
+                    <h4 className="text-base font-bold text-slate-900">Showroom Tested Genuine Guarantee</h4>
+                    <p className="text-xs text-slate-600 max-w-md mx-auto">
+                      This item is in stock at our Chiniya Road showroom with brand sealed box, 18% GST invoice, and manufacturer warranty.
                     </p>
+                    <div className="pt-2">
+                      <a
+                        href={`https://wa.me/919608828288?text=${encodeURIComponent(`Hello Lapiez Garhwa, I want to submit feedback / ask about: ${product.name}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-bold transition-all shadow-xs"
+                      >
+                        <MessageSquare className="w-4 h-4 fill-white" />
+                        <span>Submit Feedback / Review on WhatsApp</span>
+                      </a>
+                    </div>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}

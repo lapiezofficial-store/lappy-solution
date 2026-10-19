@@ -21,11 +21,19 @@ import { Product } from '../data/products';
 export default function Home() {
   const { products, homepageSections, siteSettings, blogPosts } = useStore();
 
-  const [activeTrendingTab, setActiveTrendingTab] = useState<'all' | 'monitors' | 'laptops' | 'cctv' | 'accessories'>('all');
+  const [activeTrendingTab, setActiveTrendingTab] = useState<'all' | 'monitors' | 'printers' | 'memory' | 'laptops' | 'cctv' | 'accessories'>('all');
 
-  // Curated collections for fallback
+  // Curated collections from live showroom database
   const trendingMonitors = useMemo(() => {
     return products.filter(p => p.name.toLowerCase().includes('monitor'));
+  }, [products]);
+
+  const trendingPrinters = useMemo(() => {
+    return products.filter(p => p.category === 'Printers');
+  }, [products]);
+
+  const trendingMemory = useMemo(() => {
+    return products.filter(p => p.name.toLowerCase().includes('ram') || p.category === 'Storage & Memory');
   }, [products]);
 
   const trendingLaptops = useMemo(() => {
@@ -36,38 +44,37 @@ export default function Home() {
     return products.filter(p => p.category === 'CCTV & Security');
   }, [products]);
 
-  const trendingPrinters = useMemo(() => {
-    return products.filter(p => p.category === 'Printers');
-  }, [products]);
-
   const trendingAccessories = useMemo(() => {
     return products.filter(p => 
-      (p.brand === 'Frontech' || p.category === 'Accessories' || p.category === 'Storage & Parts') &&
-      !p.name.toLowerCase().includes('monitor')
+      (p.brand === 'Frontech' || p.category === 'Accessories' || p.category === 'Storage & Parts' || p.category === 'Computer Peripherals') &&
+      !p.name.toLowerCase().includes('monitor') &&
+      !p.name.toLowerCase().includes('ram')
     );
   }, [products]);
 
-  // Mixed Trending showcasing Frontech Monitors + Laptops + Peripherals
+  // Mixed Trending showcasing Frontech Displays + Printers + RAM & Memory
   const defaultTrendingProducts = useMemo(() => {
     if (activeTrendingTab === 'monitors') return trendingMonitors.slice(0, 8);
+    if (activeTrendingTab === 'printers') return trendingPrinters.slice(0, 8);
+    if (activeTrendingTab === 'memory') return trendingMemory.slice(0, 8);
     if (activeTrendingTab === 'laptops') return trendingLaptops.slice(0, 8);
     if (activeTrendingTab === 'cctv') return trendingCctv.slice(0, 8);
     if (activeTrendingTab === 'accessories') return trendingAccessories.slice(0, 8);
 
-    const monitors = trendingMonitors.slice(0, 4);
-    const laptops = trendingLaptops.slice(0, 4);
-    return [...monitors, ...laptops].slice(0, 8);
-  }, [activeTrendingTab, trendingMonitors, trendingLaptops, trendingCctv, trendingAccessories]);
+    const monitors = trendingMonitors.slice(0, 3);
+    const printers = trendingPrinters.slice(0, 3);
+    const memory = trendingMemory.slice(0, 2);
+    const combined = [...monitors, ...printers, ...memory];
+    return combined.length > 0 ? combined.slice(0, 8) : products.slice(0, 8);
+  }, [activeTrendingTab, trendingMonitors, trendingPrinters, trendingMemory, trendingLaptops, trendingCctv, trendingAccessories, products]);
 
   // Quick category tags
   const quickCategories = useMemo(() => [
     { name: 'Frontech Monitors', count: products.filter(p => p.name.toLowerCase().includes('monitor')).length, href: '/shop?search=Monitor' },
-    { name: 'Laptops', count: products.filter(p => p.category === 'Laptops').length, href: '/shop?cat=Laptops' },
-    { name: 'Desktops & Rigs', count: products.filter(p => p.category === 'Computers').length, href: '/shop?cat=Computers' },
-    { name: 'CCTV Security', count: products.filter(p => p.category === 'CCTV & Security').length, href: '/shop?cat=CCTV%20%26%20Security' },
     { name: 'Printers & Inks', count: products.filter(p => p.category === 'Printers').length, href: '/shop?cat=Printers' },
-    { name: 'Accessories & Spares', count: products.filter(p => p.category === 'Accessories').length, href: '/shop?cat=Accessories' },
-    { name: 'SSDs & Storage', count: products.filter(p => p.category === 'Storage & Parts').length, href: '/shop?cat=Storage%20%26%20Parts' },
+    { name: 'Desktop & Laptop RAM', count: products.filter(p => p.name.toLowerCase().includes('ram')).length, href: '/shop?search=RAM' },
+    { name: 'Laptops', count: products.filter(p => p.category === 'Laptops').length, href: '/shop?cat=Laptops' },
+    { name: 'CCTV Security', count: products.filter(p => p.category === 'CCTV & Security').length, href: '/shop?cat=CCTV%20%26%20Security' },
   ], [products]);
 
   // Sorted list of active homepage sections (Brands placed directly below banners)
@@ -213,7 +220,7 @@ export default function Home() {
                 href="/shop"
                 className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs self-start sm:self-auto flex-shrink-0"
               >
-                <span>View All {products.length || 413}+ Products</span>
+                <span>View All {products.length > 0 ? `${products.length} Products` : 'Products'}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -222,10 +229,11 @@ export default function Home() {
             <div className="flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-3 no-scrollbar">
               {[
                 { id: 'all', label: 'All Trending', count: trendingItems.length },
-                { id: 'monitors', label: 'Frontech Monitors', count: trendingMonitors.length },
-                { id: 'laptops', label: 'Laptops', count: trendingLaptops.length },
-                { id: 'cctv', label: 'CCTV Security', count: trendingCctv.length },
-                { id: 'accessories', label: 'Spares & Accessories', count: trendingAccessories.length },
+                { id: 'monitors', label: 'Frontech Displays', count: trendingMonitors.length },
+                { id: 'printers', label: 'Printers & All-In-Ones', count: trendingPrinters.length },
+                { id: 'memory', label: 'RAM & Memory', count: trendingMemory.length },
+                ...(trendingLaptops.length > 0 ? [{ id: 'laptops', label: 'Laptops', count: trendingLaptops.length }] : []),
+                ...(trendingCctv.length > 0 ? [{ id: 'cctv', label: 'CCTV Security', count: trendingCctv.length }] : []),
               ].map((tab) => {
                 const isSelected = activeTrendingTab === tab.id;
                 return (

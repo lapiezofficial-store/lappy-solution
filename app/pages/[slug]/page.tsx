@@ -42,7 +42,7 @@ All prices listed on the website include applicable 18% GST unless explicitly st
 For any inquiries, bill corrections, order tracking, or service lab appointments:
 * **Showroom Address:** Opposite G P Plaza, Near Old Bus Stand, Chiniya Road, Garhwa, Jharkhand - 822114
 * **Phone / WhatsApp:** +91 9608828288
-* **Email:** support@lappysolution.com`
+* **Email:** lapiezofficial@gmail.com`
   },
   'privacy-policy': {
     title: 'Privacy Policy',
