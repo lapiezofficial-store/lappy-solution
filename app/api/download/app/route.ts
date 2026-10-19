@@ -20,7 +20,9 @@ export async function GET() {
         'Content-Type': 'application/vnd.android.package-archive',
         'Content-Disposition': 'attachment; filename="Lapiez-Garhwa-App.apk"',
         'Content-Length': fileBuffer.length.toString(),
-        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=43200',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (error) {
