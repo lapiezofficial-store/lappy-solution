@@ -7,6 +7,7 @@ import { Footer } from './Footer';
 import { CartDrawer } from './CartDrawer';
 import { ProductDetailModal } from './ProductDetailModal';
 import { CustomerAccountModal } from './CustomerAccountModal';
+import { CustomerAuthModal } from './CustomerAuthModal';
 import { MobileBottomNav } from './MobileBottomNav';
 import { AppDownloadModal } from './AppDownloadModal';
 import { CheckCircle2 } from 'lucide-react';
@@ -96,6 +97,7 @@ export const ClientShell: React.FC<{ children: React.ReactNode }> = ({ children 
         <CartDrawer />
         <ProductDetailModal />
         <CustomerAccountModal />
+        <CustomerAuthModal />
         <AppDownloadModalContainer />
         <ToastNotification />
       </div>

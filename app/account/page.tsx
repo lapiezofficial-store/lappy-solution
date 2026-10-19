@@ -84,6 +84,7 @@ function AccountContent() {
     showToast,
     customer,
     signInWithGoogle,
+    openCustomerAuthModal,
     loginCustomerManually,
     signOutCustomer,
   } = useStore();
@@ -455,7 +456,7 @@ function AccountContent() {
                 <div className="pt-0.5">
                   <button
                     type="button"
-                    onClick={() => setIsGuestModalOpen(true)}
+                    onClick={() => openCustomerAuthModal('/account')}
                     className="w-full py-2.5 px-3 bg-blue-50 hover:bg-blue-100 text-[#1A56DB] font-bold text-xs rounded-lg border border-blue-200 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
                   >
                     <User className="w-3.5 h-3.5" />

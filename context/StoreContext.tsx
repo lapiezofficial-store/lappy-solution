@@ -271,8 +271,12 @@ interface StoreContextType {
   customer: User | null;
   isCustomerLoading: boolean;
   signInWithGoogle: (redirectTo?: string) => Promise<void>;
-  loginCustomerManually: (userData: { id?: string; email: string; name?: string; picture?: string }) => void;
+  loginCustomerManually: (userData: { id?: string; email: string; name?: string; picture?: string; phone?: string }) => void;
   signOutCustomer: () => Promise<void>;
+  isCustomerAuthModalOpen: boolean;
+  openCustomerAuthModal: (redirectTo?: string) => void;
+  closeCustomerAuthModal: () => void;
+  authRedirectUrl: string | null;
   isApp: boolean;
   coupons: Coupon[];
   appliedCoupon: Coupon | null;
@@ -561,6 +565,17 @@ export function serializeBankAccountsWithConfig(accounts: BankAccount[], config:
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isApp, setIsApp] = useState(false);
+  const [isCustomerAuthModalOpen, setIsCustomerAuthModalOpen] = useState(false);
+  const [authRedirectUrl, setAuthRedirectUrl] = useState<string | null>(null);
+
+  const openCustomerAuthModal = (redirectTo?: string) => {
+    if (redirectTo) setAuthRedirectUrl(redirectTo);
+    setIsCustomerAuthModalOpen(true);
+  };
+
+  const closeCustomerAuthModal = () => {
+    setIsCustomerAuthModalOpen(false);
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -685,82 +700,41 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, []);
 
-  const loginCustomerManually = (userData: { id?: string; email: string; name?: string; picture?: string }) => {
+  const loginCustomerManually = (userData: { id?: string; email: string; name?: string; picture?: string; phone?: string }) => {
     const userObj: any = {
       id: userData.id || `usr-${Date.now()}`,
       email: userData.email,
+      phone: userData.phone || '',
       user_metadata: {
         full_name: userData.name || userData.email.split('@')[0],
         name: userData.name || userData.email.split('@')[0],
         avatar_url: userData.picture || '',
         picture: userData.picture || '',
         email: userData.email,
+        phone: userData.phone || '',
+        provider: 'google',
       },
     };
     setCustomer(userObj);
     try {
       localStorage.setItem('ls_customer_session', JSON.stringify(userObj));
     } catch (e) {}
-    showToast(`Welcome ${userObj.user_metadata.full_name}!`);
+    showToast(`Welcome ${userObj.user_metadata.full_name}! Account Connected.`);
   };
 
   const handleSignInWithGoogle = async (redirectTo?: string) => {
+    if (redirectTo) setAuthRedirectUrl(redirectTo);
+
+    // 1. In standard desktop browser, try Google Identity Services One Tap prompt in background if available
     try {
       const google = typeof window !== 'undefined' ? (window as any).google : null;
-      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '888729719943-farrlhra2vsr5dvgmdl4te3226g469l7.apps.googleusercontent.com';
-
-      // 1. Primary: Use Google Identity Services OAuth2 Token Client (Popup)
-      if (google?.accounts?.oauth2) {
-        const tokenClient = google.accounts.oauth2.initTokenClient({
-          client_id: clientId,
-          scope: 'email profile openid',
-          callback: async (tokenResponse: any) => {
-            if (tokenResponse?.error) {
-              console.warn('Google sign-in token note:', tokenResponse);
-              if (tokenResponse.error === 'popup_closed_by_user') {
-                showToast('Sign-in popup closed');
-              } else {
-                showToast('Google sign-in could not complete. You can use Instant Sign-in.');
-              }
-              return;
-            }
-            if (tokenResponse?.access_token) {
-              try {
-                const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-                });
-                const profile = await res.json();
-                if (profile?.email) {
-                  loginCustomerManually({
-                    id: profile.sub,
-                    email: profile.email,
-                    name: profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim(),
-                    picture: profile.picture,
-                  });
-                  return;
-                }
-              } catch (err: any) {
-                console.error('Error fetching Google profile:', err);
-                showToast('Error getting profile details from Google.');
-              }
-            }
-          },
-        });
-        tokenClient.requestAccessToken({ prompt: 'select_account' });
-        return;
-      }
-
-      // 2. Secondary: If google.accounts.id is available, prompt One Tap
-      if (google?.accounts?.id) {
+      if (google?.accounts?.id && !isApp) {
         google.accounts.id.prompt();
-        return;
       }
+    } catch (e) {}
 
-      showToast('Google Sign-in is initializing. Please try again or use Instant Guest Sign-in.');
-    } catch (err: any) {
-      console.warn('handleSignInWithGoogle error:', err);
-      showToast('Google Sign-in could not be completed. You can use Instant Guest Sign-in.');
-    }
+    // 2. Open dedicated CustomerAuthModal instantly for guaranteed login
+    setIsCustomerAuthModalOpen(true);
   };
 
   const handleSignOutCustomer = async () => {
@@ -2892,6 +2866,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         signInWithGoogle: handleSignInWithGoogle,
         loginCustomerManually,
         signOutCustomer: handleSignOutCustomer,
+        isCustomerAuthModalOpen,
+        openCustomerAuthModal,
+        closeCustomerAuthModal,
+        authRedirectUrl,
         isApp,
         coupons,
         appliedCoupon,
