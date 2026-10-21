@@ -254,7 +254,7 @@ export default function AdminPage() {
   const [inventoryStatus, setInventoryStatus] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
   const [inventoryStockLevel, setInventoryStockLevel] = useState<'all' | 'high' | 'low' | 'out'>('all');
   const [inventoryPriceRange, setInventoryPriceRange] = useState<'all' | 'under_1k' | '1k_10k' | '10k_50k' | 'above_50k'>('all');
-  const [inventorySort, setInventorySort] = useState<'newest' | 'price_asc' | 'price_desc' | 'name_asc' | 'stock_asc'>('newest');
+  const [inventorySort, setInventorySort] = useState<'newest' | 'oldest' | 'price_asc' | 'price_desc' | 'name_asc' | 'stock_asc'>('newest');
   const [inventorySelectedIds, setInventorySelectedIds] = useState<string[]>([]);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
 
@@ -461,6 +461,7 @@ export default function AdminPage() {
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [showAuthPassword, setShowAuthPassword] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [lockoutTimer, setLockoutTimer] = useState(0);
@@ -492,30 +493,47 @@ export default function AdminPage() {
 
   const handleUnlockPortal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLockedOut) return;
+    if (isLockedOut || isAuthenticating) return;
 
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: authPassword }),
-    });
-    if (response.ok) {
-      setIsAuthenticated(true);
-      setAuthPassword('');
-      setAuthError('');
-      await syncWithDatabase();
-      showToast('Welcome Store Owner! Console unlocked.');
-    } else {
-      const attempts = failedAttempts + 1;
-      setFailedAttempts(attempts);
-      if (attempts >= 5) {
-        setIsLockedOut(true);
-        setLockoutTimer(30);
-        setAuthError('Too many failed attempts! Portal locked for 30s.');
+    const trimmed = authPassword.trim();
+    if (!trimmed) {
+      setAuthError('Please enter master passkey / PIN');
+      return;
+    }
+
+    setIsAuthenticating(true);
+    setAuthError('');
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: trimmed }),
+      });
+
+      if (response.ok) {
+        setIsAuthenticated(true);
+        setAuthPassword('');
+        setAuthError('');
+        showToast('Welcome Store Owner! Console unlocked.');
+        // Background sync so admin dashboard opens instantly without network delay
+        syncWithDatabase({ forceFresh: true }).catch(() => {});
       } else {
-        const data = await response.json().catch(() => null);
-        setAuthError(data?.error || `Invalid credentials. (${5 - attempts} attempts left)`);
+        const attempts = failedAttempts + 1;
+        setFailedAttempts(attempts);
+        if (attempts >= 5) {
+          setIsLockedOut(true);
+          setLockoutTimer(30);
+          setAuthError('Too many failed attempts! Portal locked for 30s.');
+        } else {
+          const data = await response.json().catch(() => null);
+          setAuthError(data?.error || `Invalid credentials. (${5 - attempts} attempts left)`);
+        }
       }
+    } catch {
+      setAuthError('Connection error. Please check internet connection.');
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
@@ -2386,15 +2404,31 @@ export default function AdminPage() {
 
       return true;
     }).sort((a, b) => {
+      if (inventorySort === 'newest') {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (timeA !== timeB) return timeB - timeA;
+      }
+      if (inventorySort === 'oldest') {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (timeA !== timeB) return timeA - timeB;
+      }
       if (inventorySort === 'price_asc') return a.price - b.price;
       if (inventorySort === 'price_desc') return b.price - a.price;
       if (inventorySort === 'name_asc') return (a.name || '').localeCompare(b.name || '');
       if (inventorySort === 'stock_asc') return (a.stockQuantity ?? 10) - (b.stockQuantity ?? 10);
+      
+      // Default: Newest added products on top
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (timeA !== timeB) return timeB - timeA;
       return 0;
     });
   }, [
     products, 
     inventoryCategory, 
+    inventorySubcategory,
     inventoryBrand, 
     inventoryStatus, 
     inventoryStockLevel, 
@@ -2402,6 +2436,51 @@ export default function AdminPage() {
     inventorySort, 
     inventorySearch
   ]);
+
+  // Product Addition & Timing Formatter Helper
+  const formatProductTiming = (dateVal?: string | Date | null) => {
+    if (!dateVal) return { full: 'Prior Catalog', relative: 'Pre-existing', exactTime: 'Showroom Legacy', dateOnly: 'Prior Catalog' };
+    try {
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return { full: 'Prior Catalog', relative: 'Pre-existing', exactTime: 'Showroom Legacy', dateOnly: 'Prior Catalog' };
+      
+      const dateFormatted = d.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+      const timeFormatted = d.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+      const full = `${dateFormatted}, ${timeFormatted}`;
+
+      const now = Date.now();
+      const diffSec = Math.floor((now - d.getTime()) / 1000);
+      let relative = 'Just now';
+      if (diffSec < 60) {
+        relative = 'Just now';
+      } else if (diffSec < 3600) {
+        const mins = Math.floor(diffSec / 60);
+        relative = `${mins}m ago`;
+      } else if (diffSec < 86400) {
+        const hours = Math.floor(diffSec / 3600);
+        relative = `${hours}h ago`;
+      } else if (diffSec < 172800) {
+        relative = 'Yesterday';
+      } else if (diffSec < 604800) {
+        const days = Math.floor(diffSec / 86400);
+        relative = `${days}d ago`;
+      } else {
+        relative = dateFormatted;
+      }
+
+      return { full, relative, exactTime: timeFormatted, dateOnly: dateFormatted };
+    } catch {
+      return { full: 'Prior Catalog', relative: 'Pre-existing', exactTime: 'Showroom Legacy', dateOnly: 'Prior Catalog' };
+    }
+  };
 
   const categoryFilterOptions = useMemo(() => ['All', ...distinctCategories.map((c) => c.name)], [distinctCategories]);
 
@@ -2476,11 +2555,20 @@ export default function AdminPage() {
 
             <button
               type="submit"
-              disabled={isLockedOut || !authPassword}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-[#1A56DB] to-[#2563EB] hover:from-[#1E40AF] hover:to-[#1D4ED8] text-white font-extrabold text-sm shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              disabled={isLockedOut || !authPassword.trim() || isAuthenticating}
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-[#1A56DB] to-[#2563EB] hover:from-[#1E40AF] hover:to-[#1D4ED8] text-white font-extrabold text-sm shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Key className="w-4 h-4" />
-              <span>Unlock Admin Console</span>
+              {isAuthenticating ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span>Unlocking Admin Console...</span>
+                </>
+              ) : (
+                <>
+                  <Key className="w-4 h-4" />
+                  <span>Unlock Admin Console</span>
+                </>
+              )}
             </button>
           </form>
 
@@ -4901,7 +4989,8 @@ export default function AdminPage() {
                         onChange={(e) => setInventorySort(e.target.value as any)}
                         className="h-9 px-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:border-[#1A56DB] cursor-pointer"
                       >
-                        <option value="newest">Newest First</option>
+                        <option value="newest">🕒 Newest Added First</option>
+                        <option value="oldest">🕒 Oldest Added First</option>
                         <option value="price_asc">Price: Low to High</option>
                         <option value="price_desc">Price: High to Low</option>
                         <option value="name_asc">Name: A to Z</option>
@@ -4997,7 +5086,12 @@ export default function AdminPage() {
                           <th className="py-3 px-3">LIVE PRICE</th>
                           <th className="py-3 px-3">GST & HSN</th>
                           <th className="py-3 px-3">STATUS</th>
-                          <th className="py-3 px-3">UPDATED</th>
+                          <th className="py-3 px-3">
+                            <div className="flex items-center gap-1.5" title="Date & Time when this product was added to admin catalog">
+                              <Clock className="w-3 h-3 text-blue-600" />
+                              <span>ADDED TIMING</span>
+                            </div>
+                          </th>
                           <th className="py-3 px-3 text-right pr-4">ACTIONS</th>
                         </tr>
                       </thead>
@@ -5208,9 +5302,34 @@ export default function AdminPage() {
                                 </button>
                               </td>
 
-                              {/* Updated */}
-                              <td className="py-3 px-3 whitespace-nowrap text-[11px] text-gray-400">
-                                Recently
+                              {/* Added Timing */}
+                              <td className="py-3 px-3 whitespace-nowrap">
+                                {(() => {
+                                  const timing = formatProductTiming(product.createdAt);
+                                  const isRecent = timing.relative.includes('now') || timing.relative.includes('m ago') || timing.relative.includes('h ago') || timing.relative === 'Yesterday';
+                                  return (
+                                    <div className="space-y-0.5" title={`Product Added to Catalog: ${timing.full}`}>
+                                      <div className="flex items-center gap-1.5 font-bold text-gray-800 text-[11px]">
+                                        <Clock className={`w-3 h-3 flex-shrink-0 ${isRecent ? 'text-emerald-500' : 'text-blue-500'}`} />
+                                        <span>{timing.dateOnly}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] text-gray-400 font-mono">
+                                          {timing.exactTime}
+                                        </span>
+                                        {timing.relative !== 'Pre-existing' && (
+                                          <span className={`px-1.5 py-0.2 rounded text-[9.5px] font-extrabold ${
+                                            isRecent
+                                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                              : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                          }`}>
+                                            {timing.relative}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
                               </td>
 
                               {/* Actions Dropdown / Buttons */}
@@ -8409,6 +8528,91 @@ export default function AdminPage() {
                   )}
                 </div>
 
+                {/* Recently Added Products to Inventory (Timing Feed) */}
+                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-extrabold text-sm text-gray-900 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-emerald-600" />
+                      <span>Recently Added Products (Live Addition Timing)</span>
+                    </h3>
+                    <button
+                      onClick={() => setActiveTab('inventory')}
+                      className="text-xs font-bold text-blue-600 hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      <span>View All Inventory ({products.length})</span>
+                      <span>&rarr;</span>
+                    </button>
+                  </div>
+
+                  {products.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-gray-400 bg-gray-50 rounded-xl">
+                      No products added yet.
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100 text-xs">
+                      {[...products]
+                        .sort((a, b) => {
+                          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                          return timeB - timeA;
+                        })
+                        .slice(0, 5)
+                        .map((prod) => {
+                          const timing = formatProductTiming(prod.createdAt);
+                          const isRecent = timing.relative.includes('now') || timing.relative.includes('m ago') || timing.relative.includes('h ago') || timing.relative === 'Yesterday';
+                          return (
+                            <div key={prod.id} className="py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors rounded-lg px-1.5">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-200 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                  <img
+                                    src={prod.image || '/images/product-placeholder.svg'}
+                                    alt={prod.name}
+                                    className="w-full h-full object-contain"
+                                  />
+                                </div>
+                                <div className="min-w-0">
+                                  <div 
+                                    onClick={() => setPreviewProduct(prod)}
+                                    className="font-bold text-gray-900 truncate max-w-xs sm:max-w-md hover:text-[#1A56DB] cursor-pointer"
+                                    title="Click to preview product details"
+                                  >
+                                    {prod.name}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                                    <span className="font-semibold text-[#1A56DB]">{prod.category}</span>
+                                    <span>•</span>
+                                    <span className="font-bold text-gray-800">₹{prod.price.toLocaleString('en-IN')}</span>
+                                    <span>•</span>
+                                    <span className="font-mono text-gray-400 text-[10px]">SKU: {prod.sku || 'N/A'}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="text-right flex-shrink-0">
+                                <div className="flex items-center gap-1 font-bold text-gray-800 text-[11px] justify-end">
+                                  <Clock className={`w-3 h-3 ${isRecent ? 'text-emerald-500' : 'text-blue-500'}`} />
+                                  <span>{timing.dateOnly}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[10px] justify-end mt-0.5">
+                                  <span className="text-gray-400 font-mono">{timing.exactTime}</span>
+                                  {timing.relative !== 'Pre-existing' && (
+                                    <span className={`px-1.5 py-0.2 rounded font-extrabold ${
+                                      isRecent
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                        : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                    }`}>
+                                      {timing.relative}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+
               </div>
 
               {/* Right 1 Col: System Health & Database Info */}
@@ -9434,6 +9638,17 @@ export default function AdminPage() {
               </button>
             </div>
 
+            {/* Real-time Timestamping Notice */}
+            <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-2.5 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5 text-blue-900 font-bold">
+                <Clock className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                <span>Live Admin Timing:</span>
+              </div>
+              <span className="text-[11px] text-blue-700 font-semibold">
+                Will record exact date & time upon saving ✨
+              </span>
+            </div>
+
             <form onSubmit={handleAddProductSubmit} className="space-y-3.5 text-xs">
               
               <div>
@@ -9889,6 +10104,27 @@ export default function AdminPage() {
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* Added Timing & Updated Timing Info Bar */}
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between text-xs flex-wrap gap-2">
+              <div className="flex items-center gap-1.5 text-gray-700 font-bold">
+                <Clock className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                <span>Added to Admin:</span>
+                <span className="font-mono text-gray-900 font-semibold ml-1">
+                  {formatProductTiming(editingProduct.createdAt).full}
+                </span>
+                {formatProductTiming(editingProduct.createdAt).relative !== 'Pre-existing' && (
+                  <span className="px-1.5 py-0.2 rounded text-[9.5px] font-extrabold bg-blue-100 text-[#1A56DB]">
+                    {formatProductTiming(editingProduct.createdAt).relative}
+                  </span>
+                )}
+              </div>
+              {editingProduct.updatedAt && (
+                <div className="text-[10.5px] text-gray-500 font-medium">
+                  Last Updated: {formatProductTiming(editingProduct.updatedAt).relative}
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSaveEditProduct} className="space-y-3.5 text-xs">
@@ -10355,6 +10591,24 @@ export default function AdminPage() {
 
                 <div className="text-[11px] text-gray-400 font-mono">
                   SKU: {previewProduct.sku || 'N/A'} • Rating: ★ {previewProduct.rating || 4.8} ({previewProduct.reviewsCount || 12} reviews)
+                </div>
+
+                {/* Catalog Addition Timing */}
+                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <Clock className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                    <span className="font-bold">Catalog Added:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-900 font-mono text-[11px]">
+                      {formatProductTiming(previewProduct.createdAt).full}
+                    </span>
+                    {formatProductTiming(previewProduct.createdAt).relative !== 'Pre-existing' && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-[#1A56DB]">
+                        {formatProductTiming(previewProduct.createdAt).relative}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Pricing Block */}

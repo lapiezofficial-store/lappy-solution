@@ -134,6 +134,8 @@ export function formatProductPayload(p: any, rich?: any) {
     ...p,
     status: p.status || 'active',
     deletedAt: p.deletedAt ? new Date(p.deletedAt).toISOString() : null,
+    createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : (rich?.createdAt ? new Date(rich.createdAt).toISOString() : null),
+    updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : (rich?.updatedAt ? new Date(rich.updatedAt).toISOString() : null),
     image: primaryImage,
     images: galleryImages.length > 0 ? galleryImages : (primaryImage ? [primaryImage] : []),
     reviews: rich?.reviews || p.reviews || [],

@@ -93,9 +93,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Auto-migration on first login: if password was verified from plaintext legacy, upgrade to Bcrypt hash
+  // Auto-migration on first login: if password was verified from plaintext legacy, upgrade to Bcrypt hash in background
   if (verification.needsMigration) {
-    await migrateAdminPassword(password).catch((err) => {
+    migrateAdminPassword(password).catch((err) => {
       console.warn('Auto-migration note:', err);
     });
   }

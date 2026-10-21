@@ -53,6 +53,8 @@ function formatProduct(p: any, rich?: any) {
     status: p.status || 'active',
     gstRate: p.gstRate !== undefined ? Number(p.gstRate) : 18,
     hsnCode: p.hsnCode || '8471',
+    createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : (rich?.createdAt ? new Date(rich.createdAt).toISOString() : null),
+    updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : (rich?.updatedAt ? new Date(rich.updatedAt).toISOString() : null),
   };
 }
 

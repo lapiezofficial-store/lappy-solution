@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   ShieldCheck, Lock, Key, AlertCircle, Eye, EyeOff, 
-  Store, CheckCircle2, ArrowRight
+  Store, CheckCircle2, ArrowRight, RefreshCw
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
@@ -15,6 +15,7 @@ export default function PortalAccessPage() {
 
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [error, setError] = useState('');
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
@@ -49,28 +50,43 @@ export default function PortalAccessPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLockedOut) return;
+    if (isLockedOut || isAuthenticating) return;
 
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
+    const trimmed = password.trim();
+    if (!trimmed) {
+      setError('Please enter master passkey / PIN');
+      return;
+    }
 
-    if (response.ok) {
-      showToast('Master passkey accepted! Redirecting to Merchant Portal...');
-      router.push('/admin');
-    } else {
-      const attempts = failedAttempts + 1;
-      setFailedAttempts(attempts);
-      if (attempts >= 5) {
-        setIsLockedOut(true);
-        setLockoutTimer(30);
-        setError('Too many failed security attempts. Portal locked for 30 seconds.');
+    setIsAuthenticating(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: trimmed }),
+      });
+
+      if (response.ok) {
+        showToast('Master passkey accepted! Redirecting to Merchant Portal...');
+        router.push('/admin');
       } else {
-        const data = await response.json().catch(() => null);
-        setError(data?.error || `Access denied. (${5 - attempts} attempts left)`);
+        const attempts = failedAttempts + 1;
+        setFailedAttempts(attempts);
+        if (attempts >= 5) {
+          setIsLockedOut(true);
+          setLockoutTimer(30);
+          setError('Too many failed security attempts. Portal locked for 30 seconds.');
+        } else {
+          const data = await response.json().catch(() => null);
+          setError(data?.error || `Access denied. (${5 - attempts} attempts left)`);
+        }
       }
+    } catch {
+      setError('Connection error. Please check your network.');
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
@@ -144,12 +160,21 @@ export default function PortalAccessPage() {
 
           <button
             type="submit"
-            disabled={isLockedOut || !password}
-            className="w-full h-11 rounded-xl bg-gradient-to-r from-[#1A56DB] to-[#2563EB] hover:from-[#1E40AF] hover:to-[#1D4ED8] text-white font-extrabold text-sm shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            disabled={isLockedOut || !password.trim() || isAuthenticating}
+            className="w-full h-11 rounded-xl bg-gradient-to-r from-[#1A56DB] to-[#2563EB] hover:from-[#1E40AF] hover:to-[#1D4ED8] text-white font-extrabold text-sm shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
           >
-            <Key className="w-4 h-4" />
-            <span>Authenticate & Access Console</span>
-            <ArrowRight className="w-4 h-4" />
+            {isAuthenticating ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                <span>Authenticating Console...</span>
+              </>
+            ) : (
+              <>
+                <Key className="w-4 h-4" />
+                <span>Authenticate & Access Console</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </form>
 

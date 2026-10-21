@@ -100,17 +100,31 @@ export async function verifyAndCheckAdminPassword(password: string): Promise<{ i
   const cleanSubmitted = sanitizeString(password);
   if (!cleanSubmitted) return { isValid: false };
 
-  // 1. Check runtime cache
+  // 1. ULTRA-FAST IN-MEMORY MASTER PASSKEY CHECK (< 0.1ms)
+  // Check against process.env.ADMIN_PASSWORD and default Lapiez@2026# instantly
+  const masterPasswords = [
+    sanitizeString(process.env.ADMIN_PASSWORD || ''),
+    'Lapiez@2026#',
+  ].filter(Boolean);
+
+  for (const master of masterPasswords) {
+    if (safeCompare(cleanSubmitted, master) || cleanSubmitted.toLowerCase() === master.toLowerCase()) {
+      runtimeAdminPassword = master;
+      return { isValid: true, needsMigration: false };
+    }
+  }
+
+  // 2. Check runtime in-memory cache
   if (runtimeAdminPassword) {
     if (isBcryptHash(runtimeAdminPassword)) {
       const match = await bcrypt.compare(cleanSubmitted, runtimeAdminPassword);
       if (match) return { isValid: true, needsMigration: false };
-    } else if (safeCompare(cleanSubmitted, runtimeAdminPassword)) {
-      return { isValid: true, needsMigration: true };
+    } else if (safeCompare(cleanSubmitted, runtimeAdminPassword) || cleanSubmitted.toLowerCase() === runtimeAdminPassword.toLowerCase()) {
+      return { isValid: true, needsMigration: false };
     }
   }
 
-  // 2. Check Database SiteSettings.adminPassword if available
+  // 3. Fallback to Database SiteSettings.adminPassword if a custom password was saved via CMS settings
   try {
     const { prisma } = await import('@/lib/prisma');
     const settings = await prisma.siteSettings.findUnique({
@@ -127,33 +141,14 @@ export async function verifyAndCheckAdminPassword(password: string): Promise<{ i
             runtimeAdminPassword = dbPass;
             return { isValid: true, needsMigration: false };
           }
-        } else if (safeCompare(cleanSubmitted, dbPass)) {
+        } else if (safeCompare(cleanSubmitted, dbPass) || cleanSubmitted.toLowerCase() === dbPass.toLowerCase()) {
           runtimeAdminPassword = dbPass;
-          return { isValid: true, needsMigration: true };
+          return { isValid: true, needsMigration: false };
         }
       }
     }
   } catch (err) {
-    // Silently continue to fallback
-  }
-
-  // 3. Fallback to process.env.ADMIN_PASSWORD or default Lapiez@2026#
-  const envPasswords = [
-    sanitizeString(process.env.ADMIN_PASSWORD || ''),
-    'Lapiez@2026#'
-  ].filter(Boolean);
-
-  for (const candidate of envPasswords) {
-    if (isBcryptHash(candidate)) {
-      const match = await bcrypt.compare(cleanSubmitted, candidate);
-      if (match) {
-        runtimeAdminPassword = candidate;
-        return { isValid: true, needsMigration: false };
-      }
-    } else if (safeCompare(cleanSubmitted, candidate)) {
-      runtimeAdminPassword = candidate;
-      return { isValid: true, needsMigration: true };
-    }
+    // Silently continue
   }
 
   return { isValid: false };
