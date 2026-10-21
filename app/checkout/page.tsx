@@ -97,8 +97,8 @@ export default function CheckoutPage() {
     }
   }, [paymentMethodsConfig, paymentSettings, paymentMethod]);
 
-  // 1 min 30 sec (90s) Dynamic Transaction Countdown Timer State
-  const [paymentTimerSeconds, setPaymentTimerSeconds] = useState(90);
+  // 5-minute (300s) Dynamic Transaction Countdown Timer State
+  const [paymentTimerSeconds, setPaymentTimerSeconds] = useState(300);
   const [isTimerExpired, setIsTimerExpired] = useState(false);
 
   // Generate unique order ID on mount
@@ -107,7 +107,7 @@ export default function CheckoutPage() {
     setTempOrderId(`LPZ-${randomDigits}`);
   }, []);
 
-  // 90s Countdown Timer Effect for UPI QR Payment
+  // 5-minute (300s) Countdown Timer Effect for UPI QR Payment
   useEffect(() => {
     if (step !== 3 || paymentMethod !== 'upi_qr') return;
     
@@ -132,10 +132,10 @@ export default function CheckoutPage() {
   const handleRegenerateUpiSession = () => {
     const randomDigits = Math.floor(10000 + Math.random() * 90000);
     setTempOrderId(`LPZ-${randomDigits}`);
-    setPaymentTimerSeconds(90);
+    setPaymentTimerSeconds(300);
     setIsTimerExpired(false);
     setUtrNumber('');
-    showToast('UPI payment session refreshed! 1m 30s timer restarted.');
+    showToast('UPI payment session refreshed! 5-minute timer restarted.');
   };
 
   const formatTimer = (seconds: number) => {
@@ -877,7 +877,7 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                {/* PAYMENT METHOD A: DYNAMIC UPI QR CODE SYSTEM WITH 90s TRANSACTION TIMER */}
+                {/* PAYMENT METHOD A: DYNAMIC UPI QR CODE SYSTEM WITH 5-MINUTE TRANSACTION TIMER */}
                 {paymentMethod === 'upi_qr' && (
                   <div className="rounded-2xl border-2 border-blue-500 bg-gradient-to-b from-blue-50/30 to-white p-6 space-y-6">
                     
@@ -893,11 +893,11 @@ export default function CheckoutPage() {
                       </p>
                     </div>
 
-                    {/* Dynamic 90-Second Transaction Countdown Bar */}
+                    {/* Dynamic 5-Minute (300s) Transaction Countdown Bar */}
                     <div className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
                       isTimerExpired
                         ? 'bg-rose-50 border-rose-300 text-rose-900 shadow-sm'
-                        : paymentTimerSeconds <= 20
+                        : paymentTimerSeconds <= 60
                         ? 'bg-amber-50 border-amber-300 text-amber-900 animate-pulse'
                         : 'bg-emerald-50 border-emerald-300 text-emerald-900'
                     }`}>
@@ -905,7 +905,7 @@ export default function CheckoutPage() {
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-xs ${
                           isTimerExpired 
                             ? 'bg-rose-600 text-white' 
-                            : paymentTimerSeconds <= 20 
+                            : paymentTimerSeconds <= 60 
                             ? 'bg-amber-600 text-white' 
                             : 'bg-emerald-600 text-white'
                         }`}>
@@ -913,9 +913,9 @@ export default function CheckoutPage() {
                         </div>
                         <div>
                           <div className="text-xs font-black flex items-center gap-2">
-                            <span>{isTimerExpired ? 'Session Expired (1m 30s Time Limit)' : 'Transaction Timer Active'}</span>
+                            <span>{isTimerExpired ? 'Session Expired (5 Min Time Limit)' : 'Transaction Timer Active'}</span>
                             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/80 border font-bold">
-                              1 Min 30 Sec
+                              5 Min 00 Sec
                             </span>
                           </div>
                           <p className="text-[11px] opacity-80 mt-0.5">
@@ -929,7 +929,7 @@ export default function CheckoutPage() {
                       <div className="text-right flex flex-col items-end">
                         <span className="text-[10px] font-bold uppercase tracking-wider block opacity-75">Time Left</span>
                         <span className={`text-xl font-mono font-black tracking-tight ${
-                          isTimerExpired ? 'text-rose-700' : paymentTimerSeconds <= 20 ? 'text-amber-700' : 'text-emerald-700'
+                          isTimerExpired ? 'text-rose-700' : paymentTimerSeconds <= 60 ? 'text-amber-700' : 'text-emerald-700'
                         }`}>
                           {formatTimer(paymentTimerSeconds)}
                         </span>
@@ -947,7 +947,7 @@ export default function CheckoutPage() {
                           <div className="space-y-1">
                             <h5 className="text-sm font-black text-slate-900">QR Code Expired</h5>
                             <p className="text-xs text-slate-500 max-w-[240px] mx-auto">
-                              The 1 min 30 sec payment window has ended to prevent duplicate or stalled transactions.
+                              The 5-minute payment window has ended to prevent duplicate or stalled transactions.
                             </p>
                           </div>
                           <button
@@ -956,7 +956,7 @@ export default function CheckoutPage() {
                             className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-95"
                           >
                             <RotateCcw className="w-4 h-4" />
-                            <span>Regenerate QR & Restart Timer (1:30)</span>
+                            <span>Regenerate QR & Restart Timer (5:00)</span>
                           </button>
                         </div>
                       ) : (

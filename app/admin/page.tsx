@@ -7856,7 +7856,7 @@ export default function AdminPage() {
                       </label>
                     </div>
                     <p className="text-[11px] text-gray-600">
-                      Live QR generation (GPay, PhonePe, Paytm, BHIM) with 90s timer.
+                      Live QR generation (GPay, PhonePe, Paytm, BHIM) with 5m timer.
                     </p>
                     <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-md ${
                       enableUPI ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-600'

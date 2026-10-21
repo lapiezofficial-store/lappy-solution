@@ -30,15 +30,67 @@ export default function ProductDetailPage() {
   const [isFetchingDirect, setIsFetchingDirect] = useState(false);
   const attemptedFetchRef = React.useRef<string | null>(null);
 
-  // 1. Dynamic product matching across useStore products (DB + admin added), static catalog, and direct DB query
+  // 1. Static catalog item reference
+  const staticItem = useMemo(() => {
+    if (!productId) return undefined;
+    return PRODUCTS.find(p => p.id === productId || String(p.numericId) === productId);
+  }, [productId]);
+
+  const targetSku = staticItem?.sku?.toLowerCase();
+  const targetName = staticItem?.name?.trim().toLowerCase();
+
+  // 2. Synchronous local storage lookup (ensures instant 0ms product recovery on browser refresh)
+  const [cachedProduct, setCachedProduct] = useState<Product | null>(() => {
+    if (typeof window === 'undefined' || !productId) return null;
+    try {
+      const saved = localStorage.getItem('ls_products');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const target = productId.toLowerCase();
+          return parsed.find((p: any) => 
+            p.id === productId || 
+            p.dbId === productId ||
+            p.slug?.toLowerCase() === target || 
+            p.sku?.toLowerCase() === target || 
+            (targetSku && p.sku?.toLowerCase() === targetSku) ||
+            (targetName && p.name?.trim().toLowerCase() === targetName) ||
+            String(p.numericId) === productId
+          ) || null;
+        }
+      }
+    } catch (e) {}
+    return null;
+  });
+
+  // Track whether initial checks (static, cache, or direct DB query) have resolved
+  const [hasCompletedCheck, setHasCompletedCheck] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && productId) {
+      if (PRODUCTS.some(p => p.id === productId || String(p.numericId) === productId)) return true;
+      try {
+        const saved = localStorage.getItem('ls_products');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const target = productId.toLowerCase();
+            return parsed.some((p: any) => 
+              p.id === productId || 
+              p.dbId === productId || 
+              p.slug?.toLowerCase() === target || 
+              p.sku?.toLowerCase() === target || 
+              String(p.numericId) === productId
+            );
+          }
+        }
+      } catch (e) {}
+    }
+    return false;
+  });
+
+  // 3. Dynamic product matching across useStore products (DB + admin added), cached items, direct DB query, and static catalog
   const product: Product | undefined = useMemo(() => {
     if (!productId) return undefined;
     const searchTarget = productId.toLowerCase();
-
-    // Map legacy static ID (e.g. frontech-...) to static SKU/name for direct match
-    const staticItem = PRODUCTS.find(p => p.id === productId || String(p.numericId) === productId);
-    const targetSku = staticItem?.sku?.toLowerCase();
-    const targetName = staticItem?.name?.trim().toLowerCase();
 
     // Check dynamic products list first (has DB + added products)
     const foundInStore = products.find(
@@ -52,15 +104,24 @@ export default function ProductDetailPage() {
     );
     if (foundInStore) return foundInStore;
 
-    // Check static catalog fallback only if store products haven't loaded yet
-    if (products.length === 0 && staticItem) return staticItem;
+    // Check synchronous localStorage cache (prevents 1s refresh flicker)
+    if (cachedProduct) return cachedProduct;
 
+    // Check static catalog fallback
+    if (staticItem) return staticItem;
+
+    // Check direct database queried product
     return dbProduct || undefined;
-  }, [productId, products, dbProduct]);
+  }, [productId, products, cachedProduct, staticItem, dbProduct, targetSku, targetName]);
 
-  // 2. Direct database query fallback if product is not yet in memory
+  // 4. Direct database query fallback if product is not yet in memory
   React.useEffect(() => {
-    if (!product && productId && !isFetchingDirect && !dbProduct && attemptedFetchRef.current !== productId) {
+    if (product) {
+      setHasCompletedCheck(true);
+      return;
+    }
+
+    if (productId && !isFetchingDirect && !dbProduct && attemptedFetchRef.current !== productId) {
       attemptedFetchRef.current = productId;
       setIsFetchingDirect(true);
       fetch(`/api/cms/products?id=${encodeURIComponent(productId)}`)
@@ -75,6 +136,7 @@ export default function ProductDetailPage() {
         })
         .finally(() => {
           setIsFetchingDirect(false);
+          setHasCompletedCheck(true);
         });
     }
   }, [product, productId, isFetchingDirect, dbProduct]);
@@ -83,20 +145,73 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'specs' | 'reviews' | 'whatsapp' | 'warranty'>('specs');
 
-  // Loading state while searching database directly
-  if (isFetchingDirect && !product) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center bg-[#F8FAFC]">
-        <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-[#1A56DB] mb-4 animate-spin">
-          <RefreshCw className="w-6 h-6" />
-        </div>
-        <h2 className="text-xl font-bold text-slate-800 mb-1">Loading Product Details...</h2>
-        <p className="text-xs text-slate-500">Checking Lapiez showroom live catalog</p>
-      </div>
-    );
-  }
-
+  // Loading skeleton while verifying or fetching directly from database (Never flash "Product Not Found")
   if (!product) {
+    if (!hasCompletedCheck || isFetchingDirect) {
+      return (
+        <div className="bg-[#F1F3F6] py-6 sm:py-10 min-h-[80vh]">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            {/* Breadcrumb Skeleton */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="h-3.5 w-12 bg-slate-200 rounded animate-pulse" />
+              <span className="text-slate-300">/</span>
+              <div className="h-3.5 w-16 bg-slate-200 rounded animate-pulse" />
+              <span className="text-slate-300">/</span>
+              <div className="h-3.5 w-28 bg-slate-200 rounded animate-pulse" />
+            </div>
+
+            {/* Hero Grid Skeleton */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start mb-12">
+              {/* Left Column: Image Skeleton */}
+              <div className="lg:col-span-7 space-y-4">
+                <div className="rounded-2xl bg-white border border-[#E5E7EB] p-8 h-[380px] sm:h-[460px] flex items-center justify-center relative shadow-xs">
+                  <div className="w-44 h-44 rounded-2xl bg-slate-50 border border-slate-100 animate-pulse flex flex-col items-center justify-center gap-2 text-slate-400">
+                    <RefreshCw className="w-8 h-8 animate-spin text-[#1A56DB]" />
+                    <span className="text-xs font-medium text-slate-500">Loading Product...</span>
+                  </div>
+                </div>
+                {/* Thumbnails row */}
+                <div className="flex gap-2.5">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-white border border-[#E5E7EB] animate-pulse" />
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column: Info Skeleton */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="rounded-2xl bg-white border border-[#E5E7EB] p-5 sm:p-6 shadow-xs space-y-4">
+                  {/* Brand & Stock */}
+                  <div className="flex items-center justify-between">
+                    <div className="h-5 w-20 bg-blue-100 rounded animate-pulse" />
+                    <div className="h-5 w-32 bg-green-100 rounded animate-pulse" />
+                  </div>
+                  {/* Title & SKU */}
+                  <div className="space-y-2">
+                    <div className="h-7 w-full bg-slate-200 rounded animate-pulse" />
+                    <div className="h-7 w-3/4 bg-slate-200 rounded animate-pulse" />
+                    <div className="h-3 w-40 bg-slate-100 rounded animate-pulse mt-1" />
+                  </div>
+                  {/* Reviews */}
+                  <div className="h-4 w-36 bg-slate-100 rounded animate-pulse" />
+                  {/* Price */}
+                  <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-gray-200 space-y-2">
+                    <div className="h-8 w-36 bg-slate-200 rounded animate-pulse" />
+                    <div className="h-3 w-28 bg-slate-100 rounded animate-pulse" />
+                  </div>
+                  {/* Actions */}
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div className="h-12 bg-slate-200 rounded-xl animate-pulse" />
+                    <div className="h-12 bg-blue-200 rounded-xl animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center bg-[#F8FAFC]">
         <div className="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mb-4">
