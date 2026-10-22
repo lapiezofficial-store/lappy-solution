@@ -153,18 +153,6 @@ export default function CheckoutPage() {
   const upiId = paymentSettings.upiId || 'lappy.solution@ybl';
   const upiName = paymentSettings.upiName || 'LAPIEZ GARHWA';
   const upiPaymentUri = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(upiName)}&am=${finalTotal}&cu=INR&tn=Order%20${tempOrderId}`;
-  const gpayUri = `tez://upi/pay?pa=${upiId}&pn=${encodeURIComponent(upiName)}&am=${finalTotal}&cu=INR&tn=Order%20${tempOrderId}`;
-  const phonepeUri = `phonepe://pay?pa=${upiId}&pn=${encodeURIComponent(upiName)}&am=${finalTotal}&cu=INR&tn=Order%20${tempOrderId}`;
-  const paytmUri = `paytmmp://pay?pa=${upiId}&pn=${encodeURIComponent(upiName)}&am=${finalTotal}&cu=INR&tn=Order%20${tempOrderId}`;
-
-  const handleOpenPaymentApp = (customUri?: string) => {
-    const target = customUri || upiPaymentUri;
-    try {
-      window.location.href = target;
-    } catch {
-      window.open(target, '_top');
-    }
-  };
 
   const handleApplyCouponCode = (e?: React.FormEvent, codeToApply?: string) => {
     if (e) e.preventDefault();
@@ -981,166 +969,66 @@ export default function CheckoutPage() {
                       </p>
                     </div>
 
-                    {/* ========================================================================= */}
-                    {/* OPTION 1: PAY DIRECTLY ON THIS PHONE (NO 2ND PHONE NEEDED)                */}
-                    {/* ========================================================================= */}
-                    <div className="rounded-2xl bg-gradient-to-b from-blue-50/80 to-indigo-50/40 border-2 border-blue-400/80 p-4 sm:p-5 shadow-xs space-y-3.5">
-                      <div className="flex items-center justify-between pb-2 border-b border-blue-200/60">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                            <Smartphone className="w-4 h-4" />
+                    {/* Dynamic QR Code Card with Direct "Pay Money" Button */}
+                    <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-white border border-slate-200 shadow-md max-w-xs mx-auto text-center relative overflow-hidden">
+                      {isTimerExpired ? (
+                        <div className="py-4 space-y-4 animate-in fade-in zoom-in-95 duration-200 w-full">
+                          <div className="w-16 h-16 rounded-2xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto">
+                            <AlertCircle className="w-8 h-8" />
                           </div>
-                          <div>
-                            <h5 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
-                              <span>Pay on This Phone</span>
-                              <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
-                                No 2nd Phone Needed
-                              </span>
-                            </h5>
+                          <div className="space-y-1">
+                            <h5 className="text-sm font-black text-slate-900">QR Code Expired</h5>
+                            <p className="text-xs text-slate-500 max-w-[240px] mx-auto">
+                              The 5-minute payment window has ended to prevent duplicate or stalled transactions.
+                            </p>
                           </div>
+                          <button
+                            type="button"
+                            onClick={handleRegenerateUpiSession}
+                            className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-95"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                            <span>Regenerate QR & Restart Timer (5:00)</span>
+                          </button>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          {/* Merchant Logo Badge */}
+                          <div className="flex items-center gap-1.5 mb-2.5 text-xs font-bold text-slate-900">
+                            <div className="w-5 h-5 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] font-black">LS</div>
+                            <span>LAPIEZ GARHWA</span>
+                          </div>
 
-                      <p className="text-[11.5px] text-slate-700 leading-relaxed font-medium">
-                        Agar aap isi mobile se payment kar rahe hain, to niche diye gaye button par tap karein. Aapka payment app seedhe khul jayega:
-                      </p>
+                          {/* Live Generated QR Code */}
+                          <div className="p-3 bg-white border-2 border-slate-900 rounded-2xl shadow-xs">
+                            <QRCodeSVG
+                              value={upiPaymentUri}
+                              size={180}
+                              level="H"
+                              includeMargin={false}
+                            />
+                          </div>
 
-                      {/* Main Primary Button: Open Any Installed UPI App */}
-                      <a
-                        href={upiPaymentUri}
-                        target="_top"
-                        className="w-full h-13 min-h-[50px] rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-md shadow-blue-600/30 active:scale-[0.98] transition-all cursor-pointer text-center"
-                      >
-                        <Smartphone className="w-5 h-5 shrink-0" />
-                        <span>Open Payment App (Pay ₹{finalTotal.toLocaleString('en-IN')})</span>
-                        <ArrowRight className="w-4 h-4 shrink-0" />
-                      </a>
+                          <div className="mt-2.5 text-center space-y-0.5">
+                            <span className="text-xs font-black text-slate-900 block font-mono">
+                              Payable: ₹{finalTotal.toLocaleString('en-IN')}
+                            </span>
+                            <span className="text-[10px] text-slate-500 block">
+                              Order Ref: {tempOrderId}
+                            </span>
+                          </div>
 
-                      {/* Specific UPI Apps Grid */}
-                      <div className="pt-1 space-y-1.5">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block text-center">
-                          Or Tap Your Preferred UPI App Directly:
-                        </span>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          {/* Google Pay */}
-                          <a
-                            href={gpayUri}
-                            target="_top"
-                            className="h-10 px-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:border-blue-500 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-800 transition-all shadow-2xs active:scale-95"
-                          >
-                            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
-                            <span>Google Pay</span>
-                          </a>
-
-                          {/* PhonePe */}
-                          <a
-                            href={phonepeUri}
-                            target="_top"
-                            className="h-10 px-2 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100 hover:border-purple-500 flex items-center justify-center gap-1.5 text-xs font-bold text-purple-900 transition-all shadow-2xs active:scale-95"
-                          >
-                            <span className="w-2.5 h-2.5 rounded-full bg-purple-600 shrink-0" />
-                            <span>PhonePe</span>
-                          </a>
-
-                          {/* Paytm */}
-                          <a
-                            href={paytmUri}
-                            target="_top"
-                            className="h-10 px-2 rounded-xl border border-sky-200 bg-sky-50/70 hover:bg-sky-100 hover:border-sky-500 flex items-center justify-center gap-1.5 text-xs font-bold text-sky-900 transition-all shadow-2xs active:scale-95"
-                          >
-                            <span className="w-2.5 h-2.5 rounded-full bg-[#00BAF2] shrink-0" />
-                            <span>Paytm</span>
-                          </a>
-
-                          {/* Any BHIM / UPI */}
+                          {/* Direct "Pay Money" Button Directly Below QR Code */}
                           <a
                             href={upiPaymentUri}
                             target="_top"
-                            className="h-10 px-2 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 hover:border-emerald-500 flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-900 transition-all shadow-2xs active:scale-95"
+                            className="w-full mt-3.5 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-600/25 transition-all cursor-pointer text-center"
                           >
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
-                            <span>BHIM / UPI</span>
+                            <Smartphone className="w-4 h-4 shrink-0" />
+                            <span>Pay Money (₹{finalTotal.toLocaleString('en-IN')})</span>
                           </a>
-                        </div>
-                      </div>
-
-                      <div className="p-2.5 rounded-xl bg-blue-100/70 border border-blue-200 text-[11px] text-blue-900 font-medium flex items-start gap-2">
-                        <Sparkles className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
-                        <span>Payment complete karne ke baad, wapas is screen par aakar niche 12-digit UTR / Reference No. daal kar <strong>Place Order</strong> dabayein.</span>
-                      </div>
-                    </div>
-
-                    {/* ========================================================================= */}
-                    {/* OPTION 2: SCAN QR CODE WITH ANOTHER PHONE / TABLET / DESKTOP              */}
-                    {/* ========================================================================= */}
-                    <div className="rounded-2xl bg-white border border-slate-200 p-5 shadow-xs space-y-3.5">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                        <div className="flex items-center gap-2">
-                          <QrCode className="w-4 h-4 text-slate-700" />
-                          <h5 className="text-xs sm:text-sm font-extrabold text-slate-900">
-                            Or Scan QR Code (With Another Phone / Tablet)
-                          </h5>
-                        </div>
-                        <span className="text-[10.5px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                          Dynamic QR
-                        </span>
-                      </div>
-
-                      <p className="text-[11px] text-slate-500">
-                        Agar aap computer screen par hain ya kisi dusre mobile se scan karna chahte hain, to is QR code ko scan karein:
-                      </p>
-
-                      {/* Dynamic QR Code Card or Expired State */}
-                      <div className="flex flex-col items-center justify-center p-5 rounded-2xl bg-slate-50 border border-slate-200 max-w-xs mx-auto text-center relative overflow-hidden">
-                        {isTimerExpired ? (
-                          <div className="py-4 space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                            <div className="w-16 h-16 rounded-2xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto">
-                              <AlertCircle className="w-8 h-8" />
-                            </div>
-                            <div className="space-y-1">
-                              <h5 className="text-sm font-black text-slate-900">QR Code Expired</h5>
-                              <p className="text-xs text-slate-500 max-w-[240px] mx-auto">
-                                The 5-minute payment window has ended to prevent duplicate or stalled transactions.
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={handleRegenerateUpiSession}
-                              className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-95"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                              <span>Regenerate QR & Restart Timer (5:00)</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            {/* Merchant Logo Badge */}
-                            <div className="flex items-center gap-1.5 mb-2.5 text-xs font-bold text-slate-900">
-                              <div className="w-5 h-5 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px]">LS</div>
-                              <span>LAPIEZ GARHWA</span>
-                            </div>
-
-                            {/* Live Generated QR Code */}
-                            <div className="p-3 bg-white border-2 border-slate-900 rounded-2xl shadow-xs">
-                              <QRCodeSVG
-                                value={upiPaymentUri}
-                                size={180}
-                                level="H"
-                                includeMargin={false}
-                              />
-                            </div>
-
-                            <div className="mt-2.5 text-center space-y-0.5">
-                              <span className="text-xs font-black text-slate-900 block font-mono">
-                                Payable: ₹{finalTotal.toLocaleString('en-IN')}
-                              </span>
-                              <span className="text-[10px] text-slate-500 block">
-                                Order Ref: {tempOrderId}
-                              </span>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Copy UPI ID Box */}
@@ -1324,9 +1212,9 @@ export default function CheckoutPage() {
                       </div>
                     </div>
 
-                    {/* If Online is selected: Show Direct App Launch + QR Code & UTR input */}
+                    {/* If Online is selected: Show QR Code & Direct Pay Money button */}
                     {pickupPaymentMode === 'online' && (
-                      <div className="p-4 sm:p-5 rounded-2xl bg-white border border-blue-200 space-y-4 animate-in fade-in">
+                      <div className="p-5 rounded-2xl bg-white border border-blue-200 space-y-4 animate-in fade-in">
                         <div className="flex items-center justify-between pb-2 border-b border-gray-100">
                           <span className="font-extrabold text-xs text-blue-900 flex items-center gap-1.5">
                             <Smartphone className="w-4 h-4 text-blue-600" />
@@ -1335,93 +1223,59 @@ export default function CheckoutPage() {
                           <span className="text-[10.5px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">Zero Convenience Fee</span>
                         </div>
 
-                        {/* Pay directly on phone button for pickup */}
-                        <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 space-y-2.5">
-                          <span className="text-[11px] font-extrabold text-slate-800 block">
-                            📱 Option 1: Pay Directly On This Phone:
+                        {/* Centered QR code with Pay Money button below */}
+                        <div className="flex flex-col items-center justify-center p-5 rounded-2xl bg-slate-50 border border-slate-200 max-w-xs mx-auto text-center w-full">
+                          <div className="p-3 bg-white border-2 border-slate-900 rounded-2xl shadow-xs mb-2">
+                            <QRCodeSVG
+                              value={`upi://pay?pa=${paymentSettings?.upiId || 'lappy.solution@ybl'}&pn=${encodeURIComponent(paymentSettings?.upiName || 'LAPIEZ GARHWA')}&am=${finalTotal}&cu=INR&tn=Pickup%20Order%20${tempOrderId}`}
+                              size={160}
+                              level="H"
+                            />
+                          </div>
+
+                          <span className="text-xs font-black text-slate-900 block font-mono mb-3">
+                            ₹{finalTotal.toLocaleString('en-IN')}
                           </span>
+
                           <a
                             href={`upi://pay?pa=${paymentSettings?.upiId || 'lappy.solution@ybl'}&pn=${encodeURIComponent(paymentSettings?.upiName || 'LAPIEZ GARHWA')}&am=${finalTotal}&cu=INR&tn=Pickup%20Order%20${tempOrderId}`}
                             target="_top"
-                            className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] transition-all cursor-pointer text-center"
+                            className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer text-center"
                           >
                             <Smartphone className="w-4 h-4" />
-                            <span>Open Payment App (Pay ₹{finalTotal.toLocaleString('en-IN')})</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
+                            <span>Pay Money (₹{finalTotal.toLocaleString('en-IN')})</span>
                           </a>
-
-                          <div className="grid grid-cols-3 gap-1.5 pt-1">
-                            <a
-                              href={`tez://upi/pay?pa=${paymentSettings?.upiId || 'lappy.solution@ybl'}&pn=${encodeURIComponent(paymentSettings?.upiName || 'LAPIEZ GARHWA')}&am=${finalTotal}&cu=INR&tn=Pickup%20Order%20${tempOrderId}`}
-                              target="_top"
-                              className="py-1.5 px-2 rounded-lg bg-white border border-slate-200 hover:border-blue-400 text-center text-[10.5px] font-bold text-slate-800 active:scale-95"
-                            >
-                              Google Pay
-                            </a>
-                            <a
-                              href={`phonepe://pay?pa=${paymentSettings?.upiId || 'lappy.solution@ybl'}&pn=${encodeURIComponent(paymentSettings?.upiName || 'LAPIEZ GARHWA')}&am=${finalTotal}&cu=INR&tn=Pickup%20Order%20${tempOrderId}`}
-                              target="_top"
-                              className="py-1.5 px-2 rounded-lg bg-white border border-purple-200 hover:border-purple-400 text-center text-[10.5px] font-bold text-purple-900 active:scale-95"
-                            >
-                              PhonePe
-                            </a>
-                            <a
-                              href={`paytmmp://pay?pa=${paymentSettings?.upiId || 'lappy.solution@ybl'}&pn=${encodeURIComponent(paymentSettings?.upiName || 'LAPIEZ GARHWA')}&am=${finalTotal}&cu=INR&tn=Pickup%20Order%20${tempOrderId}`}
-                              target="_top"
-                              className="py-1.5 px-2 rounded-lg bg-white border border-sky-200 hover:border-sky-400 text-center text-[10.5px] font-bold text-sky-900 active:scale-95"
-                            >
-                              Paytm
-                            </a>
-                          </div>
                         </div>
 
-                        {/* Or Scan QR Code */}
-                        <div>
-                          <span className="text-[11px] font-extrabold text-slate-700 block mb-2">
-                            📷 Option 2: Or Scan QR Code at Counter:
-                          </span>
-                          <div className="flex flex-col sm:flex-row items-center gap-4">
-                            <div className="p-3 bg-white rounded-xl border border-gray-200 shadow-xs flex-shrink-0">
-                              <QRCodeSVG
-                                value={`upi://pay?pa=${paymentSettings?.upiId || 'lappy.solution@ybl'}&pn=${encodeURIComponent(paymentSettings?.upiName || 'LAPIEZ GARHWA')}&am=${finalTotal}&cu=INR&tn=Pickup%20Order%20${tempOrderId}`}
-                                size={120}
-                                level="H"
-                              />
-                            </div>
-
-                            <div className="space-y-2.5 flex-1 w-full text-xs">
-                              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
-                                <div>
-                                  <span className="text-[10px] text-gray-500 block">UPI ID</span>
-                                  <span className="font-mono font-bold text-gray-900">{paymentSettings?.upiId || 'lappy.solution@ybl'}</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(paymentSettings?.upiId || 'lappy.solution@ybl');
-                                    setCopiedUpi(true);
-                                    setTimeout(() => setCopiedUpi(false), 2000);
-                                  }}
-                                  className="px-2.5 py-1 rounded bg-blue-600 text-white font-bold text-[10px] cursor-pointer"
-                                >
-                                  {copiedUpi ? 'Copied!' : 'Copy'}
-                                </button>
-                              </div>
-
-                              <div>
-                                <label className="text-[11px] font-bold text-slate-800 block mb-1">
-                                  Enter UPI Transaction Reference (UTR Number) *
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="12-digit UTR from GPay / PhonePe / Paytm"
-                                  value={utrNumber}
-                                  onChange={(e) => setUtrNumber(e.target.value.trim())}
-                                  className="w-full bg-[#F8FAFC] border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 focus:bg-white focus:border-blue-600 focus:outline-none"
-                                />
-                              </div>
-                            </div>
+                        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs max-w-sm mx-auto w-full">
+                          <div>
+                            <span className="text-[10px] text-gray-500 block">UPI ID</span>
+                            <span className="font-mono font-bold text-gray-900">{paymentSettings?.upiId || 'lappy.solution@ybl'}</span>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(paymentSettings?.upiId || 'lappy.solution@ybl');
+                              setCopiedUpi(true);
+                              setTimeout(() => setCopiedUpi(false), 2000);
+                            }}
+                            className="px-2.5 py-1 rounded bg-blue-600 text-white font-bold text-[10px] cursor-pointer"
+                          >
+                            {copiedUpi ? 'Copied!' : 'Copy'}
+                          </button>
+                        </div>
+
+                        <div className="max-w-sm mx-auto w-full">
+                          <label className="text-[11px] font-bold text-slate-800 block mb-1">
+                            Enter UPI Transaction Reference (UTR Number) *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="12-digit UTR from GPay / PhonePe / Paytm"
+                            value={utrNumber}
+                            onChange={(e) => setUtrNumber(e.target.value.trim())}
+                            className="w-full bg-[#F8FAFC] border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 focus:bg-white focus:border-blue-600 focus:outline-none"
+                          />
                         </div>
                       </div>
                     )}
