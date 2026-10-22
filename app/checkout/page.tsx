@@ -63,6 +63,8 @@ export default function CheckoutPage() {
 
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState<'upi_qr' | 'cod' | 'netbanking' | 'store_pickup'>('upi_qr');
+  const [pickupPaymentMode, setPickupPaymentMode] = useState<'cash' | 'online'>('cash');
+  const [pickupHandedBy, setPickupHandedBy] = useState('');
   const [utrNumber, setUtrNumber] = useState('');
   const [selectedBank, setSelectedBank] = useState('State Bank of India (SBI)');
   const [copiedUpi, setCopiedUpi] = useState(false);
@@ -252,12 +254,20 @@ export default function CheckoutPage() {
       }
     }
 
+    if (paymentMethod === 'store_pickup' && pickupPaymentMode === 'online') {
+      if (!utrNumber.trim()) {
+        showToast('Please enter the UPI UTR / Transaction Reference number for Online Pickup payment');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     const showroomAddr = siteSettings?.address || `${STORE_INFO.address}, ${STORE_INFO.city}, ${STORE_INFO.state} - ${STORE_INFO.pincode}`;
     const isPickup = deliveryType === 'pickup' || paymentMethod === 'store_pickup';
+    const pickupStaffText = pickupHandedBy.trim() ? ` • Handed Over By: ${pickupHandedBy.trim()}` : '';
     const fullAddress = isPickup
-      ? `Showroom Counter Pickup (${showroomAddr})`
+      ? `Showroom Counter Pickup (${showroomAddr})${pickupStaffText}`
       : `${streetAddress}${landmark ? `, Near ${landmark}` : ''}, ${city}, Jharkhand - ${pincode}`;
 
     const newOrder = {
@@ -268,6 +278,7 @@ export default function CheckoutPage() {
       email: email || customer?.email || 'customer@lapiez.com',
       address: fullAddress,
       deliveryType: isPickup ? 'pickup' : 'delivery',
+      pickupHandedBy: pickupHandedBy.trim() || null,
       items: cart.map(item => ({
         id: item.product.id,
         productId: item.product.id,
@@ -288,9 +299,9 @@ export default function CheckoutPage() {
           : paymentMethod === 'cod' 
           ? 'Cash on Delivery (COD)' 
           : paymentMethod === 'store_pickup'
-          ? 'Pickup from Store (Counter Payment)'
+          ? (pickupPaymentMode === 'online' ? 'Store Pickup (Online UPI QR)' : 'Store Pickup (Cash at Counter)')
           : `NetBanking / Bank Transfer (${selectedBank})`,
-      paymentStatus: (paymentMethod === 'upi_qr' || paymentMethod === 'netbanking' || Boolean(utrNumber)) ? 'Paid' : 'Pending',
+      paymentStatus: (paymentMethod === 'upi_qr' || (paymentMethod === 'store_pickup' && pickupPaymentMode === 'online') || paymentMethod === 'netbanking' || Boolean(utrNumber)) ? 'Paid' : 'Pending',
       utrNumber: utrNumber || null,
       orderDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
       date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -340,7 +351,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="bg-[#F1F3F6] py-6 sm:py-10 min-h-[85vh]">
+    <div className="bg-[#F1F3F6] py-6 sm:py-10 pb-28 sm:pb-16 min-h-[85vh]">
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
         
         {/* Header Breadcrumbs & Security Tag */}
@@ -364,34 +375,37 @@ export default function CheckoutPage() {
           </Link>
         </div>
 
-        {/* Stepper Header (1. Details -> 2. Review -> 3. Payment) */}
-        {/* Stepper Header (0. Sign-In -> 1. Details -> 2. Review -> 3. Payment) */}
-        <div className="flex items-center justify-between max-w-xl mx-auto mb-10 pb-2">
-          {[
-            { num: 0, label: 'Sign-In Verification' },
-            { num: 1, label: 'Delivery Details' },
-            { num: 2, label: 'Order Review' },
-            { num: 3, label: 'QR Payment & Confirmation' }
-          ].map((s) => {
-            const isCompleted = s.num === 0 ? Boolean(customer) : Boolean(customer && step > s.num);
-            const isCurrent = s.num === 0 ? !customer : Boolean(customer && step === s.num);
+        {/* Modern 3-Step Checkout Stepper */}
+        <div className="flex items-center justify-between max-w-lg mx-auto mb-8 pb-2 px-2">
+          {([
+            { num: 1 as const, label: 'Delivery Details' },
+            { num: 2 as const, label: 'Order Review' },
+            { num: 3 as const, label: 'Payment & Confirm' }
+          ] as const).map((s, idx, arr) => {
+            const isCompleted = step > s.num;
+            const isCurrent = step === s.num;
             return (
-              <div key={s.num} className="flex flex-col items-center text-center">
-                <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 transition-all ${
-                    isCurrent
-                      ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-sm'
-                      : isCompleted
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-slate-200 text-slate-500'
-                  }`}
-                >
-                  {isCompleted ? <Check className="w-4 h-4 stroke-[3]" /> : s.num === 0 ? <Lock className="w-4 h-4" /> : s.num}
+              <React.Fragment key={s.num}>
+                <div className="flex flex-col items-center text-center cursor-pointer" onClick={() => { if (step > s.num) setStep(s.num); }}>
+                  <div
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm mb-1.5 transition-all ${
+                      isCurrent
+                        ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-md'
+                        : isCompleted
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-slate-200 text-slate-500'
+                    }`}
+                  >
+                    {isCompleted ? <Check className="w-4 h-4 stroke-[3]" /> : s.num}
+                  </div>
+                  <span className={`text-[11px] sm:text-xs font-bold ${isCurrent ? 'text-blue-600' : isCompleted ? 'text-slate-900' : 'text-slate-400'}`}>
+                    {s.label}
+                  </span>
                 </div>
-                <span className={`text-xs font-bold ${isCurrent ? 'text-blue-600' : isCompleted ? 'text-slate-900' : 'text-slate-400'}`}>
-                  {s.label}
-                </span>
-              </div>
+                {idx < arr.length - 1 && (
+                  <div className={`flex-1 h-0.5 mx-2 sm:mx-4 mb-4 transition-colors ${step > s.num ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                )}
+              </React.Fragment>
             );
           })}
         </div>
@@ -679,7 +693,7 @@ export default function CheckoutPage() {
                 {/* Next Step Button */}
                 <button
                   type="submit"
-                  className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/20"
+                  className="w-full h-13 min-h-[50px] rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/25 shrink-0 active:scale-[0.98] cursor-pointer"
                 >
                   <span>Continue to Order Review</span>
                   <ArrowRight className="w-4 h-4" />
@@ -758,18 +772,20 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 pt-3">
                   <button
+                    type="button"
                     onClick={() => setStep(1)}
-                    className="flex-1 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+                    className="w-full sm:w-auto h-12 min-h-[48px] px-6 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm flex items-center justify-center transition-colors shrink-0 cursor-pointer"
                   >
                     Back to Address
                   </button>
                   <button
+                    type="button"
                     onClick={handleProceedToPayment}
-                    className="flex-[2] h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/20"
+                    className="w-full sm:flex-1 h-13 min-h-[50px] rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/25 shrink-0 active:scale-[0.98] cursor-pointer"
                   >
-                    <span>Proceed to Payment (Select QR / Cash)</span>
+                    <span>Proceed to Payment</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -893,47 +909,64 @@ export default function CheckoutPage() {
                       </p>
                     </div>
 
-                    {/* Dynamic 5-Minute (300s) Transaction Countdown Bar */}
-                    <div className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
+                    {/* Sleek Dynamic 5-Minute UPI Security Countdown Bar */}
+                    <div className={`p-4 rounded-2xl border transition-all ${
                       isTimerExpired
-                        ? 'bg-rose-50 border-rose-300 text-rose-900 shadow-sm'
+                        ? 'bg-rose-50 border-rose-300 text-rose-950 shadow-xs'
                         : paymentTimerSeconds <= 60
-                        ? 'bg-amber-50 border-amber-300 text-amber-900 animate-pulse'
-                        : 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                        ? 'bg-amber-50 border-amber-300 text-amber-950 shadow-xs'
+                        : 'bg-emerald-50/90 border-emerald-300 text-emerald-950 shadow-xs'
                     }`}>
-                      <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-xs ${
-                          isTimerExpired 
-                            ? 'bg-rose-600 text-white' 
-                            : paymentTimerSeconds <= 60 
-                            ? 'bg-amber-600 text-white' 
-                            : 'bg-emerald-600 text-white'
-                        }`}>
-                          <Clock className="w-5 h-5" />
+                      {/* Top Header Row: Status on left, Clock countdown on right */}
+                      <div className="flex items-center justify-between gap-3 mb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`relative flex h-2.5 w-2.5 ${isTimerExpired ? 'hidden' : ''}`}>
+                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                              paymentTimerSeconds <= 60 ? 'bg-amber-500' : 'bg-emerald-500'
+                            }`}></span>
+                            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                              paymentTimerSeconds <= 60 ? 'bg-amber-600' : 'bg-emerald-600'
+                            }`}></span>
+                          </span>
+                          <span className="text-xs font-black tracking-tight">
+                            {isTimerExpired ? 'Payment Session Expired' : 'UPI Security Window'}
+                          </span>
                         </div>
-                        <div>
-                          <div className="text-xs font-black flex items-center gap-2">
-                            <span>{isTimerExpired ? 'Session Expired (5 Min Time Limit)' : 'Transaction Timer Active'}</span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/80 border font-bold">
-                              5 Min 00 Sec
-                            </span>
-                          </div>
-                          <p className="text-[11px] opacity-80 mt-0.5">
-                            {isTimerExpired
-                              ? 'Payment session expired for security. Tap regenerate to get a new QR code.'
-                              : 'Complete UPI payment and enter UTR reference before timer expires.'}
-                          </p>
+
+                        {/* Digital Timer Badge */}
+                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-mono font-black text-xs sm:text-sm tracking-wider shadow-inner ${
+                          isTimerExpired
+                            ? 'bg-rose-950 text-rose-300'
+                            : paymentTimerSeconds <= 60
+                            ? 'bg-amber-950 text-amber-300 animate-pulse'
+                            : 'bg-emerald-950 text-emerald-300'
+                        }`}>
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{formatTimer(paymentTimerSeconds)}</span>
                         </div>
                       </div>
 
-                      <div className="text-right flex flex-col items-end">
-                        <span className="text-[10px] font-bold uppercase tracking-wider block opacity-75">Time Left</span>
-                        <span className={`text-xl font-mono font-black tracking-tight ${
-                          isTimerExpired ? 'text-rose-700' : paymentTimerSeconds <= 60 ? 'text-amber-700' : 'text-emerald-700'
-                        }`}>
-                          {formatTimer(paymentTimerSeconds)}
-                        </span>
+                      {/* Visual Progress Bar */}
+                      <div className="w-full h-1.5 bg-black/10 rounded-full overflow-hidden mb-2">
+                        <div
+                          className={`h-full transition-all duration-1000 ease-linear rounded-full ${
+                            isTimerExpired
+                              ? 'w-0'
+                              : paymentTimerSeconds <= 60
+                              ? 'bg-amber-500'
+                              : 'bg-emerald-600'
+                          }`}
+                          style={{
+                            width: `${Math.max(0, Math.min(100, (paymentTimerSeconds / 300) * 100))}%`
+                          }}
+                        />
                       </div>
+
+                      <p className="text-[11px] opacity-85 leading-relaxed">
+                        {isTimerExpired
+                          ? 'This 5-minute payment window has expired for security. Please tap Regenerate QR below to restart.'
+                          : 'Scan QR with any UPI app and enter the 12-digit UTR reference below before session closes.'}
+                      </p>
                     </div>
 
                     {/* Dynamic QR Code Card or Expired State */}
@@ -1122,45 +1155,156 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {/* PAYMENT METHOD D: PICKUP FROM STORE (COUNTER PAYMENT) */}
+                {/* PAYMENT METHOD D: PICKUP FROM STORE (COUNTER CASH OR ONLINE UPI) */}
                 {paymentMethod === 'store_pickup' && (
-                  <div className="p-6 rounded-2xl bg-purple-50/40 border-2 border-purple-300 space-y-4 text-xs">
-                    <div className="flex items-center justify-between pb-3 border-b border-purple-100">
+                  <div className="p-6 rounded-2xl bg-purple-50/40 border-2 border-purple-300 space-y-5 text-xs">
+                    <div className="flex items-center justify-between pb-3 border-b border-purple-200">
                       <div className="flex items-center gap-2">
                         <Store className="w-5 h-5 text-purple-700" />
                         <div>
                           <strong className="text-sm font-black text-slate-900 block">
-                            Showroom Collection & Counter Payment (Garhwa)
+                            Pickup from Showroom (Chiniya Road, Garhwa)
                           </strong>
                           <span className="text-[11px] text-slate-500">
-                            Zero advance required. Inspect & test hardware before making payment.
+                            Direct counter collection with live hardware testing &amp; instant 18% GST bill.
                           </span>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold px-2.5 py-1 bg-purple-100 text-purple-900 rounded-full">
+                      <span className="text-[10px] font-bold px-2.5 py-1 bg-purple-100 text-purple-900 rounded-full flex-shrink-0">
                         Ready for Handover
                       </span>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-white border border-purple-200 space-y-2.5 text-slate-700">
+                    {/* Choose Payment Mode: Cash vs Online */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-900 block uppercase tracking-wider">
+                        Choose Counter Payment Mode (भुगतान का प्रकार चुनें)
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setPickupPaymentMode('cash')}
+                          className={`p-3.5 rounded-xl border-2 text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                            pickupPaymentMode === 'cash'
+                              ? 'border-emerald-600 bg-emerald-50/80 shadow-xs ring-2 ring-emerald-200'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <Banknote className={`w-5 h-5 flex-shrink-0 mt-0.5 ${pickupPaymentMode === 'cash' ? 'text-emerald-700' : 'text-slate-400'}`} />
+                          <div>
+                            <strong className="block text-xs font-extrabold text-slate-900">Cash at Counter</strong>
+                            <span className="text-[10.5px] text-slate-500">Pay cash upon item inspection</span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setPickupPaymentMode('online')}
+                          className={`p-3.5 rounded-xl border-2 text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                            pickupPaymentMode === 'online'
+                              ? 'border-blue-600 bg-blue-50/80 shadow-xs ring-2 ring-blue-200'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <QrCode className={`w-5 h-5 flex-shrink-0 mt-0.5 ${pickupPaymentMode === 'online' ? 'text-blue-700' : 'text-slate-400'}`} />
+                          <div>
+                            <strong className="block text-xs font-extrabold text-slate-900">Online UPI QR</strong>
+                            <span className="text-[10.5px] text-slate-500">GPay, PhonePe, Paytm, BHIM</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* If Online is selected: Show QR Code & UTR input */}
+                    {pickupPaymentMode === 'online' && (
+                      <div className="p-4 rounded-xl bg-white border border-blue-200 space-y-4 animate-in fade-in">
+                        <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                          <span className="font-extrabold text-xs text-blue-900">Showroom UPI QR Code</span>
+                          <span className="text-[10.5px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">Zero Convenience Fee</span>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                          <div className="p-3 bg-white rounded-xl border border-gray-200 shadow-xs flex-shrink-0">
+                            <QRCodeSVG
+                              value={`upi://pay?pa=${paymentSettings?.upiId || 'lappy.solution@ybl'}&pn=${encodeURIComponent(paymentSettings?.upiName || 'LAPIEZ GARHWA')}&am=${finalTotal}&cu=INR&tn=Pickup%20Order%20${tempOrderId}`}
+                              size={130}
+                              level="H"
+                            />
+                          </div>
+
+                          <div className="space-y-2.5 flex-1 w-full text-xs">
+                            <div className="p-2.5 rounded-lg bg-blue-50/60 border border-blue-100 flex items-center justify-between">
+                              <div>
+                                <span className="text-[10px] text-gray-500 block">UPI ID</span>
+                                <span className="font-mono font-bold text-gray-900">{paymentSettings?.upiId || 'lappy.solution@ybl'}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(paymentSettings?.upiId || 'lappy.solution@ybl');
+                                  setCopiedUpi(true);
+                                  setTimeout(() => setCopiedUpi(false), 2000);
+                                }}
+                                className="px-2.5 py-1 rounded bg-blue-600 text-white font-bold text-[10px] cursor-pointer"
+                              >
+                                {copiedUpi ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+
+                            <div>
+                              <label className="text-[11px] font-bold text-slate-800 block mb-1">
+                                Enter UPI Transaction Reference (UTR Number) *
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="12-digit UTR from GPay / PhonePe / Paytm"
+                                value={utrNumber}
+                                onChange={(e) => setUtrNumber(e.target.value.trim())}
+                                className="w-full bg-[#F8FAFC] border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 focus:bg-white focus:border-blue-600 focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Handed Over By / Staff Name Input Field */}
+                    <div className="p-4 rounded-xl bg-white border border-purple-200 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-4 h-4 text-purple-700 flex-shrink-0" />
+                        <label htmlFor="pickup-handed-by" className="text-xs font-extrabold text-slate-900">
+                          Handed Over By / Staff Name (सामान देने वाले स्टाफ / काउंटर व्यक्ति का नाम)
+                        </label>
+                      </div>
+                      <input
+                        id="pickup-handed-by"
+                        type="text"
+                        value={pickupHandedBy}
+                        onChange={(e) => setPickupHandedBy(e.target.value)}
+                        placeholder="e.g. Sonu Kumar (Staff) or Showroom Counter Representative"
+                        className="w-full bg-[#F8FAFC] border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 focus:bg-white focus:border-purple-600 focus:outline-none"
+                      />
+                      <p className="text-[10.5px] text-slate-500">
+                        Staff / counter person who delivered the item and confirmed payment will be displayed on the order invoice &amp; admin record.
+                      </p>
+                    </div>
+
+                    {/* Showroom Details */}
+                    <div className="p-3.5 rounded-xl bg-white/80 border border-purple-100 space-y-1.5 text-slate-700 text-[11.5px]">
                       <div className="flex items-start gap-2">
                         <span className="font-bold text-slate-900 min-w-[110px]">Showroom Address:</span>
-                        <span className="font-medium">{siteSettings?.address || `${STORE_INFO.address}, ${STORE_INFO.city}, ${STORE_INFO.state} - ${STORE_INFO.pincode}`}</span>
+                        <span>{siteSettings?.address || `${STORE_INFO.address}, ${STORE_INFO.city}, ${STORE_INFO.state} - ${STORE_INFO.pincode}`}</span>
                       </div>
                       <div className="flex items-start gap-2">
                         <span className="font-bold text-slate-900 min-w-[110px]">Store Timings:</span>
                         <span>{siteSettings?.timings || STORE_INFO.timings}</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="font-bold text-slate-900 min-w-[110px]">Payment at Counter:</span>
-                        <span>Cash, Card Swipe, or UPI Dynamic QR on billing computer</span>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
                       <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
                         <Check className="w-4 h-4" />
-                        <span>Pre-flight hardware diagnostic & GST bill ready upon arrival</span>
+                        <span>Pre-flight hardware diagnostic &amp; 18% GST bill ready upon arrival</span>
                       </div>
                       <a
                         href={siteSettings?.googleMapsUrl || siteSettings?.twitterUrl || STORE_INFO.mapsUrl}
@@ -1176,26 +1320,26 @@ export default function CheckoutPage() {
                 )}
 
                 {/* Final Order Confirmation CTA */}
-                <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
+                <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setStep(2)}
-                    className="py-3 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+                    className="w-full sm:w-auto h-12 min-h-[48px] px-6 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm flex items-center justify-center transition-colors shrink-0 cursor-pointer"
                   >
-                    Back
+                    ← Back to Review
                   </button>
 
                   <button
                     type="button"
                     disabled={isSubmitting}
                     onClick={handleFinalOrderSubmit}
-                    className="flex-1 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20"
+                    className="w-full sm:flex-1 h-13 sm:h-14 min-h-[52px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/25 shrink-0 active:scale-[0.98] cursor-pointer"
                   >
                     {isSubmitting ? (
                       <span>Verifying & Placing Order...</span>
                     ) : (
                       <>
-                        <ShieldCheck className="w-4 h-4" />
+                        <ShieldCheck className="w-5 h-5 shrink-0" />
                         <span>Place Order #{tempOrderId} (₹{finalTotal.toLocaleString('en-IN')})</span>
                       </>
                     )}
@@ -1212,12 +1356,10 @@ export default function CheckoutPage() {
           <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
             <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-7 shadow-sm space-y-5">
               
-              {!customer && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                  <span>Please sign in on the left to continue to delivery & payment.</span>
-                </div>
-              )}
+              <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-2xl text-xs text-blue-900 font-semibold flex items-center gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <span>100% Genuine Hardware • Official Garhwa GST Bill</span>
+              </div>
 
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="text-base font-black text-slate-900">

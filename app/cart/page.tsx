@@ -313,16 +313,16 @@ export default function CartPage() {
                 <div className="space-y-2 pt-2">
                   <button
                     onClick={() => router.push('/checkout')}
-                    className="w-full h-11 rounded-lg bg-[#FB641B] hover:bg-[#E0530F] text-white font-bold text-[14px] flex items-center justify-center gap-2 transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+                    className="w-full h-12 rounded-xl bg-[#FB641B] hover:bg-[#E0530F] text-white font-extrabold text-[15px] flex items-center justify-center gap-2 transition-all shadow-md shadow-orange-500/20 active:scale-[0.98] cursor-pointer"
                   >
-                    <span>{customer ? 'PROCEED TO CHECKOUT' : 'SIGN IN & CHECKOUT'}</span>
+                    <span>PROCEED TO CHECKOUT</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
 
                   <div className="text-center">
                     <span className="text-[11px] text-gray-500 font-medium flex items-center justify-center gap-1">
                       <Lock className="w-3 h-3 text-emerald-600" />
-                      {customer ? 'Verified Secure Checkout • 100% Genuine' : 'Sign-In Required to Complete Purchase'}
+                      <span>Verified Secure 256-Bit Checkout • 100% Genuine Hardware</span>
                     </span>
                   </div>
                 </div>

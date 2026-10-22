@@ -56,14 +56,27 @@ function recordOrderIpAttempt(ip: string) {
   }
 }
 
-const toClientOrder = (order: { itemsJson: string } & Record<string, unknown>) => {
+const toClientOrder = (order: { itemsJson: string; address?: string } & Record<string, unknown>) => {
   let items: unknown[] = [];
   try {
     const parsed = JSON.parse(order.itemsJson);
     items = Array.isArray(parsed) ? parsed : [];
   } catch {}
   const rest = Object.fromEntries(Object.entries(order).filter(([key]) => key !== 'itemsJson'));
-  return { ...rest, items };
+
+  let pickupHandedBy = '';
+  if (typeof order.address === 'string' && (order.address.includes('Handed Over By:') || order.address.includes('Sold By:'))) {
+    const match = order.address.match(/(?:Handed Over By|Sold By):\s*([^•\n]+)/i);
+    if (match) pickupHandedBy = match[1].trim();
+  }
+
+  let approvedBy = '';
+  if (typeof order.address === 'string' && order.address.includes('Approved By:')) {
+    const match = order.address.match(/Approved By:\s*([^•\n]+)/i);
+    if (match) approvedBy = match[1].trim();
+  }
+
+  return { ...rest, items, pickupHandedBy, approvedBy };
 };
 
 export async function GET(request: Request) {
@@ -286,6 +299,17 @@ export async function POST(request: Request) {
       ? rawOrderId
       : `LPZ-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
+    const pickupHandedBy = typeof body.pickupHandedBy === 'string' ? body.pickupHandedBy.trim() : '';
+    let finalAddress = address;
+    if (pickupHandedBy && !finalAddress.includes('Handed Over By:')) {
+      finalAddress = `${finalAddress} • Handed Over By: ${pickupHandedBy}`;
+    }
+
+    const isPickup = rawMethod.includes('pickup') || rawMethod.includes('counter') || finalAddress.toLowerCase().includes('pickup');
+    const resolvedPaymentMethod = isUpi
+      ? (isPickup ? 'Store Pickup (Online UPI QR)' : 'UPI Dynamic QR (GPay/PhonePe)')
+      : (isPickup ? 'Store Pickup (Cash at Counter)' : (isCod ? 'Cash on Delivery (COD)' : 'NetBanking'));
+
     const order = await prisma.$transaction(async (tx) => {
       // Atomic inventory deduction with concurrency check
       for (const product of products) {
@@ -321,13 +345,13 @@ export async function POST(request: Request) {
           customerName,
           phone,
           email: typeof body.email === 'string' && body.email.includes('@') ? body.email.trim() : null,
-          address,
+          address: finalAddress,
           itemsJson: JSON.stringify(items),
           subtotalAmount,
           couponCode: finalCouponCode,
           couponDiscount: finalCouponDiscount,
           totalAmount,
-          paymentMethod: isUpi ? 'UPI Dynamic QR (GPay/PhonePe)' : (isCod ? 'Cash on Delivery / Pickup' : 'NetBanking'),
+          paymentMethod: resolvedPaymentMethod,
           paymentStatus: isUpi ? 'Verification Pending' : (isCod ? 'Pending Payment' : 'Verification Pending'),
           utrNumber: isUpi ? utrNumber : null,
           orderStatus: 'Confirmed',
@@ -430,11 +454,36 @@ export async function PUT(request: Request) {
         newInventoryStatus = 'allocated';
       }
 
+      let updatedAddress = currentOrder.address;
+      const staffName = typeof body.pickupHandedBy === 'string'
+        ? body.pickupHandedBy.trim()
+        : (typeof body.staffName === 'string' ? body.staffName.trim() : '');
+
+      if (staffName) {
+        if (updatedAddress.includes('Handed Over By:')) {
+          updatedAddress = updatedAddress.replace(/Handed Over By:\s*([^•\n]+)/i, `Handed Over By: ${staffName}`);
+        } else if (updatedAddress.includes('Sold By:')) {
+          updatedAddress = updatedAddress.replace(/Sold By:\s*([^•\n]+)/i, `Sold By: ${staffName}`);
+        } else {
+          updatedAddress = `${updatedAddress} • Handed Over By: ${staffName}`;
+        }
+      }
+
+      const approverName = typeof body.approvedBy === 'string' ? body.approvedBy.trim() : '';
+      if (approverName) {
+        if (updatedAddress.includes('Approved By:')) {
+          updatedAddress = updatedAddress.replace(/Approved By:\s*([^•\n]+)/i, `Approved By: ${approverName}`);
+        } else {
+          updatedAddress = `${updatedAddress} • Approved By: ${approverName}`;
+        }
+      }
+
       return tx.order.update({
         where: { orderId },
         data: {
           ...(paymentStatuses.has(paymentStatus) ? { paymentStatus } : {}),
           ...(orderStatuses.has(orderStatus) ? { orderStatus } : {}),
+          ...(staffName || approverName ? { address: updatedAddress } : {}),
           inventoryStatus: newInventoryStatus,
         },
       });

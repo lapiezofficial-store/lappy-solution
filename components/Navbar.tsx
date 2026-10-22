@@ -1062,7 +1062,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                             {cat.subcategories.map((sub) => (
                               <Link
                                 key={sub.id || sub.slug}
-                                href={`/shop?cat=${encodeURIComponent(cat.name)}&sub=${encodeURIComponent(sub.name)}`}
+                                href={`/shop?cat=${encodeURIComponent(cat.name)}&subcat=${encodeURIComponent(sub.name)}`}
                                 onClick={() => setMobileMenuOpen(false)}
                                 className="block py-1 text-xs text-[#2563EB] hover:text-[#1D4ED8] font-semibold"
                               >

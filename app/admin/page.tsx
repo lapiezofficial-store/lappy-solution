@@ -25,6 +25,7 @@ export default function AdminPage() {
   const { 
     orders, 
     updateOrders, 
+    fetchOrders,
     products, 
     updateProducts, 
     leads, 
@@ -465,13 +466,36 @@ export default function AdminPage() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [lockoutTimer, setLockoutTimer] = useState(0);
+  const [isRefreshingOrders, setIsRefreshingOrders] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth/session')
       .then((response) => response.json())
-      .then((data) => setIsAuthenticated(Boolean(data.authenticated)))
+      .then((data) => {
+        const isAuthed = Boolean(data.authenticated);
+        setIsAuthenticated(isAuthed);
+        if (isAuthed) {
+          fetchOrders().catch(() => {});
+        }
+      })
       .catch(() => setIsAuthenticated(false));
-  }, []);
+  }, [fetchOrders]);
+
+  // Real-Time Background Order Polling for Admin (every 15s)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchOrders().catch(() => {});
+    const interval = setInterval(() => {
+      fetchOrders().catch(() => {});
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, fetchOrders]);
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'orders') {
+      fetchOrders().catch(() => {});
+    }
+  }, [isAuthenticated, activeTab, fetchOrders]);
 
   useEffect(() => {
     let interval: any;
@@ -518,6 +542,7 @@ export default function AdminPage() {
         showToast('Welcome Store Owner! Console unlocked.');
         // Background sync so admin dashboard opens instantly without network delay
         syncWithDatabase({ forceFresh: true }).catch(() => {});
+        fetchOrders().catch(() => {});
       } else {
         const attempts = failedAttempts + 1;
         setFailedAttempts(attempts);
@@ -571,6 +596,8 @@ export default function AdminPage() {
   const [invBankName, setInvBankName] = useState(invoiceSettings?.bankName || 'State Bank of India');
   const [invAccountNo, setInvAccountNo] = useState(invoiceSettings?.accountNumber || '38947291048');
   const [invIfsc, setInvIfsc] = useState(invoiceSettings?.ifscCode || 'SBIN0000080');
+  const [invSignatoryName, setInvSignatoryName] = useState(invoiceSettings?.signatoryName || 'Jay Prakash Chaubey');
+  const [invSignatoryTitle, setInvSignatoryTitle] = useState(invoiceSettings?.signatoryTitle || 'Authorized Signatory for Lapiez');
 
   useEffect(() => {
     if (invoiceSettings) {
@@ -586,6 +613,8 @@ export default function AdminPage() {
       setInvBankName(invoiceSettings.bankName);
       setInvAccountNo(invoiceSettings.accountNumber);
       setInvIfsc(invoiceSettings.ifscCode);
+      setInvSignatoryName(invoiceSettings.signatoryName || 'Jay Prakash Chaubey');
+      setInvSignatoryTitle(invoiceSettings.signatoryTitle || 'Authorized Signatory for Lapiez');
     }
   }, [invoiceSettings]);
 
@@ -637,18 +666,30 @@ export default function AdminPage() {
 
   // Order Actions
   const handleVerifyPayment = (orderId: string) => {
+    const approver = typeof window !== 'undefined' ? window.prompt("Enter Approver / Manager Name who verified payment & approves bill:", "Jay Prakash Chaubey") : "Jay Prakash Chaubey";
+    if (approver === null) return;
+    const finalApprover = approver.trim() || "Jay Prakash Chaubey";
+
     const updated = orders.map(o => {
       if (o.orderId === orderId) {
+        let updatedAddr = o.address;
+        if (updatedAddr.includes('Approved By:')) {
+          updatedAddr = updatedAddr.replace(/Approved By:\s*([^•\n]+)/i, `Approved By: ${finalApprover}`);
+        } else {
+          updatedAddr = `${updatedAddr} • Approved By: ${finalApprover}`;
+        }
         return {
           ...o,
+          address: updatedAddr,
           paymentStatus: 'Paid',
-          orderStatus: o.orderStatus === 'Confirmed' ? 'Packed' : o.orderStatus
+          orderStatus: o.orderStatus === 'Confirmed' ? 'Packed' : o.orderStatus,
+          approvedBy: finalApprover,
         };
       }
       return o;
     });
     updateOrders(updated);
-    showToast(`Payment verified for order ${orderId}!`);
+    showToast(`Payment verified & approved by ${finalApprover}! Official GST Bill is unlocked.`);
   };
 
   const handleUpdateOrderStatus = (orderId: string, newStatus: string) => {
@@ -663,6 +704,47 @@ export default function AdminPage() {
     });
     updateOrders(updated);
     showToast(`Order ${orderId} marked as ${newStatus}!`);
+  };
+
+  const handleHandoverPickupOrder = (orderId: string, currentStaffName?: string, currentApprover?: string) => {
+    const staff = typeof window !== 'undefined' ? window.prompt("Enter Seller / Staff Name who sold & handed over items:", currentStaffName || "Sonu Kumar") : "Sonu Kumar";
+    if (staff === null) return;
+    const finalStaff = staff.trim() || "Sonu Kumar";
+
+    const approver = typeof window !== 'undefined' ? window.prompt("Enter Approver / Store Manager Name:", currentApprover || "Jay Prakash Chaubey") : "Jay Prakash Chaubey";
+    if (approver === null) return;
+    const finalApprover = approver.trim() || "Jay Prakash Chaubey";
+
+    const updated = orders.map(o => {
+      if (o.orderId === orderId) {
+        let updatedAddr = o.address;
+        if (updatedAddr.includes('Handed Over By:')) {
+          updatedAddr = updatedAddr.replace(/Handed Over By:\s*([^•\n]+)/i, `Handed Over By: ${finalStaff}`);
+        } else if (updatedAddr.includes('Sold By:')) {
+          updatedAddr = updatedAddr.replace(/Sold By:\s*([^•\n]+)/i, `Sold By: ${finalStaff}`);
+        } else {
+          updatedAddr = `${updatedAddr} • Handed Over By: ${finalStaff}`;
+        }
+
+        if (updatedAddr.includes('Approved By:')) {
+          updatedAddr = updatedAddr.replace(/Approved By:\s*([^•\n]+)/i, `Approved By: ${finalApprover}`);
+        } else {
+          updatedAddr = `${updatedAddr} • Approved By: ${finalApprover}`;
+        }
+
+        return {
+          ...o,
+          address: updatedAddr,
+          paymentStatus: 'Paid',
+          orderStatus: 'Delivered',
+          pickupHandedBy: finalStaff,
+          approvedBy: finalApprover,
+        };
+      }
+      return o;
+    });
+    updateOrders(updated);
+    showToast(`Order ${orderId} handed over by ${finalStaff} & approved by ${finalApprover}! Official GST Bill is ready.`);
   };
 
   // Inventory Toggle Stock (Persists directly to DB)
@@ -3563,9 +3645,25 @@ export default function AdminPage() {
                   <span>GST Billing ({invoices.length})</span>
                 </button>
               </div>
-              <span className="text-xs text-emerald-600 font-semibold hidden md:inline">
-                ● Showroom Console Active
-              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsRefreshingOrders(true);
+                    await fetchOrders();
+                    setIsRefreshingOrders(false);
+                    showToast('Orders updated from live database!');
+                  }}
+                  disabled={isRefreshingOrders}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all shadow-xs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingOrders ? 'animate-spin' : ''}`} />
+                  <span>Sync Orders ({orders.length})</span>
+                </button>
+                <span className="text-xs text-emerald-600 font-semibold hidden md:inline">
+                  ● Real-Time Database Active
+                </span>
+              </div>
             </div>
 
             {/* Filter and Search Bar */}
@@ -3615,6 +3713,10 @@ export default function AdminPage() {
                 {filteredOrders.map((order) => {
                   const isPending = order.paymentStatus === 'Verification Pending' || order.paymentStatus === 'Pending';
                   const isPaid = order.paymentStatus === 'Paid';
+                  const isPickupOrder = (order as any).isStorePickup || order.address?.toLowerCase().includes('pickup') || order.paymentMethod?.toLowerCase().includes('pickup');
+                  const handedOverBy = (order as any).pickupHandedBy || order.address?.match(/(?:Handed Over By|Sold By):\s*([^•\n]+)/i)?.[1]?.trim() || '';
+                  const approverName = (order as any).approvedBy || order.address?.match(/Approved By:\s*([^•\n]+)/i)?.[1]?.trim() || '';
+                  const isOrderApproved = Boolean(approverName || isPaid || order.orderStatus === 'Delivered');
 
                   return (
                     <div 
@@ -3624,7 +3726,7 @@ export default function AdminPage() {
                       {/* Top Header of Order */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-gray-100 gap-2">
                         
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex flex-wrap items-center gap-2.5">
                           <span className="font-extrabold text-sm sm:text-base text-[#111827]">
                             {order.orderId}
                           </span>
@@ -3647,6 +3749,14 @@ export default function AdminPage() {
                           <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#1A56DB] border border-blue-200">
                             {order.orderStatus || 'Confirmed'}
                           </span>
+
+                          {/* Pickup Badge */}
+                          {isPickupOrder && (
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                              <Store className="w-3 h-3" />
+                              <span>Store Pickup</span>
+                            </span>
+                          )}
                         </div>
 
                         {/* Customer Total Amount */}
@@ -3693,6 +3803,32 @@ export default function AdminPage() {
                               Payment: <strong>{order.paymentMethod}</strong>
                             </div>
                           )}
+
+                          {isPickupOrder && (
+                            <div className="mt-2 p-2.5 rounded-lg bg-amber-50/80 border border-amber-200/80 text-[11px] text-amber-900 space-y-1.5">
+                              <div className="flex items-center gap-1 font-bold text-amber-900">
+                                <Store className="w-3.5 h-3.5 text-amber-700" />
+                                <span>Showroom Counter Pickup</span>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-gray-800 bg-white px-2 py-1 rounded border border-amber-200">
+                                  <span className="text-[10.5px] text-gray-500">Sold / Handed By:</span>
+                                  <strong className="text-emerald-700 font-bold">{handedOverBy || 'Counter Seller'}</strong>
+                                </div>
+                                <div className="flex items-center justify-between text-gray-800 bg-white px-2 py-1 rounded border border-amber-200">
+                                  <span className="text-[10.5px] text-gray-500">Approved By:</span>
+                                  {approverName ? (
+                                    <strong className="text-blue-900 font-bold flex items-center gap-1">
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                      <span>{approverName}</span>
+                                    </strong>
+                                  ) : (
+                                    <span className="text-amber-700 italic text-[10px]">Awaiting Approval</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Order Items (5 cols) */}
@@ -3718,7 +3854,7 @@ export default function AdminPage() {
                         {/* UPI UTR & Merchant Actions (3 cols) */}
                         <div className="md:col-span-3 space-y-2 bg-blue-50/50 p-3 rounded-xl border border-blue-100">
                           <span className="text-[10px] font-bold text-[#1A56DB] uppercase tracking-wider block">
-                            Bank Reference / UTR
+                            Bank Reference / Payment
                           </span>
                           
                           {order.utrNumber ? (
@@ -3736,46 +3872,115 @@ export default function AdminPage() {
                                 </button>
                               </div>
                               <span className="text-[10px] text-gray-500 block mt-0.5">
-                                Cross-check with SBI/Axis Bank statement
+                                UPI Online Payment (Bank statement)
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-gray-500 italic block">
-                              Cash / Pay on Pickup
+                            <span className="text-xs text-gray-600 font-medium block">
+                              Cash / Pay at Counter
                             </span>
                           )}
 
                           {/* Merchant Action Buttons */}
                           <div className="space-y-1.5 pt-2 border-t border-blue-100/60">
-                            {isPending && (
-                              <button
-                                onClick={() => handleVerifyPayment(order.orderId)}
-                                className="w-full h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                                <span>Approve Payment</span>
-                              </button>
+                            {isPickupOrder ? (
+                              <>
+                                {order.orderStatus !== 'Delivered' ? (
+                                  <button
+                                    onClick={() => handleHandoverPickupOrder(order.orderId, handedOverBy, approverName)}
+                                    className="w-full h-8.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                                  >
+                                    <Store className="w-3.5 h-3.5" />
+                                    <span>Handover, Approve & Collect Payment</span>
+                                  </button>
+                                ) : (
+                                  <div className="flex items-center justify-between text-[11px] text-emerald-700 bg-emerald-50 px-2 py-1.5 rounded-lg border border-emerald-200 font-bold">
+                                    <span className="flex items-center gap-1 truncate">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                                      <span className="truncate">Handed: {handedOverBy || 'Staff'} • Apprv: {approverName || 'Jay Prakash'}</span>
+                                    </span>
+                                    <button
+                                      onClick={() => handleHandoverPickupOrder(order.orderId, handedOverBy, approverName)}
+                                      className="text-[10px] text-purple-700 hover:underline flex-shrink-0 ml-1 cursor-pointer"
+                                    >
+                                      Edit
+                                    </button>
+                                  </div>
+                                )}
+
+                                {isPending && (
+                                  <button
+                                    onClick={() => handleVerifyPayment(order.orderId)}
+                                    className="w-full h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>Approve Payment & Generate Bill</span>
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                {isPending && (
+                                  <button
+                                    onClick={() => handleVerifyPayment(order.orderId)}
+                                    className="w-full h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>Approve Payment & Generate Bill</span>
+                                  </button>
+                                )}
+
+                                {order.orderStatus !== 'Shipped' && order.orderStatus !== 'Delivered' && (
+                                  <button
+                                    onClick={() => handleUpdateOrderStatus(order.orderId, 'Shipped')}
+                                    className="w-full h-8 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                                  >
+                                    <Truck className="w-3.5 h-3.5" />
+                                    <span>Dispatch Order</span>
+                                  </button>
+                                )}
+
+                                {order.orderStatus === 'Shipped' && (
+                                  <button
+                                    onClick={() => handleUpdateOrderStatus(order.orderId, 'Delivered')}
+                                    className="w-full h-8 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>Mark Delivered</span>
+                                  </button>
+                                )}
+                              </>
                             )}
 
-                            {order.orderStatus !== 'Shipped' && order.orderStatus !== 'Delivered' && (
-                              <button
-                                onClick={() => handleUpdateOrderStatus(order.orderId, 'Shipped')}
-                                className="w-full h-8 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
-                              >
-                                <Truck className="w-3.5 h-3.5" />
-                                <span>Dispatch Order</span>
-                              </button>
-                            )}
-
-                            {order.orderStatus === 'Shipped' && (
-                              <button
-                                onClick={() => handleUpdateOrderStatus(order.orderId, 'Delivered')}
-                                className="w-full h-8 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>Mark Delivered</span>
-                              </button>
-                            )}
+                            {/* GST TAX INVOICE BUTTON (Bill is generated only AFTER approval) */}
+                            <div className="pt-2 border-t border-blue-100/60">
+                              {isOrderApproved ? (
+                                <Link
+                                  href={`/invoice/${encodeURIComponent(order.orderId)}`}
+                                  target="_blank"
+                                  className="w-full h-8.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                                  title="Print Official GST Tax Invoice"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                  <span>Print GST Bill (A4)</span>
+                                </Link>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    if (isPickupOrder) {
+                                      handleHandoverPickupOrder(order.orderId, handedOverBy, approverName);
+                                    } else {
+                                      handleVerifyPayment(order.orderId);
+                                    }
+                                  }}
+                                  className="w-full h-8.5 rounded-lg bg-gray-100 hover:bg-amber-100 text-gray-700 hover:text-amber-950 text-xs font-bold flex items-center justify-center gap-1.5 border border-dashed border-gray-300 hover:border-amber-400 transition-colors cursor-pointer"
+                                  title="Order must be approved before generating bill"
+                                >
+                                  <Lock className="w-3.5 h-3.5 text-amber-600" />
+                                  <span>Approve Order to Generate Bill</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
 
                         </div>
@@ -3793,6 +3998,20 @@ export default function AdminPage() {
                 <p className="text-xs text-gray-500 mt-1">
                   No customer orders match the current filter or search criteria.
                 </p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsRefreshingOrders(true);
+                    await fetchOrders();
+                    setIsRefreshingOrders(false);
+                    showToast('Orders refreshed from database!');
+                  }}
+                  disabled={isRefreshingOrders}
+                  className="mt-4 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold inline-flex items-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingOrders ? 'animate-spin' : ''}`} />
+                  <span>Refresh Orders from Database</span>
+                </button>
               </div>
             )}
 
@@ -4514,6 +4733,28 @@ export default function AdminPage() {
                       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-[#1A56DB]"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Authorized Signatory Name</label>
+                    <input
+                      type="text"
+                      value={invSignatoryName}
+                      onChange={(e) => setInvSignatoryName(e.target.value)}
+                      placeholder="e.g. Jay Prakash Chaubey"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-bold text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Signatory Title</label>
+                    <input
+                      type="text"
+                      value={invSignatoryTitle}
+                      onChange={(e) => setInvSignatoryTitle(e.target.value)}
+                      placeholder="e.g. Authorized Signatory for Lapiez"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-[#1A56DB]"
+                    />
+                  </div>
                 </div>
 
                 <div className="pt-4 flex justify-end">
@@ -4531,11 +4772,13 @@ export default function AdminPage() {
                         upiId: invUpiId,
                         bankName: invBankName,
                         accountNumber: invAccountNo,
-                        ifscCode: invIfsc
+                        ifscCode: invIfsc,
+                        signatoryName: invSignatoryName,
+                        signatoryTitle: invSignatoryTitle
                       });
                       showToast('Invoice settings saved successfully!');
                     }}
-                    className="h-10 px-6 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-colors"
+                    className="h-10 px-6 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
                   >
                     <Save className="w-4 h-4" />
                     <span>Save Invoice Settings</span>

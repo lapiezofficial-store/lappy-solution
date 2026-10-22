@@ -230,6 +230,7 @@ interface StoreContextType {
   createLead: (lead: any) => void;
   updateProducts: (prods: Product[]) => void;
   updateOrders: (ords: any[]) => void;
+  fetchOrders: () => Promise<any[]>;
   updateLeads: (lds: any[]) => void;
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
   updateThemeSettings: (theme: Partial<ThemeSettings>) => Promise<void>;
@@ -538,9 +539,12 @@ export function normalizeProduct(p: any): Product {
   }
 
   const primaryImage = galleryImages[0] || (typeof p.image === 'string' ? p.image.split('|||')[0].trim() : '') || '/images/product-placeholder.svg';
+  const resolvedSubcat = p.subcategory || p.subCategory || '';
 
   return {
     ...p,
+    subcategory: resolvedSubcat,
+    subCategory: resolvedSubcat,
     image: primaryImage,
     images: galleryImages.length > 0 ? galleryImages : [primaryImage],
   };
@@ -941,13 +945,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
 
-      // Check admin orders strictly if admin session cookie is present (eliminates 401s for guests)
-      if (typeof document !== 'undefined' && document.cookie.includes('ls_admin_session=')) {
+      // Sync admin orders if on admin / portal route or forced fresh sync
+      const isConsoleRoute = typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/portal'));
+      if (isConsoleRoute || options?.forceFresh) {
         try {
           const resOrders = await fetch('/api/cms/orders');
           if (resOrders.ok) {
             const data = await resOrders.json();
-            if (data.orders && data.orders.length > 0) {
+            if (Array.isArray(data.orders)) {
               setOrders(data.orders);
               try {
                 localStorage.setItem('ls_orders', JSON.stringify(data.orders));
@@ -1160,6 +1165,46 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     syncWithDatabase();
   }, [syncWithDatabase]);
 
+  // Live Auto-Sync for Mobile App & Web (Heartbeat + Visibility + Window Focus)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Expose global bridge hook for Native Android App (MainActivity.java)
+    (window as any).__lapiezSync = () => {
+      syncWithDatabase({ forceFresh: true }).catch(() => {});
+    };
+
+    const handleForegroundSync = () => {
+      if (document.visibilityState === 'visible') {
+        syncWithDatabase({ forceFresh: true }).catch(() => {});
+      }
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key && e.key.startsWith('ls_')) {
+        syncWithDatabase({ forceFresh: true }).catch(() => {});
+      }
+    };
+
+    window.addEventListener('focus', handleForegroundSync);
+    document.addEventListener('visibilitychange', handleForegroundSync);
+    window.addEventListener('storage', handleStorageChange);
+
+    // 25-second background heartbeat to auto-fetch admin updates on phone & web without manual refresh
+    const heartbeat = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncWithDatabase({ forceFresh: true }).catch(() => {});
+      }
+    }, 25000);
+
+    return () => {
+      window.removeEventListener('focus', handleForegroundSync);
+      document.removeEventListener('visibilitychange', handleForegroundSync);
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(heartbeat);
+    };
+  }, [syncWithDatabase]);
+
   const addToCart = (product: Product, qty: number = 1) => {
     const isOutOfStock = product.inStock === false || (product.stockQuantity !== undefined && product.stockQuantity !== null && Number(product.stockQuantity) <= 0);
     if (isOutOfStock) {
@@ -1236,15 +1281,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const placeOrder = async (newOrder: any): Promise<Invoice> => {
-    if (!customer) {
-      showToast('Please sign in to your customer account before placing an order.');
-      throw new Error('Customer sign-in is strictly required to place an order.');
-    }
     try {
+      // Direct frictionless checkout support: If customer session is absent, link guest details seamlessly
+      const guestEmail = newOrder.customerEmail || newOrder.email || (newOrder.phone ? `${newOrder.phone}@customer.lapiez.com` : 'customer@lapiez.com');
+      const guestId = customer?.id || newOrder.customerId || `cust-${Date.now()}`;
+      const guestName = customer?.user_metadata?.full_name || customer?.user_metadata?.name || newOrder.customerName || 'Valued Customer';
+
+      if (!customer) {
+        try {
+          loginCustomerManually({
+            id: guestId,
+            name: guestName,
+            email: guestEmail,
+            phone: newOrder.phone || '',
+          });
+        } catch (e) {}
+      }
+
       const orderPayload = {
         ...newOrder,
-        customerId: customer.id,
-        customerEmail: customer.email || newOrder.email,
+        customerId: guestId,
+        customerEmail: guestEmail,
       };
       const response = await fetch('/api/cms/orders', {
         method: 'POST',
@@ -1255,7 +1312,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (!response.ok) throw new Error(data.error || 'Order could not be placed');
 
       const savedOrder = data.order;
-      const updated = [savedOrder, ...orders];
+      const updated = [savedOrder, ...orders.filter((o) => o.orderId !== savedOrder.orderId)];
       setOrders(updated);
       setCart([]);
       const newInvoice = createInvoiceFromOrder(savedOrder);
@@ -1271,6 +1328,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       throw e;
     }
   };
+
+  const fetchOrders = useCallback(async (): Promise<any[]> => {
+    try {
+      const res = await fetch('/api/cms/orders');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.orders)) {
+          setOrders(data.orders);
+          try {
+            localStorage.setItem('ls_orders', JSON.stringify(data.orders));
+          } catch (e) {}
+          return data.orders;
+        }
+      }
+    } catch (e) {
+      console.warn('Orders fetch error:', e);
+    }
+    return [];
+  }, []);
 
   const createLead = (leadData: any) => {
     const newLead = {
@@ -1324,7 +1400,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('ls_orders', JSON.stringify(ords));
       const changes = ords.filter((order) => {
         const previous = orders.find((current) => current.orderId === order.orderId);
-        return previous && (previous.paymentStatus !== order.paymentStatus || previous.orderStatus !== order.orderStatus);
+        return previous && (
+          previous.paymentStatus !== order.paymentStatus || 
+          previous.orderStatus !== order.orderStatus ||
+          previous.pickupHandedBy !== order.pickupHandedBy ||
+          (previous as any).approvedBy !== (order as any).approvedBy
+        );
       });
       await Promise.all(changes.map((order) => fetch('/api/cms/orders', {
         method: 'PUT',
@@ -1333,6 +1414,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           orderId: order.orderId,
           paymentStatus: order.paymentStatus,
           orderStatus: order.orderStatus,
+          pickupHandedBy: order.pickupHandedBy,
+          approvedBy: (order as any).approvedBy,
         }),
       })));
     } catch (e) {}
@@ -2704,7 +2787,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       notes: manualData.notes || 'Counter sale invoice. 100% genuine guaranteed.',
       terms: currentSettings.termsAndConditions,
       declaration: currentSettings.declaration,
-      signatoryTitle: currentSettings.signatoryTitle,
+      signatoryName: currentSettings.signatoryName || 'Jay Prakash Chaubey',
+      signatoryTitle: currentSettings.signatoryTitle || 'Authorized Signatory for Lapiez',
       createdAt: new Date().toISOString(),
       ...manualData
     };
@@ -2799,6 +2883,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         createLead,
         updateProducts,
         updateOrders,
+        fetchOrders,
         updateLeads,
         updateSiteSettings,
         updateThemeSettings,

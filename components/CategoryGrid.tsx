@@ -89,7 +89,7 @@ export const CategoryGrid: React.FC = () => {
             const price = formatCategoryStartingPrice(cat.startingPrice);
             const img = cat.image || cat.imageUrl || '/images/categories/laptop-adapters.png';
             const cleanSearchQuery = (cat.name || '').replace(/^Laptop\s*/i, '').trim();
-            const href = cat.href || `/shop?search=${encodeURIComponent(cleanSearchQuery || cat.slug)}`;
+            const href = cat.href || `/shop?cat=${encodeURIComponent(cat.name)}`;
 
             return (
               <Link
@@ -128,7 +128,7 @@ export const CategoryGrid: React.FC = () => {
             const price = formatCategoryStartingPrice(cat.startingPrice);
             const img = cat.image || cat.imageUrl || '/images/categories/laptop-adapters.png';
             const cleanSearchQuery = (cat.name || '').replace(/^Laptop\s*/i, '').trim();
-            const href = cat.href || `/shop?search=${encodeURIComponent(cleanSearchQuery || cat.slug)}`;
+            const href = cat.href || `/shop?cat=${encodeURIComponent(cat.name)}`;
 
             const slugKey = (cat.slug || cat.name || '').toLowerCase();
             const themeKey = Object.keys(CATEGORY_THEMES).find(k => slugKey.includes(k)) || 'accessories';

@@ -13,7 +13,7 @@ interface CachedInitData {
 }
 
 let inMemoryCache: CachedInitData | null = null;
-const CACHE_TTL_MS = 60 * 1000; // 60 seconds in-memory TTL
+const CACHE_TTL_MS = 10 * 1000; // 10 seconds in-memory TTL for instant phone & web synchronization
 
 export function invalidateInitCache() {
   inMemoryCache = null;
@@ -28,6 +28,7 @@ function formatProduct(p: any, rich?: any) {
     : (p.image ? [p.image] : (rich?.image ? [rich.image] : []));
 
   const isOutOfStock = p.inStock === false || (p.stockQuantity !== undefined && p.stockQuantity !== null && Number(p.stockQuantity) <= 0);
+  const resolvedSubcat = p.subcategory || p.subCategory || rich?.subcategory || rich?.subCategory || '';
 
   return {
     id: p.id,
@@ -35,7 +36,8 @@ function formatProduct(p: any, rich?: any) {
     name: p.name,
     slug: p.slug,
     category: p.category,
-    subCategory: p.subCategory || rich?.subCategory || '',
+    subcategory: resolvedSubcat,
+    subCategory: resolvedSubcat,
     brand: p.brand,
     price: Number(p.price),
     mrp: Number(p.mrp) || Number(p.price),

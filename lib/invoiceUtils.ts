@@ -58,6 +58,7 @@ export interface InvoiceSettings {
   // Policy & Signature
   termsAndConditions: string[];
   declaration: string;
+  signatoryName?: string;
   signatoryTitle: string;
 
   // Visibility toggles
@@ -116,16 +117,21 @@ export interface Invoice {
   grandTotal: number;
   amountInWords: string;
 
-  // Payment
+  // Payment & Staff Handover
   paymentMethod: string;
   paymentStatus: 'Paid' | 'Pending' | 'Cancelled';
   upiId: string;
   upiQrData: string;
+  sellerHandedBy?: string;
+  approvedBy?: string;
+  isApproved?: boolean;
+  isPickupOrder?: boolean;
 
   // Terms & Footer
   notes?: string;
   terms: string[];
   declaration: string;
+  signatoryName?: string;
   signatoryTitle: string;
   createdAt: string;
 }
@@ -168,6 +174,7 @@ export const DEFAULT_INVOICE_SETTINGS: InvoiceSettings = {
     'Subject to realization of Cheque / UPI / Bank transfer.'
   ],
   declaration: 'We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.',
+  signatoryName: 'Jay Prakash Chaubey',
   signatoryTitle: 'Authorized Signatory for Lapiez',
 
   showGstin: true,
@@ -428,6 +435,32 @@ export function buildInvoiceFromOrder(params: {
     year: 'numeric'
   });
 
+  const isPickup = Boolean(
+    order.isStorePickup ||
+    String(order.address || '').toLowerCase().includes('pickup') ||
+    String(order.paymentMethod || '').toLowerCase().includes('pickup')
+  );
+
+  const sellerHandedBy = (
+    order.pickupHandedBy ||
+    order.sellerName ||
+    order.address?.match(/(?:Handed Over By|Sold By):\s*([^•\n]+)/i)?.[1]?.trim() ||
+    ''
+  );
+
+  const approvedBy = (
+    order.approvedBy ||
+    order.address?.match(/Approved By:\s*([^•\n]+)/i)?.[1]?.trim() ||
+    ''
+  );
+
+  const isApproved = Boolean(
+    approvedBy ||
+    order.paymentStatus === 'Paid' ||
+    order.orderStatus === 'Delivered' ||
+    order.orderStatus === 'Shipped'
+  );
+
   return {
     id: `inv-${Date.now()}`,
     invoiceNumber,
@@ -470,15 +503,20 @@ export function buildInvoiceFromOrder(params: {
     grandTotal: roundedGrand,
     amountInWords: convertAmountToWords(roundedGrand),
 
-    paymentMethod: order.paymentMethod || 'UPI / Counter Pickup',
+    paymentMethod: order.paymentMethod || (isPickup ? 'Store Pickup (Cash at Counter)' : 'UPI / Online Payment'),
     paymentStatus: (order.paymentStatus === 'Paid' || order.paymentStatus === 'Verified' || order.paymentStatus === 'Verification In Progress' || String(order.paymentMethod || '').toLowerCase().includes('upi') || Boolean(order.utrNumber)) ? 'Paid' : (order.paymentStatus === 'Cancelled' ? 'Cancelled' : 'Pending'),
     upiId: settings.upiId,
     upiQrData: qrCodeUrl,
+    sellerHandedBy,
+    approvedBy,
+    isApproved,
+    isPickupOrder: isPickup,
 
     notes: order.notes || 'Goods verified and packed in brand original sealed packaging.',
     terms: settings.termsAndConditions,
     declaration: settings.declaration,
-    signatoryTitle: settings.signatoryTitle,
+    signatoryName: settings.signatoryName || 'Jay Prakash Chaubey',
+    signatoryTitle: settings.signatoryTitle || 'Authorized Signatory for Lapiez',
     createdAt: new Date().toISOString()
   };
 }

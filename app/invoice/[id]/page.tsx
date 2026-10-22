@@ -6,7 +6,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { 
   Printer, ArrowLeft, Download, ShieldCheck, 
   CheckCircle2, Building2, Phone, Mail, Globe, 
-  MapPin, QrCode, FileText, Share2, Copy
+  MapPin, QrCode, FileText, Share2, Copy, Store, UserCheck, AlertCircle, Lock
 } from 'lucide-react';
 import { useStore } from '../../../context/StoreContext';
 import { 
@@ -24,6 +24,7 @@ export default function InvoicePage() {
   const { 
     invoices, 
     orders, 
+    updateOrders,
     invoiceSettings, 
     siteSettings,
     showToast 
@@ -165,6 +166,51 @@ export default function InvoicePage() {
     );
   }
 
+  const isPickup = Boolean(
+    invoice?.isPickupOrder ||
+    String(invoice?.paymentMethod || '').toLowerCase().includes('pickup') ||
+    String(invoice?.buyerAddress || '').toLowerCase().includes('pickup')
+  );
+
+  const matchedOrder = orders.find(
+    (o) => o.orderId === invoice?.orderId || o.id === invoice?.orderId
+  );
+
+  const isOrderApproved = Boolean(
+    invoice?.isApproved ||
+    invoice?.paymentStatus === 'Paid' ||
+    invoice?.approvedBy ||
+    matchedOrder?.approvedBy ||
+    matchedOrder?.paymentStatus === 'Paid'
+  );
+
+  const handleQuickApproveOrder = () => {
+    if (!invoice?.orderId) return;
+    const approver = typeof window !== 'undefined' ? window.prompt("Enter Approver / Manager Name:", "Jay Prakash Chaubey") : "Jay Prakash Chaubey";
+    if (approver === null) return;
+    const finalApprover = approver.trim() || "Jay Prakash Chaubey";
+
+    const updated = orders.map(o => {
+      if (o.orderId === invoice.orderId || o.id === invoice.orderId) {
+        let updatedAddr = o.address || '';
+        if (updatedAddr.includes('Approved By:')) {
+          updatedAddr = updatedAddr.replace(/Approved By:\s*([^•\n]+)/i, `Approved By: ${finalApprover}`);
+        } else {
+          updatedAddr = `${updatedAddr} • Approved By: ${finalApprover}`;
+        }
+        return {
+          ...o,
+          address: updatedAddr,
+          paymentStatus: 'Paid',
+          approvedBy: finalApprover,
+        };
+      }
+      return o;
+    });
+    updateOrders(updated);
+    showToast(`Order #${invoice.orderId} approved by ${finalApprover}! Official Bill generated.`);
+  };
+
   const handlePrint = () => {
     if (typeof window !== 'undefined') {
       window.print();
@@ -187,7 +233,7 @@ export default function InvoicePage() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => router.back()}
-              className="h-9 px-3 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              className="h-9 px-3 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back</span>
@@ -209,7 +255,7 @@ export default function InvoicePage() {
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
               onClick={handleCopyLink}
-              className="h-9 px-3.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              className="h-9 px-3.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Copy shareable invoice link"
             >
               <Share2 className="w-3.5 h-3.5 text-gray-500" />
@@ -218,7 +264,7 @@ export default function InvoicePage() {
 
             <button
               onClick={handlePrint}
-              className="h-9 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95 flex-1 sm:flex-none justify-center"
+              className="h-9 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95 flex-1 sm:flex-none justify-center cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>Print / Download PDF</span>
@@ -226,6 +272,43 @@ export default function InvoicePage() {
           </div>
         </div>
       </div>
+
+      {/* PENDING APPROVAL WARNING BANNER */}
+      {!isOrderApproved && (
+        <div className="max-w-4xl mx-auto px-4 mb-4 print:hidden">
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 text-amber-900 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-800 flex-shrink-0 mt-0.5">
+                <AlertCircle className="w-5 h-5 text-amber-700" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm sm:text-base text-amber-950 flex items-center gap-1.5">
+                  <span>Bill Pending Showroom Approval</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">
+                    Provisional Slip
+                  </span>
+                </h3>
+                <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                  Ye bill abhi showroom manager dwara approve nahi hua hai. Official GST Tax Invoice counter approval aur product handover ke baad finalize hoga.
+                </p>
+                {invoice.sellerHandedBy && (
+                  <p className="text-[11px] text-amber-950 mt-1 font-semibold">
+                    Seller / Handover Staff: <span className="underline">{invoice.sellerHandedBy}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={handleQuickApproveOrder}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold whitespace-nowrap shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Approve & Finalize Bill Now</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. A4 PRINT-READY INVOICE CONTAINER */}
       <div 
@@ -354,30 +437,60 @@ export default function InvoicePage() {
           {/* Ship To / Settlement */}
           <div className="bg-white p-3 rounded-lg border border-gray-300 space-y-1">
             <span className="font-extrabold uppercase tracking-wider text-gray-500 text-[10px] block">
-              SHIPPED TO & PAYMENT SETTLEMENT
+              {isPickup ? 'SHOWROOM COUNTER PICKUP & SETTLEMENT' : 'SHIPPED TO & PAYMENT SETTLEMENT'}
             </span>
             <div className="text-sm font-bold text-gray-900">
               {invoice.buyerName}
             </div>
-            <div className="text-gray-700 leading-snug">
-              Delivery Destination: {invoice.buyerAddress}
+            <div className="text-gray-700 leading-snug text-xs">
+              {isPickup ? (
+                <span className="inline-flex items-center gap-1 font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                  <Store className="w-3.5 h-3.5 text-purple-700" />
+                  <span>Showroom Counter Pickup (Garhwa Showroom)</span>
+                </span>
+              ) : (
+                <>Delivery Destination: {invoice.buyerAddress}</>
+              )}
             </div>
-            <div className="pt-0.5 space-y-0.5">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Payment Mode:</span>
-                <strong className="text-gray-900">{invoice.paymentMethod}</strong>
+
+            <div className="pt-1 space-y-1 text-xs">
+              <div className="flex justify-between items-center bg-gray-50 p-1.5 rounded border border-gray-200">
+                <span className="text-gray-600 font-semibold">Payment Mode:</span>
+                <strong className="text-gray-900 font-bold">
+                  {invoice.paymentMethod || (isPickup ? 'Store Pickup (Cash at Counter)' : 'UPI / Online Payment')}
+                </strong>
               </div>
-              <div className="flex justify-between">
+
+              <div className="flex justify-between items-center">
                 <span className="text-gray-600">Payment Status:</span>
-                <span className={`font-bold px-1.5 py-0.2 rounded text-[10.5px] ${
-                  invoice.paymentStatus === 'Paid' ? 'text-green-700 bg-green-50' : 'text-amber-700 bg-amber-50'
+                <span className={`font-extrabold px-2 py-0.5 rounded text-[10.5px] ${
+                  isOrderApproved ? 'text-emerald-800 bg-emerald-50 border border-emerald-200' : 'text-amber-800 bg-amber-50 border border-amber-200'
                 }`}>
-                  {invoice.paymentStatus}
+                  {isOrderApproved ? '✓ PAID / SETTLED' : 'APPROVAL PENDING'}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Dispatch Hub:</span>
-                <strong className="text-gray-900">Chiniya Road Showroom, Garhwa</strong>
+
+              {(invoice.sellerHandedBy || isPickup) && (
+                <div className="flex justify-between items-center bg-amber-50/70 px-2 py-1 rounded border border-amber-200 text-[11px]">
+                  <span className="text-amber-900 font-bold">Sold & Handed By:</span>
+                  <strong className="text-gray-900 font-bold">
+                    {invoice.sellerHandedBy || 'Showroom Sales Counter'}
+                  </strong>
+                </div>
+              )}
+
+              {(invoice.approvedBy || isOrderApproved) && (
+                <div className="flex justify-between items-center bg-blue-50/70 px-2 py-1 rounded border border-blue-200 text-[11px]">
+                  <span className="text-blue-900 font-bold">Approved By:</span>
+                  <strong className="text-blue-950 font-bold">
+                    {invoice.approvedBy || 'Jay Prakash Chaubey'}
+                  </strong>
+                </div>
+              )}
+
+              <div className="flex justify-between text-gray-500 text-[10px] pt-0.5">
+                <span>Dispatch Hub:</span>
+                <strong className="text-gray-800">Chiniya Road Showroom, Garhwa</strong>
               </div>
             </div>
           </div>
@@ -573,9 +686,14 @@ export default function InvoicePage() {
           </div>
 
           <div className="sm:col-span-4 text-center sm:text-right space-y-1 pt-2 sm:pt-0">
+            {invoice.sellerHandedBy && (
+              <div className="text-[10px] text-gray-600 pb-0.5">
+                Sold / Handed By: <strong className="text-gray-900 font-bold">{invoice.sellerHandedBy}</strong>
+              </div>
+            )}
             <div className="h-10 flex items-end justify-center sm:justify-end">
-              <div className="border-b border-gray-400 w-36 pb-0.5 text-center font-serif italic text-gray-700 font-bold text-xs">
-                Rupesh Kumar
+              <div className="border-b border-gray-400 min-w-40 px-3 pb-0.5 text-center font-serif italic text-gray-900 font-bold text-xs sm:text-sm">
+                {invoice.signatoryName || invoiceSettings?.signatoryName || 'Jay Prakash Chaubey'}
               </div>
             </div>
             <div className="space-y-0">
@@ -583,7 +701,7 @@ export default function InvoicePage() {
                 For LAPIEZ
               </div>
               <div className="text-[9px] text-gray-500 uppercase tracking-wider">
-                {invoice.signatoryTitle || 'Authorized Signatory'}
+                {invoice.signatoryTitle || 'AUTHORIZED SIGNATORY FOR LAPIEZ'}
               </div>
             </div>
           </div>

@@ -210,20 +210,62 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     return [allItem, ...otherItems];
   }, [cmsCategories, products]);
 
-  // Subcategories available under currently selected category
+  // Subcategories available under currently selected category (Merged CMS + Inventory counts)
   const availableSubcategories = useMemo(() => {
     if (selectedCategory === 'All' || selectedCategory === 'All Products') return [];
-    const matched = (cmsCategories || []).find(c => c.name.toLowerCase() === selectedCategory.toLowerCase());
-    if (matched && matched.subcategories && matched.subcategories.length > 0) {
-      return matched.subcategories.map(s => ({ name: s.name, slug: s.slug }));
+    const catLower = selectedCategory.toLowerCase();
+
+    // 1. Find matching CMS category
+    const matched = (cmsCategories || []).find(
+      (c) =>
+        c.name.toLowerCase() === catLower ||
+        c.name.toLowerCase().includes(catLower) ||
+        catLower.includes(c.name.toLowerCase()) ||
+        c.slug?.toLowerCase() === catLower
+    );
+
+    const subMap = new Map<string, { name: string; slug: string; count: number }>();
+
+    if (matched && Array.isArray(matched.subcategories)) {
+      matched.subcategories.forEach((s) => {
+        const sName = (s.name || '').trim();
+        if (sName) {
+          subMap.set(sName.toLowerCase(), {
+            name: sName,
+            slug: s.slug || sName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            count: 0,
+          });
+        }
+      });
     }
-    const set = new Set<string>();
-    products.forEach(p => {
-      if (p.category.toLowerCase() === selectedCategory.toLowerCase() && p.subcategory?.trim()) {
-        set.add(p.subcategory.trim());
+
+    // 2. Count matching products and include any extra subcategories present in product data
+    products.forEach((p) => {
+      const pCat = (p.category || '').toLowerCase();
+      const matchesCategory =
+        pCat === catLower ||
+        pCat.includes(catLower) ||
+        catLower.includes(pCat) ||
+        p.name.toLowerCase().includes(catLower);
+
+      if (!matchesCategory) return;
+
+      const pSub = (p.subcategory || (p as any).subCategory || '').trim();
+      if (pSub) {
+        const key = pSub.toLowerCase();
+        if (!subMap.has(key)) {
+          subMap.set(key, {
+            name: pSub,
+            slug: key.replace(/[^a-z0-9]+/g, '-'),
+            count: 1,
+          });
+        } else {
+          subMap.get(key)!.count += 1;
+        }
       }
     });
-    return Array.from(set).map(name => ({ name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-') }));
+
+    return Array.from(subMap.values());
   }, [selectedCategory, cmsCategories, products]);
 
   // Derive unique brands with product count (Connected with Admin CMS Brands & Products)
@@ -301,9 +343,11 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       // Subcategory Match
       if (selectedSubcategory !== 'All') {
         const subLower = selectedSubcategory.toLowerCase();
-        const matchesSubDirect = (p.subcategory || '').toLowerCase() === subLower;
+        const pSub = (p.subcategory || (p as any).subCategory || '').toLowerCase();
+        const matchesSubDirect = pSub === subLower || pSub.includes(subLower) || subLower.includes(pSub);
         const matchesSubName = p.name.toLowerCase().includes(subLower);
-        if (!matchesSubDirect && !matchesSubName) {
+        const matchesSpecs = (p.specs || '').toLowerCase().includes(subLower);
+        if (!matchesSubDirect && !matchesSubName && !matchesSpecs) {
           return false;
         }
       }
@@ -352,6 +396,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
 
   const clearAllFilters = () => {
     setSelectedCategory('All');
+    setSelectedSubcategory('All');
     setSelectedBrand('All');
     setOnlyInStock(false);
     setMaxPrice(100000);
@@ -363,6 +408,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
 
   const activeFilterCount = (selectedCategory !== 'All' && selectedCategory !== 'All Products' ? 1 : 0) +
+    (selectedSubcategory !== 'All' ? 1 : 0) +
     (selectedBrand !== 'All' ? 1 : 0) +
     (onlyInStock ? 1 : 0) +
     (maxPrice < 100000 ? 1 : 0) +
@@ -448,6 +494,74 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
             );
           })}
         </div>
+
+        {/* Mobile Fast-Swipe Subcategory Chips (Displayed when a category is selected) */}
+        {selectedCategory !== 'All' && selectedCategory !== 'All Products' && availableSubcategories.length > 0 && (
+          <div className="lg:hidden bg-gradient-to-r from-blue-50/90 via-white to-blue-50/60 border border-blue-200/90 rounded-2xl p-2.5 mb-3 shadow-2xs">
+            <div className="flex items-center justify-between mb-1.5 px-0.5">
+              <div className="flex items-center gap-1.5 text-[11px] font-black text-[#1A56DB] uppercase tracking-wide">
+                <Layers className="w-3.5 h-3.5 text-[#1A56DB]" />
+                <span className="truncate">{selectedCategory} Subcategories</span>
+              </div>
+              {selectedSubcategory !== 'All' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSubcategory('All');
+                    setDisplayLimit(24);
+                  }}
+                  className="text-[10.5px] font-bold text-rose-600 hover:text-rose-800 flex items-center gap-0.5 flex-shrink-0"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Clear</span>
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              {/* All in Category Pill */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSubcategory('All');
+                  setDisplayLimit(24);
+                }}
+                className={`px-3 py-1 rounded-full text-[11.5px] font-bold whitespace-nowrap transition-all flex items-center gap-1 flex-shrink-0 ${
+                  selectedSubcategory === 'All'
+                    ? 'bg-[#1A56DB] text-white shadow-xs'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <span>All {selectedCategory}</span>
+              </button>
+
+              {availableSubcategories.map((sub) => {
+                const isSubSelected = selectedSubcategory.toLowerCase() === sub.name.toLowerCase();
+                return (
+                  <button
+                    key={sub.name}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubcategory(isSubSelected ? 'All' : sub.name);
+                      setDisplayLimit(24);
+                    }}
+                    className={`px-3 py-1 rounded-full text-[11.5px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 flex-shrink-0 ${
+                      isSubSelected
+                        ? 'bg-[#1A56DB] text-white shadow-xs ring-2 ring-blue-300'
+                        : 'bg-white text-blue-900 border border-blue-200 hover:border-blue-400 hover:bg-blue-50/50'
+                    }`}
+                  >
+                    <span>{sub.name}</span>
+                    {sub.count > 0 && (
+                      <span className={`text-[10px] ${isSubSelected ? 'text-blue-100 font-bold' : 'text-blue-600 font-extrabold'}`}>
+                        ({sub.count})
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Mobile Filter & Sort Bar (Phone Optimized Flipkart/Amazon Style) */}
         <div className="lg:hidden flex items-center justify-between gap-2 bg-white border border-[#E5E7EB] rounded-xl p-2 mb-3 shadow-2xs">
@@ -1010,6 +1124,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                         key={cat.name}
                         onClick={() => {
                           setSelectedCategory(cat.name);
+                          setSelectedSubcategory('All');
                           setDisplayLimit(24);
                         }}
                         className={`p-2 rounded-lg text-left text-xs font-medium border flex items-center justify-between transition-colors ${
@@ -1025,6 +1140,56 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                   })}
                 </div>
               </div>
+
+              {/* Subcategories (When Category is selected) */}
+              {selectedCategory !== 'All' && selectedCategory !== 'All Products' && availableSubcategories.length > 0 && (
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-gray-900 uppercase tracking-wider block">
+                      Subcategories in {selectedCategory}
+                    </span>
+                    {selectedSubcategory !== 'All' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSubcategory('All')}
+                        className="text-[11px] font-bold text-blue-600 hover:underline"
+                      >
+                        View All
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSubcategory('All')}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                        selectedSubcategory === 'All'
+                          ? 'bg-[#1A56DB] text-white border-[#1A56DB]'
+                          : 'bg-gray-50 text-gray-700 border-gray-200'
+                      }`}
+                    >
+                      All {selectedCategory}
+                    </button>
+                    {availableSubcategories.map((sub) => {
+                      const isSubSelected = selectedSubcategory.toLowerCase() === sub.name.toLowerCase();
+                      return (
+                        <button
+                          key={sub.name}
+                          type="button"
+                          onClick={() => setSelectedSubcategory(isSubSelected ? 'All' : sub.name)}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                            isSubSelected
+                              ? 'bg-[#1A56DB] text-white border-[#1A56DB]'
+                              : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >
+                          {sub.name} {sub.count > 0 && `(${sub.count})`}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Price Slider */}
               <div className="pt-3 border-t border-gray-100">

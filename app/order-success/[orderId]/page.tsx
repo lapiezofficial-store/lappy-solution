@@ -103,6 +103,19 @@ export default function OrderSuccessPage() {
   const sgst = Math.round((totalTax - cgst) * 100) / 100;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`upi://pay?pa=${paymentSettings?.upiId || 'lappy.solution@ybl'}&pn=LAPIEZ%20GARHWA&am=${grandTotal}&cu=INR&tn=Invoice%20${order.orderId}`)}`;
 
+  // Pickup & approval detection
+  const isPickup = Boolean(
+    order.isStorePickup ||
+    String(order.address || '').toLowerCase().includes('pickup') ||
+    String(order.paymentMethod || '').toLowerCase().includes('pickup')
+  );
+  const isApproved = Boolean(
+    order.approvedBy ||
+    order.address?.includes('Approved By:') ||
+    order.paymentStatus === 'Paid' ||
+    order.orderStatus === 'Delivered'
+  );
+
   return (
     <div className="bg-[#F1F3F6] py-6 sm:py-10 min-h-[90vh]">
       <div className="max-w-4xl mx-auto px-3 sm:px-6 space-y-6">
@@ -115,13 +128,21 @@ export default function OrderSuccessPage() {
 
           <div>
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1 rounded-full inline-block mb-2">
-              Order received
+              {isPickup ? 'Store Pickup Confirmed' : 'Order received'}
             </span>
             <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
               Thank You, {order.customerName}!
             </h1>
             <p className="text-xs sm:text-sm text-gray-600 mt-2 max-w-xl mx-auto leading-relaxed">
-              Your order <strong className="text-gray-900 font-mono font-bold">#{order.orderId}</strong> has been received by our Garhwa showroom team. An official 18% GST Tax Invoice has been generated for your warranty.
+              {isPickup && !isApproved ? (
+                <>
+                  Your order <strong className="text-gray-900 font-mono font-bold">#{order.orderId}</strong> is reserved for Showroom Counter Pickup. Please show this Order ID at our Chiniya Road showroom counter. Your official 18% GST Tax Invoice will be finalized and printed upon staff approval & handover.
+                </>
+              ) : (
+                <>
+                  Your order <strong className="text-gray-900 font-mono font-bold">#{order.orderId}</strong> has been received by our Garhwa showroom team. An official 18% GST Tax Invoice is ready for your manufacturer warranty.
+                </>
+              )}
             </p>
           </div>
 
@@ -130,24 +151,24 @@ export default function OrderSuccessPage() {
             <Link
               href={`/invoice/${order.orderId}`}
               target="_blank"
-              className="h-10 sm:h-11 px-5 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-xs transition-all"
+              className="h-10 sm:h-11 px-5 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-xs transition-all cursor-pointer"
             >
               <FileText className="w-4 h-4" />
-              <span>Download Official GST Invoice (A4 PDF)</span>
+              <span>{isPickup && !isApproved ? 'View Showroom Pickup Slip' : 'Download Official GST Invoice (A4 PDF)'}</span>
               <ExternalLink className="w-3.5 h-3.5 text-blue-200" />
             </Link>
 
             <button
               onClick={handlePrintA4}
-              className="h-10 sm:h-11 px-4 rounded-xl bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold text-xs sm:text-sm flex items-center gap-2 transition-colors shadow-2xs"
+              className="h-10 sm:h-11 px-4 rounded-xl bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold text-xs sm:text-sm flex items-center gap-2 transition-colors shadow-2xs cursor-pointer"
             >
               <Printer className="w-4 h-4 text-[#1A56DB]" />
-              <span>Print A4 Invoice</span>
+              <span>{isPickup && !isApproved ? 'Print Pickup Slip' : 'Print A4 Invoice'}</span>
             </button>
 
             <button
               onClick={handleWhatsApp}
-              className="h-10 sm:h-11 px-4 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all shadow-xs"
+              className="h-10 sm:h-11 px-4 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all shadow-xs cursor-pointer"
             >
               <MessageSquare className="w-4 h-4 fill-white" />
               <span>WhatsApp Store Desk</span>
@@ -160,7 +181,7 @@ export default function OrderSuccessPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-gray-200 gap-3">
             <div>
               <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-50 text-[#1A56DB] border border-blue-200 inline-block mb-1">
-                ORIGINAL TAX INVOICE / BILL OF SUPPLY
+                {isPickup && !isApproved ? 'PROVISIONAL SHOWROOM SLIP (PENDING STORE APPROVAL)' : 'ORIGINAL TAX INVOICE / BILL OF SUPPLY'}
               </span>
               <h2 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
                 {siteSettings?.siteName || STORE_INFO.name}

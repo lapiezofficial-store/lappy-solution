@@ -6,8 +6,8 @@ import { ProductCatalog } from '../../components/ProductCatalog';
 
 function ShopContent() {
   const searchParams = useSearchParams();
-  const catParam = searchParams.get('cat');
-  const subcatParam = searchParams.get('subcat');
+  const catParam = searchParams.get('cat') || searchParams.get('category');
+  const subcatParam = searchParams.get('subcat') || searchParams.get('sub');
   const searchParam = searchParams.get('search');
   const brandParam = searchParams.get('brand');
   const initialCategory = catParam || 'All';
