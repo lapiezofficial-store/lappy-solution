@@ -73,6 +73,18 @@ export default function InvoicePage() {
   const invoice: Invoice | null = useMemo(() => {
     const decodedId = decodeURIComponent(invoiceId || '');
 
+    const sanitizeInvoice = (inv: Invoice | null): Invoice | null => {
+      if (!inv) return null;
+      let invoiceNumber = inv.invoiceNumber;
+      if (invoiceNumber && (invoiceNumber.includes('/10248') || invoiceNumber.includes('/10249'))) {
+        invoiceNumber = invoiceNumber.replace(/\/1024[89]/g, '/0001');
+      }
+      return {
+        ...inv,
+        invoiceNumber,
+      };
+    };
+
     // 1. Match from existing StoreContext invoices
     const existing = invoices.find(
       (inv) => inv.id === decodedId || 
@@ -80,7 +92,7 @@ export default function InvoicePage() {
                inv.invoiceNumber.replace(/\//g, '-') === decodedId ||
                inv.orderId === decodedId
     );
-    if (existing) return existing;
+    if (existing) return sanitizeInvoice(existing);
 
     // 2. Check direct localStorage 'ls_invoices'
     if (typeof window !== 'undefined') {
@@ -92,59 +104,59 @@ export default function InvoicePage() {
                    inv.invoiceNumber.replace(/\//g, '-') === decodedId ||
                    inv.orderId === decodedId
         );
-        if (match) return match;
+        if (match) return sanitizeInvoice(match);
 
         const lastInv = JSON.parse(localStorage.getItem('ls_last_invoice') || 'null');
         if (lastInv && (lastInv.id === decodedId || lastInv.orderId === decodedId || lastInv.invoiceNumber === decodedId)) {
-          return lastInv;
+          return sanitizeInvoice(lastInv);
         }
       } catch (e) {}
     }
 
-    // 3. Match from StoreContext orders
-    const matchedOrder = orders.find(
-      (o) => o.orderId === decodedId || o.id === decodedId
+// 3. Match from StoreContext orders
+const matchedOrder = orders.find(
+  (o) => o.orderId === decodedId || o.id === decodedId
+);
+if (matchedOrder) {
+  return sanitizeInvoice(buildInvoiceFromOrder({
+    order: matchedOrder,
+    settings: invoiceSettings || DEFAULT_INVOICE_SETTINGS
+  }));
+}
+
+// 4. Check direct localStorage 'ls_orders' and 'ls_last_order'
+if (typeof window !== 'undefined') {
+  try {
+    const savedOrders = JSON.parse(localStorage.getItem('ls_orders') || '[]');
+    const match = savedOrders.find(
+      (o: any) => o.orderId === decodedId || o.id === decodedId
     );
-    if (matchedOrder) {
-      return buildInvoiceFromOrder({
-        order: matchedOrder,
+    if (match) {
+      return sanitizeInvoice(buildInvoiceFromOrder({
+        order: match,
         settings: invoiceSettings || DEFAULT_INVOICE_SETTINGS
-      });
+      }));
     }
 
-    // 4. Check direct localStorage 'ls_orders' and 'ls_last_order'
-    if (typeof window !== 'undefined') {
-      try {
-        const savedOrders = JSON.parse(localStorage.getItem('ls_orders') || '[]');
-        const match = savedOrders.find(
-          (o: any) => o.orderId === decodedId || o.id === decodedId
-        );
-        if (match) {
-          return buildInvoiceFromOrder({
-            order: match,
-            settings: invoiceSettings || DEFAULT_INVOICE_SETTINGS
-          });
-        }
-
-        const lastOrder = JSON.parse(localStorage.getItem('ls_last_order') || 'null');
-        if (lastOrder && (lastOrder.orderId === decodedId || lastOrder.id === decodedId)) {
-          return buildInvoiceFromOrder({
-            order: lastOrder,
-            settings: invoiceSettings || DEFAULT_INVOICE_SETTINGS
-          });
-        }
-      } catch (e) {}
-    }
-
-    // 5. Build from fetched remote database order
-    if (remoteOrder) {
-      return buildInvoiceFromOrder({
-        order: remoteOrder,
+    const lastOrder = JSON.parse(localStorage.getItem('ls_last_order') || 'null');
+    if (lastOrder && (lastOrder.orderId === decodedId || lastOrder.id === decodedId)) {
+      return sanitizeInvoice(buildInvoiceFromOrder({
+        order: lastOrder,
         settings: invoiceSettings || DEFAULT_INVOICE_SETTINGS
-      });
+      }));
     }
+  } catch (e) {}
+}
 
-    return null;
+// 5. Build from fetched remote database order
+if (remoteOrder) {
+  return sanitizeInvoice(buildInvoiceFromOrder({
+    order: remoteOrder,
+    settings: invoiceSettings || DEFAULT_INVOICE_SETTINGS
+  }));
+}
+
+return null;
   }, [invoiceId, invoices, orders, invoiceSettings, remoteOrder]);
 
   if (isLoadingRemote && !invoice) {
@@ -217,9 +229,33 @@ export default function InvoicePage() {
     }
   };
 
-  const handleCopyLink = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
+  const handleShareInvoice = async () => {
+    if (typeof window === 'undefined') return;
+
+    const shareUrl = window.location.href;
+    const shareTitle = `Tax Invoice #${invoice.invoiceNumber} - LAPIEZ`;
+    const shareText = `Official Tax Invoice #${invoice.invoiceNumber} for Order #${invoice.orderId} from LAPIEZ Showroom (Amount: ₹${invoice.grandTotal.toLocaleString('en-IN')}).\nClick link to view or download bill: ${shareUrl}`;
+
+    // 1. Try Native Web Share API (opens native apps tray on Android / iOS / Desktop)
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+
+    // 2. Fallback: Direct WhatsApp share if native sheet is not supported
+    try {
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+      window.open(whatsappUrl, '_blank');
+    } catch {
+      navigator.clipboard?.writeText(shareUrl);
       showToast('Invoice link copied to clipboard!');
     }
   };
@@ -254,12 +290,12 @@ export default function InvoicePage() {
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
-              onClick={handleCopyLink}
-              className="h-9 px-3.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Copy shareable invoice link"
+              onClick={handleShareInvoice}
+              className="h-9 px-3.5 rounded-lg border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Share invoice directly to WhatsApp or installed apps"
             >
-              <Share2 className="w-3.5 h-3.5 text-gray-500" />
-              <span className="hidden sm:inline">Share</span>
+              <Share2 className="w-3.5 h-3.5 text-blue-600" />
+              <span>Share Bill</span>
             </button>
 
             <button

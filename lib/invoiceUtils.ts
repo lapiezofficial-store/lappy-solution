@@ -153,7 +153,7 @@ export const DEFAULT_INVOICE_SETTINGS: InvoiceSettings = {
 
   prefix: 'INV',
   financialYear: '2026-27',
-  nextNumber: 10248,
+  nextNumber: 1,
 
   upiId: 'lappy.solution@ybl',
   upiName: 'LAPIEZ GARHWA',
@@ -355,9 +355,10 @@ export function calculateInvoiceItem(params: {
   };
 }
 
-// Generate formatted sequential invoice number
+// Generate formatted sequential invoice number starting from 0001 (e.g. INV/2026-27/0001)
 export function formatInvoiceNumber(prefix: string, financialYear: string, seqNumber: number): string {
-  const padded = String(seqNumber).padStart(5, '0');
+  const num = Number(seqNumber) || 1;
+  const padded = String(num).padStart(4, '0');
   return `${prefix}/${financialYear}/${padded}`;
 }
 
@@ -370,7 +371,14 @@ export function buildInvoiceFromOrder(params: {
 }): Invoice {
   const { order, settings = DEFAULT_INVOICE_SETTINGS, customBuyerGstin, isInterstate = false } = params;
 
-  const invoiceNumber = formatInvoiceNumber(settings.prefix, settings.financialYear, settings.nextNumber);
+  let seq = settings.nextNumber;
+  if (!seq || seq >= 10000) {
+    seq = 1;
+  }
+  let invoiceNumber = order.invoiceNumber || formatInvoiceNumber(settings.prefix, settings.financialYear, seq);
+  if (invoiceNumber.includes('/10248') || invoiceNumber.includes('/10249')) {
+    invoiceNumber = invoiceNumber.replace(/\/1024[89]/g, '/0001');
+  }
 
   // Parse items
   let rawItems: any[] = [];

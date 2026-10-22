@@ -1105,7 +1105,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const savedInvSettings = localStorage.getItem('ls_invoice_settings');
       if (savedInvSettings) {
-        setInvoiceSettings(JSON.parse(savedInvSettings));
+        try {
+          const parsed = JSON.parse(savedInvSettings);
+          if (!parsed.nextNumber || parsed.nextNumber >= 10000) {
+            parsed.nextNumber = 1;
+          }
+          setInvoiceSettings(parsed);
+        } catch (e) {}
       }
 
       const savedPages = localStorage.getItem('ls_custom_pages');
@@ -2712,6 +2718,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Invoicing Engine Methods
   const createInvoiceFromOrder = (order: any, buyerGstin?: string, isInterstate: boolean = false): Invoice => {
     const currentSettings = { ...invoiceSettings };
+    if (!currentSettings.nextNumber || currentSettings.nextNumber >= 10000) {
+      currentSettings.nextNumber = 1;
+    }
     const nextSeq = currentSettings.nextNumber;
     currentSettings.nextNumber = nextSeq + 1;
     setInvoiceSettings(currentSettings);
@@ -2737,6 +2746,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const createManualInvoice = (manualData: Partial<Invoice>): Invoice => {
     const currentSettings = { ...invoiceSettings };
+    if (!currentSettings.nextNumber || currentSettings.nextNumber >= 10000) {
+      currentSettings.nextNumber = 1;
+    }
     const nextSeq = currentSettings.nextNumber;
     currentSettings.nextNumber = nextSeq + 1;
     setInvoiceSettings(currentSettings);
