@@ -186,9 +186,9 @@ export default function InvoicePage() {
 
   const handleQuickApproveOrder = () => {
     if (!invoice?.orderId) return;
-    const approver = typeof window !== 'undefined' ? window.prompt("Enter Approver / Manager Name:", "Jay Prakash Chaubey") : "Jay Prakash Chaubey";
+    const approver = typeof window !== 'undefined' ? window.prompt("Enter Approver / Manager Name:", "Lapiez") : "Lapiez";
     if (approver === null) return;
-    const finalApprover = approver.trim() || "Jay Prakash Chaubey";
+    const finalApprover = approver.trim() || "Lapiez";
 
     const updated = orders.map(o => {
       if (o.orderId === invoice.orderId || o.id === invoice.orderId) {
@@ -483,7 +483,7 @@ export default function InvoicePage() {
                 <div className="flex justify-between items-center bg-blue-50/70 px-2 py-1 rounded border border-blue-200 text-[11px]">
                   <span className="text-blue-900 font-bold">Approved By:</span>
                   <strong className="text-blue-950 font-bold">
-                    {invoice.approvedBy || 'Jay Prakash Chaubey'}
+                    {invoice.approvedBy === 'Jay Prakash Chaubey' || invoice.approvedBy === 'Jay Prakash' ? 'Lapiez' : (invoice.approvedBy || 'Lapiez')}
                   </strong>
                 </div>
               )}
@@ -693,7 +693,7 @@ export default function InvoicePage() {
             )}
             <div className="h-10 flex items-end justify-center sm:justify-end">
               <div className="border-b border-gray-400 min-w-40 px-3 pb-0.5 text-center font-serif italic text-gray-900 font-bold text-xs sm:text-sm">
-                {invoice.signatoryName || invoiceSettings?.signatoryName || 'Jay Prakash Chaubey'}
+                {invoice.signatoryName && invoice.signatoryName !== 'Jay Prakash Chaubey' ? invoice.signatoryName : (invoiceSettings?.signatoryName && invoiceSettings.signatoryName !== 'Jay Prakash Chaubey' ? invoiceSettings.signatoryName : '')}
               </div>
             </div>
             <div className="space-y-0">

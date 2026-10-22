@@ -174,7 +174,7 @@ export const DEFAULT_INVOICE_SETTINGS: InvoiceSettings = {
     'Subject to realization of Cheque / UPI / Bank transfer.'
   ],
   declaration: 'We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.',
-  signatoryName: 'Jay Prakash Chaubey',
+  signatoryName: '',
   signatoryTitle: 'Authorized Signatory for Lapiez',
 
   showGstin: true,
@@ -448,11 +448,12 @@ export function buildInvoiceFromOrder(params: {
     ''
   );
 
-  const approvedBy = (
+  const rawApproved = (
     order.approvedBy ||
     order.address?.match(/Approved By:\s*([^•\n]+)/i)?.[1]?.trim() ||
     ''
   );
+  const approvedBy = rawApproved === 'Jay Prakash Chaubey' || rawApproved === 'Jay Prakash' ? 'Lapiez' : rawApproved;
 
   const isApproved = Boolean(
     approvedBy ||
@@ -515,7 +516,7 @@ export function buildInvoiceFromOrder(params: {
     notes: order.notes || 'Goods verified and packed in brand original sealed packaging.',
     terms: settings.termsAndConditions,
     declaration: settings.declaration,
-    signatoryName: settings.signatoryName || 'Jay Prakash Chaubey',
+    signatoryName: settings.signatoryName && settings.signatoryName !== 'Jay Prakash Chaubey' ? settings.signatoryName : '',
     signatoryTitle: settings.signatoryTitle || 'Authorized Signatory for Lapiez',
     createdAt: new Date().toISOString()
   };

@@ -2787,7 +2787,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       notes: manualData.notes || 'Counter sale invoice. 100% genuine guaranteed.',
       terms: currentSettings.termsAndConditions,
       declaration: currentSettings.declaration,
-      signatoryName: currentSettings.signatoryName || 'Jay Prakash Chaubey',
+      signatoryName: currentSettings.signatoryName && currentSettings.signatoryName !== 'Jay Prakash Chaubey' ? currentSettings.signatoryName : '',
       signatoryTitle: currentSettings.signatoryTitle || 'Authorized Signatory for Lapiez',
       createdAt: new Date().toISOString(),
       ...manualData

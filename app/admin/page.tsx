@@ -596,7 +596,7 @@ export default function AdminPage() {
   const [invBankName, setInvBankName] = useState(invoiceSettings?.bankName || 'State Bank of India');
   const [invAccountNo, setInvAccountNo] = useState(invoiceSettings?.accountNumber || '38947291048');
   const [invIfsc, setInvIfsc] = useState(invoiceSettings?.ifscCode || 'SBIN0000080');
-  const [invSignatoryName, setInvSignatoryName] = useState(invoiceSettings?.signatoryName || 'Jay Prakash Chaubey');
+  const [invSignatoryName, setInvSignatoryName] = useState(invoiceSettings?.signatoryName && invoiceSettings.signatoryName !== 'Jay Prakash Chaubey' ? invoiceSettings.signatoryName : '');
   const [invSignatoryTitle, setInvSignatoryTitle] = useState(invoiceSettings?.signatoryTitle || 'Authorized Signatory for Lapiez');
 
   useEffect(() => {
@@ -613,7 +613,7 @@ export default function AdminPage() {
       setInvBankName(invoiceSettings.bankName);
       setInvAccountNo(invoiceSettings.accountNumber);
       setInvIfsc(invoiceSettings.ifscCode);
-      setInvSignatoryName(invoiceSettings.signatoryName || 'Jay Prakash Chaubey');
+      setInvSignatoryName(invoiceSettings.signatoryName && invoiceSettings.signatoryName !== 'Jay Prakash Chaubey' ? invoiceSettings.signatoryName : '');
       setInvSignatoryTitle(invoiceSettings.signatoryTitle || 'Authorized Signatory for Lapiez');
     }
   }, [invoiceSettings]);
@@ -666,9 +666,9 @@ export default function AdminPage() {
 
   // Order Actions
   const handleVerifyPayment = (orderId: string) => {
-    const approver = typeof window !== 'undefined' ? window.prompt("Enter Approver / Manager Name who verified payment & approves bill:", "Jay Prakash Chaubey") : "Jay Prakash Chaubey";
+    const approver = typeof window !== 'undefined' ? window.prompt("Enter Approver / Manager Name who verified payment & approves bill:", "Lapiez") : "Lapiez";
     if (approver === null) return;
-    const finalApprover = approver.trim() || "Jay Prakash Chaubey";
+    const finalApprover = approver.trim() || "Lapiez";
 
     const updated = orders.map(o => {
       if (o.orderId === orderId) {
@@ -711,9 +711,9 @@ export default function AdminPage() {
     if (staff === null) return;
     const finalStaff = staff.trim() || "Sonu Kumar";
 
-    const approver = typeof window !== 'undefined' ? window.prompt("Enter Approver / Store Manager Name:", currentApprover || "Jay Prakash Chaubey") : "Jay Prakash Chaubey";
+    const approver = typeof window !== 'undefined' ? window.prompt("Enter Approver / Store Manager Name:", currentApprover && currentApprover !== 'Jay Prakash Chaubey' && currentApprover !== 'Jay Prakash' ? currentApprover : "Lapiez") : "Lapiez";
     if (approver === null) return;
-    const finalApprover = approver.trim() || "Jay Prakash Chaubey";
+    const finalApprover = approver.trim() || "Lapiez";
 
     const updated = orders.map(o => {
       if (o.orderId === orderId) {
@@ -3715,7 +3715,8 @@ export default function AdminPage() {
                   const isPaid = order.paymentStatus === 'Paid';
                   const isPickupOrder = (order as any).isStorePickup || order.address?.toLowerCase().includes('pickup') || order.paymentMethod?.toLowerCase().includes('pickup');
                   const handedOverBy = (order as any).pickupHandedBy || order.address?.match(/(?:Handed Over By|Sold By):\s*([^•\n]+)/i)?.[1]?.trim() || '';
-                  const approverName = (order as any).approvedBy || order.address?.match(/Approved By:\s*([^•\n]+)/i)?.[1]?.trim() || '';
+                  const rawApprover = (order as any).approvedBy || order.address?.match(/Approved By:\s*([^•\n]+)/i)?.[1]?.trim() || '';
+                  const approverName = rawApprover === 'Jay Prakash Chaubey' || rawApprover === 'Jay Prakash' ? 'Lapiez' : rawApprover;
                   const isOrderApproved = Boolean(approverName || isPaid || order.orderStatus === 'Delivered');
 
                   return (
@@ -3897,7 +3898,7 @@ export default function AdminPage() {
                                   <div className="flex items-center justify-between text-[11px] text-emerald-700 bg-emerald-50 px-2 py-1.5 rounded-lg border border-emerald-200 font-bold">
                                     <span className="flex items-center gap-1 truncate">
                                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                                      <span className="truncate">Handed: {handedOverBy || 'Staff'} • Apprv: {approverName || 'Jay Prakash'}</span>
+                                      <span className="truncate">Handed: {handedOverBy || 'Staff'} • Apprv: {approverName || 'Lapiez'}</span>
                                     </span>
                                     <button
                                       onClick={() => handleHandoverPickupOrder(order.orderId, handedOverBy, approverName)}
@@ -4740,7 +4741,7 @@ export default function AdminPage() {
                       type="text"
                       value={invSignatoryName}
                       onChange={(e) => setInvSignatoryName(e.target.value)}
-                      placeholder="e.g. Jay Prakash Chaubey"
+                      placeholder="Optional (leave blank for empty signature line)"
                       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-bold text-gray-900 focus:outline-none focus:border-[#1A56DB]"
                     />
                   </div>

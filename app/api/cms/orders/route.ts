@@ -75,6 +75,9 @@ const toClientOrder = (order: { itemsJson: string; address?: string } & Record<s
     const match = order.address.match(/Approved By:\s*([^•\n]+)/i);
     if (match) approvedBy = match[1].trim();
   }
+  if (approvedBy === 'Jay Prakash Chaubey' || approvedBy === 'Jay Prakash') {
+    approvedBy = 'Lapiez';
+  }
 
   return { ...rest, items, pickupHandedBy, approvedBy };
 };
