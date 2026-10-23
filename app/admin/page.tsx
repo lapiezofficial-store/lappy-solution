@@ -13,7 +13,7 @@ import {
   BookOpen, Star, Crown, Laptop, Box, Award, AlertTriangle, MoreVertical,
   SlidersHorizontal, ArrowUpDown, Pencil, ChevronDown, ChevronRight, ChevronLeft, Download, Upload, Tag,
   Share2, Globe, ArrowLeft, LayoutDashboard, Menu, Wrench, Terminal, Database, Radio, HardDrive, FolderTree, CheckSquare, FileCode,
-  Banknote
+  Banknote, Loader2
 } from 'lucide-react';
 import { useStore, CMSBanner, CMSSection, CMSCustomPage, CMSBlogPost, CMSBrand, CMSCategory, CMSSubcategory, DEFAULT_SHOP_BY_CATEGORIES } from '../../context/StoreContext';
 import { BrandLogoRenderer, PRESET_BRANDS_CONFIG } from '../../components/BrandLogoRenderer';
@@ -318,6 +318,13 @@ export default function AdminPage() {
   const [newProductImageInput, setNewProductImageInput] = useState('');
   const [newProductGstRate, setNewProductGstRate] = useState(18);
   const [newProductHsnCode, setNewProductHsnCode] = useState('8471');
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [inventoryPage, setInventoryPage] = useState(1);
+
+  // Reset inventory pagination whenever any filter or search changes
+  useEffect(() => {
+    setInventoryPage(1);
+  }, [inventoryCategory, inventorySubcategory, inventorySearch, inventoryBrand, inventoryStatus, inventoryStockLevel, inventoryPriceRange, inventorySort]);
 
   // Live Real-Time Duplicate Product Candidate Detection Engine
   const duplicateCandidate = useMemo(() => {
@@ -966,24 +973,29 @@ export default function AdminPage() {
       return;
     }
 
-    if (duplicateCandidate?.matchType === 'exact') {
-      showToast(`Duplicate Blocked: "${duplicateCandidate.product.name}" already exists in inventory!`);
-      return;
-    }
+    if (isSavingProduct) return;
 
     const priceNum = Number(newProductPrice);
     const mrpNum = Number(newProductMrp) || Math.round(priceNum * 1.2);
     const discount = Math.round(((mrpNum - priceNum) / mrpNum) * 100);
 
+    // Collect valid images from gallery, direct input URL, or reliable showroom hardware placeholder
     const validGallery = newProductImages.filter(Boolean);
-    const primaryImg = validGallery[0] || newProductImage.trim();
-    if (!primaryImg) {
-      showToast('Please upload or provide at least 1 image for this product!');
-      return;
+    if (newProductImageInput.trim() && !validGallery.includes(newProductImageInput.trim())) {
+      validGallery.push(newProductImageInput.trim());
     }
-    if (validGallery.length === 0 && primaryImg) {
+    if (newProductImage.trim() && !validGallery.includes(newProductImage.trim())) {
+      validGallery.unshift(newProductImage.trim());
+    }
+
+    const defaultHardwarePlaceholder = 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&auto=format&fit=crop&q=80';
+    const primaryImg = validGallery[0] || defaultHardwarePlaceholder;
+    if (validGallery.length === 0) {
       validGallery.push(primaryImg);
     }
+
+    const catClean = (newProductCategory || 'GEN').replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase() || 'GEN';
+    const uniqueSku = `LS-${catClean}-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`;
 
     const newProd: Partial<Product> = {
       name: newProductName.trim(),
@@ -999,13 +1011,14 @@ export default function AdminPage() {
       images: validGallery,
       inStock: true,
       stockQuantity: Number(newProductStockQuantity) || 10,
-      sku: `LS-${newProductCategory.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase() || 'GEN'}-${Math.floor(1000 + Math.random() * 9000)}`,
+      sku: uniqueSku,
       rating: 4.8,
       gstRate: Number(newProductGstRate) !== undefined && !isNaN(Number(newProductGstRate)) ? Number(newProductGstRate) : 18,
       hsnCode: newProductHsnCode.trim() || '8471',
     };
 
     try {
+      setIsSavingProduct(true);
       await addProductToDb(newProd);
       setIsAddProductOpen(false);
       setNewProductName('');
@@ -1019,10 +1032,13 @@ export default function AdminPage() {
       setNewProductImageInput('');
       setNewProductGstRate(18);
       setNewProductHsnCode('8471');
+      showToast('Product added successfully!');
     } catch (err: any) {
       console.error('Failed to save product:', err);
       // Keep modal open and preserve all user inputs so no work is lost!
       showToast(err.message || 'Failed to save product to database');
+    } finally {
+      setIsSavingProduct(false);
     }
   };
 
@@ -1042,6 +1058,7 @@ export default function AdminPage() {
     setNewProductImageInput('');
     setNewProductGstRate(18);
     setNewProductHsnCode('8471');
+    setIsSavingProduct(false);
     setIsAddProductOpen(true);
     setIsNewMenuOpen(false);
   };
@@ -5412,7 +5429,7 @@ export default function AdminPage() {
                       </thead>
 
                       <tbody className="divide-y divide-gray-100 bg-white">
-                        {filteredInventory.slice(0, 100).map((product) => {
+                        {filteredInventory.slice((inventoryPage - 1) * 50, inventoryPage * 50).map((product) => {
                           const isSelected = inventorySelectedIds.includes(product.id);
                           const isInlineEditing = inlineEditingPriceId === product.id;
                           const qty = product.stockQuantity ?? (product.inStock ? 10 : 0);
@@ -5712,9 +5729,37 @@ export default function AdminPage() {
                     </table>
                   </div>
 
-                  {filteredInventory.length > 100 && (
-                    <div className="p-3 text-center text-xs text-gray-500 bg-gray-50 border-t border-gray-100">
-                      Showing first 100 of {filteredInventory.length} products. Use filters to narrow results.
+                  {filteredInventory.length > 0 && (
+                    <div className="p-3.5 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                      <div className="text-gray-600 font-medium">
+                        Showing <strong className="text-gray-900">{Math.min((inventoryPage - 1) * 50 + 1, filteredInventory.length)}</strong> to{' '}
+                        <strong className="text-gray-900">{Math.min(inventoryPage * 50, filteredInventory.length)}</strong> of{' '}
+                        <strong className="text-gray-900">{filteredInventory.length.toLocaleString('en-IN')}</strong> products
+                      </div>
+
+                      {filteredInventory.length > 50 && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setInventoryPage((p) => Math.max(p - 1, 1))}
+                            disabled={inventoryPage === 1}
+                            className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white font-bold text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                          >
+                            Previous
+                          </button>
+                          <span className="px-2 text-xs font-bold text-gray-700">
+                            Page {inventoryPage} of {Math.ceil(filteredInventory.length / 50)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setInventoryPage((p) => Math.min(p + 1, Math.ceil(filteredInventory.length / 50)))}
+                            disabled={inventoryPage >= Math.ceil(filteredInventory.length / 50)}
+                            className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white font-bold text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -10419,16 +10464,25 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={duplicateCandidate?.matchType === 'exact'}
+                  disabled={isSavingProduct}
                   className={`px-5 py-2 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all ${
-                    duplicateCandidate?.matchType === 'exact'
-                      ? 'bg-rose-100 text-rose-600 border border-rose-300 cursor-not-allowed opacity-80'
-                      : 'bg-[#0F172A] hover:bg-[#1E293B] text-white cursor-pointer'
+                    isSavingProduct
+                      ? 'bg-blue-400 text-white cursor-wait'
+                      : 'bg-[#1A56DB] hover:bg-[#1E40AF] text-white cursor-pointer active:scale-95'
                   }`}
-                  title={duplicateCandidate?.matchType === 'exact' ? 'Cannot upload duplicate product' : 'Save to Catalog'}
+                  title="Save Product"
                 >
-                  <Plus className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{duplicateCandidate?.matchType === 'exact' ? 'Upload Blocked (Duplicate Found)' : 'Save to Catalog'}</span>
+                  {isSavingProduct ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                      <span>Saving Product...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3.5 h-3.5 text-white" />
+                      <span>Save Product</span>
+                    </>
+                  )}
                 </button>
               </div>
 

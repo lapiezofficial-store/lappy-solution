@@ -102,7 +102,7 @@ export async function GET(request: Request) {
       prisma.banner.findMany({ where: { status: 'active' }, orderBy: { position: 'asc' } }).catch(() => []),
       prisma.homepageSection.findMany({ orderBy: { position: 'asc' } }).catch(() => []),
       prisma.category.findMany({ orderBy: { position: 'asc' } }).catch(() => []),
-      prisma.product.findMany({ where: { status: 'active' }, orderBy: { createdAt: 'desc' } }).catch(() => []),
+      prisma.product.findMany({ where: { status: 'active' }, orderBy: { createdAt: 'desc' }, take: 1000 }).catch(() => []),
       prisma.customPage.findMany({ where: { status: 'published' }, orderBy: { updatedAt: 'desc' } }).catch(() => []),
       prisma.blogPost.findMany({ where: { status: 'published' }, orderBy: { createdAt: 'desc' } }).catch(() => []),
       prisma.coupon.findMany({ where: { isActive: true }, orderBy: { createdAt: 'desc' } }).catch(() => []),

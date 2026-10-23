@@ -58,7 +58,7 @@ export async function GET(request: Request) {
     const category = searchParams.get('category');
     const search = searchParams.get('search');
     const requestedLimit = Number(searchParams.get('limit'));
-    const limit = Number.isInteger(requestedLimit) && requestedLimit > 0 ? Math.min(requestedLimit, 100) : undefined;
+    const limit = Number.isInteger(requestedLimit) && requestedLimit > 0 ? Math.min(requestedLimit, 1000) : 500;
 
     const where: Prisma.ProductWhereInput = { status: 'active' };
     if (id) {
@@ -153,27 +153,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name, category, brand, and a valid price are required.' }, { status: 400 });
     }
     const trimmedName = body.name.trim();
-    const sku = body.sku || (`LS-${body.category.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`);
+    const catClean = (body.category || 'GEN').replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase() || 'GEN';
 
-    // Duplicate Check: ensure no product with the same exact/case-insensitive name or SKU already exists
-    const existing = await prisma.product.findFirst({
+    // 1. Rapid double-click deduplication (within last 4 seconds)
+    const fourSecondsAgo = new Date(Date.now() - 4000);
+    const recent = await prisma.product.findFirst({
       where: {
-        OR: [
-          { name: { equals: trimmedName, mode: 'insensitive' } },
-          { sku: sku }
-        ]
+        name: { equals: trimmedName, mode: 'insensitive' },
+        brand: { equals: body.brand.trim(), mode: 'insensitive' },
+        price: Number(body.price),
+        createdAt: { gte: fourSecondsAgo }
       }
     });
-
-    if (existing) {
-      return NextResponse.json({
-        error: `Duplicate Product Detected: A product with the name "${existing.name}" already exists in inventory (SKU: ${existing.sku}).`,
-        isDuplicate: true,
-        existingProduct: { id: existing.id, name: existing.name, sku: existing.sku, price: existing.price }
-      }, { status: 409 });
+    if (recent) {
+      return NextResponse.json({ success: true, product: formatProductPayload(recent) });
     }
 
-    const slug = body.slug || (trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now());
+    // 2. Guaranteed collision-free unique SKU
+    let sku = body.sku?.trim();
+    if (!sku) {
+      sku = `LS-${catClean}-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`;
+    }
+    const existingSku = await prisma.product.findFirst({
+      where: { sku: sku },
+      select: { id: true }
+    });
+    if (existingSku) {
+      sku = `LS-${catClean}-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`;
+    }
+
+    // 3. Guaranteed unique slug for PostgreSQL
+    const baseSlugPart = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
+    let slug = body.slug || `${baseSlugPart}-${Date.now().toString().slice(-6)}`;
+    const existingSlug = await prisma.product.findFirst({
+      where: { slug: slug },
+      select: { id: true }
+    });
+    if (existingSlug) {
+      slug = `${baseSlugPart}-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+    }
 
     const rawImages = Array.isArray(body.images) && body.images.length > 0
       ? body.images
@@ -203,7 +221,7 @@ export async function POST(request: Request) {
         processedGallery.push(img);
       }
     }
-    const imageToStore = processedGallery.length > 0 ? processedGallery.join('|||') : (body.image || '');
+    const imageToStore = processedGallery.length > 0 ? processedGallery.join('|||') : (body.image || 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&auto=format&fit=crop&q=80');
 
     const product = await prisma.product.create({
       data: {

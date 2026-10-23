@@ -598,6 +598,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
+  function safeSaveProductsToLocalStorage(productsList: Product[]) {
+    if (typeof window === 'undefined') return;
+    try {
+      // Safely cache up to 100 products to prevent localStorage 5MB QuotaExceededError and browser freezing when catalog scales to 10,000+ items
+      localStorage.setItem('ls_products', JSON.stringify(productsList.slice(0, 100)));
+    } catch (e) {
+      // Safely ignore QuotaExceededError
+    }
+  }
+
   const [products, setProducts] = useState<Product[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -916,9 +926,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 return prev;
               }
 
-              try {
-                localStorage.setItem('ls_products', JSON.stringify(nextList));
-              } catch (e) {}
+              safeSaveProductsToLocalStorage(nextList);
 
               return nextList;
             });
@@ -1383,7 +1391,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateProducts = async (prods: Product[]) => {
     setProducts(prods);
     try {
-      localStorage.setItem('ls_products', JSON.stringify(prods));
+      safeSaveProductsToLocalStorage(prods);
       const changes = prods.filter((product) => {
         const previous = products.find((current) => current.id === product.id || (product.sku && current.sku === product.sku));
         return previous && (previous.inStock !== product.inStock || previous.stockQuantity !== product.stockQuantity);
@@ -1856,26 +1864,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const addProductToDb = async (prod: Partial<Product>) => {
-    // 1. Prevent duplicate product upload
-    const cleanName = (prod.name || '').trim().toLowerCase();
-    const cleanSku = (prod.sku || '').trim().toLowerCase();
-    const existing = products.find(p => {
-      if (cleanName && p.name.trim().toLowerCase() === cleanName) return true;
-      if (cleanSku && p.sku && p.sku.trim().toLowerCase() === cleanSku) return true;
-      return false;
-    });
-
-    if (existing) {
-      showToast(`Duplicate Blocked: "${existing.name}" already exists in inventory!`);
-      throw new Error(`Product "${existing.name}" already exists (SKU: ${existing.sku}). Duplicate upload blocked.`);
+    // Ensure collision-free unique SKU for database
+    const catClean = ((prod.category || 'GEN') as string).replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase() || 'GEN';
+    let sku = prod.sku?.trim();
+    if (!sku || products.some(p => p.sku && p.sku.toLowerCase() === sku!.toLowerCase())) {
+      sku = `LS-${catClean}-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`;
     }
+    const finalProd = { ...prod, sku };
 
     try {
       const res = await fetch('/api/cms/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(prod),
+        body: JSON.stringify(finalProd),
       });
 
       if (res.ok) {
@@ -1883,7 +1885,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const created = normalizeProduct(data.product);
         setProducts((prev) => {
           const updated = [created, ...prev.filter(p => p.id !== created.id && p.sku !== created.sku)];
-          try { localStorage.setItem('ls_products', JSON.stringify(updated)); } catch (e) {}
+          safeSaveProductsToLocalStorage(updated);
           return updated;
         });
         showToast(`Product "${created.name}" saved to database!`);
@@ -1936,9 +1938,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             (p as any).dbId !== targetId && 
             (!sku || !p.sku || p.sku.toLowerCase() !== sku.toLowerCase())
           );
-          try { 
-            localStorage.setItem('ls_products', JSON.stringify(next)); 
-          } catch (e) {}
+          safeSaveProductsToLocalStorage(next);
           return next;
         });
 
@@ -1969,7 +1969,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (saved) {
             const parsed = JSON.parse(saved);
             const filtered = parsed.filter((p: any) => p.id !== id && p.id !== targetId);
-            localStorage.setItem('ls_products', JSON.stringify(filtered));
+            safeSaveProductsToLocalStorage(filtered);
           }
         } catch (e) {}
 
@@ -2005,7 +2005,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setProducts(prev => {
           const exists = prev.some(p => p.id === targetId || (p.sku && prodToRestore.sku && p.sku.toLowerCase() === prodToRestore.sku.toLowerCase()));
           const next = exists ? prev : [restored, ...prev];
-          try { localStorage.setItem('ls_products', JSON.stringify(next)); } catch (e) {}
+          safeSaveProductsToLocalStorage(next);
           return next;
         });
       }
@@ -2032,7 +2032,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setProducts(prev => {
         const restored = items.map(p => ({ ...p, status: 'active', deletedAt: null }));
         const next = [...restored, ...prev];
-        try { localStorage.setItem('ls_products', JSON.stringify(next)); } catch (e) {}
+        safeSaveProductsToLocalStorage(next);
         return next;
       });
 
@@ -2114,9 +2114,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             (name && p.name && p.name.trim().toLowerCase() === name.trim().toLowerCase());
           return isMatch ? { ...p, ...finalFields } : p;
         });
-        try {
-          localStorage.setItem('ls_products', JSON.stringify(next));
-        } catch (e) {}
+        safeSaveProductsToLocalStorage(next);
         return next;
       });
 
@@ -2145,7 +2143,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 (updatedProd.name && p.name && p.name.trim().toLowerCase() === updatedProd.name.trim().toLowerCase());
               return isMatch ? updatedProd : p;
             });
-            try { localStorage.setItem('ls_products', JSON.stringify(next)); } catch (e) {}
+            safeSaveProductsToLocalStorage(next);
             return next;
           });
         }
