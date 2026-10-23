@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { 
-  Printer, ArrowLeft, Download, ShieldCheck, 
-  CheckCircle2, Building2, Phone, Mail, Globe, 
-  MapPin, QrCode, FileText, Share2, Copy, Store, UserCheck, AlertCircle, Lock
+  Printer, ArrowLeft, Building2, 
+  Store, AlertCircle, Loader2, CheckCircle2, Share2
 } from 'lucide-react';
 import { useStore } from '../../../context/StoreContext';
 import { 
@@ -19,7 +18,16 @@ export default function InvoicePage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const invoiceId = (params?.id as string) || '';
+  
+  // Safe extraction and decoding of invoice parameter
+  const rawId = (params?.id as string) || '';
+  const decodedId = useMemo(() => {
+    try {
+      return decodeURIComponent(rawId).trim();
+    } catch {
+      return rawId.trim();
+    }
+  }, [rawId]);
 
   const { 
     invoices, 
@@ -32,46 +40,139 @@ export default function InvoicePage() {
 
   const printAreaRef = useRef<HTMLDivElement>(null);
 
+  // States decoupled from synchronous render-blocking operations
   const [remoteOrder, setRemoteOrder] = useState<any>(null);
+  const [cachedInvoice, setCachedInvoice] = useState<Invoice | null>(null);
   const [isLoadingRemote, setIsLoadingRemote] = useState<boolean>(true);
+  const [isApproving, setIsApproving] = useState<boolean>(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
 
-  // Auto-trigger print if ?print=true in query
+  // 1. Asynchronous Client Storage Hydration (Non-blocking runtime strategy)
   useEffect(() => {
-    if (typeof window !== 'undefined' && searchParams?.get('print') === 'true') {
-      const timer = setTimeout(() => {
-        window.print();
-      }, 700);
-      return () => clearTimeout(timer);
+    if (typeof window === 'undefined' || !decodedId) return;
+
+    let isSubscribed = true;
+
+    // Run off the main rendering pass to prevent frame drops
+    const hydrateStorage = () => {
+      try {
+        const savedInvoicesRaw = localStorage.getItem('ls_invoices');
+        if (savedInvoicesRaw) {
+          const savedInvoices: Invoice[] = JSON.parse(savedInvoicesRaw);
+          const match = savedInvoices.find(
+            (inv) => inv.id === decodedId || 
+                     inv.invoiceNumber === decodedId || 
+                     inv.invoiceNumber?.replace(/\//g, '-') === decodedId ||
+                     inv.orderId === decodedId
+          );
+          if (match && isSubscribed) {
+            setCachedInvoice(match);
+            setIsLoadingRemote(false);
+            return;
+          }
+        }
+
+        const savedOrdersRaw = localStorage.getItem('ls_orders');
+        if (savedOrdersRaw) {
+          const savedOrders = JSON.parse(savedOrdersRaw);
+          const matchOrder = savedOrders.find(
+            (o: any) => o.orderId === decodedId || o.id === decodedId
+          );
+          if (matchOrder && isSubscribed) {
+            setCachedInvoice(buildInvoiceFromOrder({
+              order: matchOrder,
+              settings: invoiceSettings || DEFAULT_INVOICE_SETTINGS
+            }));
+            setIsLoadingRemote(false);
+            return;
+          }
+        }
+      } catch {
+        // Silently handle corrupted storage without crashing runtime
+      }
+    };
+
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(hydrateStorage);
+    } else {
+      setTimeout(hydrateStorage, 0);
     }
-  }, [searchParams]);
 
-  // Fetch order from server if not found in local memory or storage
+    return () => {
+      isSubscribed = false;
+    };
+  }, [decodedId, invoiceSettings]);
+
+  // 2. Verified Server-Side Order Resolution (Zero-Trust authorization pattern)
   useEffect(() => {
-    if (typeof window === 'undefined' || !invoiceId) return;
-    const decodedId = decodeURIComponent(invoiceId || '');
+    if (!decodedId) return;
 
-    const foundInLocal = invoices.some(i => i.id === decodedId || i.orderId === decodedId || i.invoiceNumber === decodedId) ||
-                         orders.some(o => o.orderId === decodedId || o.id === decodedId);
+    // Check if order/invoice is already populated in-memory
+    const existsLocally = invoices.some(i => 
+      i.id === decodedId || i.orderId === decodedId || i.invoiceNumber === decodedId
+    ) || orders.some(o => o.orderId === decodedId || o.id === decodedId);
 
-    if (foundInLocal) {
+    if (existsLocally) {
       setIsLoadingRemote(false);
       return;
     }
 
-    fetch(`/api/cms/orders?orderId=${encodeURIComponent(decodedId)}`)
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
-        if (data?.order) {
+    let isMounted = true;
+    setIsLoadingRemote(true);
+    setVerificationError(null);
+
+    const abortController = new AbortController();
+
+    fetch(`/api/cms/orders?orderId=${encodeURIComponent(decodedId)}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      credentials: 'include',
+      signal: abortController.signal
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP_${res.status}`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (isMounted && data?.order) {
           setRemoteOrder(data.order);
         }
       })
-      .catch(() => null)
-      .finally(() => setIsLoadingRemote(false));
-  }, [invoiceId, invoices, orders]);
+      .catch((err: any) => {
+        if (err?.name === 'AbortError') return;
+        if (isMounted) {
+          setVerificationError(err.message === 'HTTP_404' ? 'Invoice record not found.' : 'Unable to verify order permissions.');
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingRemote(false);
+        }
+      });
 
-  // Find invoice by ID, Invoice Number, or Order ID (with instant localStorage sync & server fallback)
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
+  }, [decodedId, invoices, orders]);
+
+  // 3. Automated Print Trigger with Safety Cleanup
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (searchParams?.get('print') === 'true') {
+      const timer = window.setTimeout(() => {
+        window.print();
+      }, 700);
+      return () => window.clearTimeout(timer);
+    }
+  }, [searchParams]);
+
+  // 4. Pure In-Memory Invoice Resolver (Deterministic & Non-blocking)
   const invoice: Invoice | null = useMemo(() => {
-    const decodedId = decodeURIComponent(invoiceId || '');
+    if (!decodedId) return null;
 
     const sanitizeInvoice = (inv: Invoice | null): Invoice | null => {
       if (!inv) return null;
@@ -85,159 +186,134 @@ export default function InvoicePage() {
       };
     };
 
-    // 1. Match from existing StoreContext invoices
-    const existing = invoices.find(
+    // A. Match from live StoreContext invoices
+    const existingInv = invoices.find(
       (inv) => inv.id === decodedId || 
                inv.invoiceNumber === decodedId || 
-               inv.invoiceNumber.replace(/\//g, '-') === decodedId ||
+               inv.invoiceNumber?.replace(/\//g, '-') === decodedId ||
                inv.orderId === decodedId
     );
-    if (existing) return sanitizeInvoice(existing);
+    if (existingInv) return sanitizeInvoice(existingInv);
 
-    // 2. Check direct localStorage 'ls_invoices'
-    if (typeof window !== 'undefined') {
-      try {
-        const savedInvoices: Invoice[] = JSON.parse(localStorage.getItem('ls_invoices') || '[]');
-        const match = savedInvoices.find(
-          (inv) => inv.id === decodedId || 
-                   inv.invoiceNumber === decodedId || 
-                   inv.invoiceNumber.replace(/\//g, '-') === decodedId ||
-                   inv.orderId === decodedId
-        );
-        if (match) return sanitizeInvoice(match);
-
-        const lastInv = JSON.parse(localStorage.getItem('ls_last_invoice') || 'null');
-        if (lastInv && (lastInv.id === decodedId || lastInv.orderId === decodedId || lastInv.invoiceNumber === decodedId)) {
-          return sanitizeInvoice(lastInv);
-        }
-      } catch (e) {}
-    }
-
-// 3. Match from StoreContext orders
-const matchedOrder = orders.find(
-  (o) => o.orderId === decodedId || o.id === decodedId
-);
-if (matchedOrder) {
-  return sanitizeInvoice(buildInvoiceFromOrder({
-    order: matchedOrder,
-    settings: invoiceSettings || DEFAULT_INVOICE_SETTINGS
-  }));
-}
-
-// 4. Check direct localStorage 'ls_orders' and 'ls_last_order'
-if (typeof window !== 'undefined') {
-  try {
-    const savedOrders = JSON.parse(localStorage.getItem('ls_orders') || '[]');
-    const match = savedOrders.find(
-      (o: any) => o.orderId === decodedId || o.id === decodedId
+    // B. Match from live StoreContext orders
+    const matchedOrder = orders.find(
+      (o) => o.orderId === decodedId || o.id === decodedId
     );
-    if (match) {
+    if (matchedOrder) {
       return sanitizeInvoice(buildInvoiceFromOrder({
-        order: match,
+        order: matchedOrder,
         settings: invoiceSettings || DEFAULT_INVOICE_SETTINGS
       }));
     }
 
-    const lastOrder = JSON.parse(localStorage.getItem('ls_last_order') || 'null');
-    if (lastOrder && (lastOrder.orderId === decodedId || lastOrder.id === decodedId)) {
+    // C. Match from authenticated server-fetched order
+    if (remoteOrder) {
       return sanitizeInvoice(buildInvoiceFromOrder({
-        order: lastOrder,
+        order: remoteOrder,
         settings: invoiceSettings || DEFAULT_INVOICE_SETTINGS
       }));
     }
-  } catch (e) {}
-}
 
-// 5. Build from fetched remote database order
-if (remoteOrder) {
-  return sanitizeInvoice(buildInvoiceFromOrder({
-    order: remoteOrder,
-    settings: invoiceSettings || DEFAULT_INVOICE_SETTINGS
-  }));
-}
+    // D. Cached Storage Invoice (from async hydration)
+    if (cachedInvoice) return sanitizeInvoice(cachedInvoice);
 
-return null;
-  }, [invoiceId, invoices, orders, invoiceSettings, remoteOrder]);
+    return null;
+  }, [decodedId, invoices, orders, invoiceSettings, remoteOrder, cachedInvoice]);
 
-  if (isLoadingRemote && !invoice) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 p-6 text-center">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm font-semibold text-gray-600">Generating tax invoice...</p>
-      </div>
+  const isPickup = useMemo(() => {
+    return Boolean(
+      invoice?.isPickupOrder ||
+      String(invoice?.paymentMethod || '').toLowerCase().includes('pickup') ||
+      String(invoice?.buyerAddress || '').toLowerCase().includes('pickup')
     );
-  }
+  }, [invoice]);
 
-  if (!invoice) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 p-6 text-center">
-        <h1 className="text-2xl font-black text-gray-900">Invoice not found</h1>
-        <p className="text-sm text-gray-600">The invoice reference could not be found or has expired.</p>
-        <Link href="/shop" className="rounded-lg bg-[#1A56DB] px-5 py-3 text-sm font-bold text-white">Continue Shopping</Link>
-      </div>
+  const matchedOrder = useMemo(() => {
+    return orders.find(
+      (o) => o.orderId === invoice?.orderId || o.id === invoice?.orderId
     );
-  }
+  }, [orders, invoice?.orderId]);
 
-  const isPickup = Boolean(
-    invoice?.isPickupOrder ||
-    String(invoice?.paymentMethod || '').toLowerCase().includes('pickup') ||
-    String(invoice?.buyerAddress || '').toLowerCase().includes('pickup')
-  );
+  const isOrderApproved = useMemo(() => {
+    return Boolean(
+      invoice?.isApproved ||
+      invoice?.paymentStatus === 'Paid' ||
+      invoice?.approvedBy ||
+      matchedOrder?.approvedBy ||
+      matchedOrder?.paymentStatus === 'Paid'
+    );
+  }, [invoice, matchedOrder]);
 
-  const matchedOrder = orders.find(
-    (o) => o.orderId === invoice?.orderId || o.id === invoice?.orderId
-  );
+  // 5. Hardened Server-Side Verified Order Approval (Prevents Client Privilege Escalation)
+  const handleQuickApproveOrder = useCallback(async () => {
+    if (!invoice?.orderId || isApproving) return;
 
-  const isOrderApproved = Boolean(
-    invoice?.isApproved ||
-    invoice?.paymentStatus === 'Paid' ||
-    invoice?.approvedBy ||
-    matchedOrder?.approvedBy ||
-    matchedOrder?.paymentStatus === 'Paid'
-  );
+    const approver = window.prompt("Enter Authenticated Showroom Manager / Staff Name:", "Lapiez Showroom");
+    if (!approver?.trim()) return;
+    const finalApprover = approver.trim();
 
-  const handleQuickApproveOrder = () => {
-    if (!invoice?.orderId) return;
-    const approver = typeof window !== 'undefined' ? window.prompt("Enter Approver / Manager Name:", "Lapiez") : "Lapiez";
-    if (approver === null) return;
-    const finalApprover = approver.trim() || "Lapiez";
-
-    const updated = orders.map(o => {
-      if (o.orderId === invoice.orderId || o.id === invoice.orderId) {
-        let updatedAddr = o.address || '';
-        if (updatedAddr.includes('Approved By:')) {
-          updatedAddr = updatedAddr.replace(/Approved By:\s*([^•\n]+)/i, `Approved By: ${finalApprover}`);
-        } else {
-          updatedAddr = `${updatedAddr} • Approved By: ${finalApprover}`;
-        }
-        return {
-          ...o,
-          address: updatedAddr,
+    try {
+      setIsApproving(true);
+      // Dispatch verified administrative mutation with credentials
+      const res = await fetch('/api/cms/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          orderId: invoice.orderId,
           paymentStatus: 'Paid',
           approvedBy: finalApprover,
-        };
-      }
-      return o;
-    });
-    updateOrders(updated);
-    showToast(`Order #${invoice.orderId} approved by ${finalApprover}! Official Bill generated.`);
-  };
+        }),
+      });
 
-  const handlePrint = () => {
+      if (!res.ok) {
+        showToast('Approval rejected: Valid administrative authorization required.');
+        return;
+      }
+
+      // Update state upon confirmed server mutation
+      const updated = orders.map((o) => {
+        if (o.orderId === invoice.orderId || o.id === invoice.orderId) {
+          let updatedAddr = o.address || '';
+          if (updatedAddr.includes('Approved By:')) {
+            updatedAddr = updatedAddr.replace(/Approved By:\s*([^•\n]+)/i, `Approved By: ${finalApprover}`);
+          } else {
+            updatedAddr = `${updatedAddr} • Approved By: ${finalApprover}`;
+          }
+          return {
+            ...o,
+            address: updatedAddr,
+            paymentStatus: 'Paid',
+            approvedBy: finalApprover,
+          };
+        }
+        return o;
+      });
+      updateOrders(updated);
+      showToast(`Order #${invoice.orderId} approved and verified by ${finalApprover}!`);
+    } catch {
+      showToast('Network error while recording authorization.');
+    } finally {
+      setIsApproving(false);
+    }
+  }, [invoice?.orderId, isApproving, orders, updateOrders, showToast]);
+
+  const handlePrint = useCallback(() => {
     if (typeof window !== 'undefined') {
       window.print();
     }
-  };
+  }, []);
 
-  const handleShareInvoice = async () => {
-    if (typeof window === 'undefined') return;
+  // 6. Hardened Secure Sharing (Mitigates Reverse Tabnabbing)
+  const handleShareInvoice = useCallback(async () => {
+    if (typeof window === 'undefined' || !invoice) return;
 
     const shareUrl = window.location.href;
     const shareTitle = `Tax Invoice #${invoice.invoiceNumber} - LAPIEZ`;
-    const shareText = `Official Tax Invoice #${invoice.invoiceNumber} for Order #${invoice.orderId} from LAPIEZ Showroom (Amount: ₹${invoice.grandTotal.toLocaleString('en-IN')}).\nClick link to view or download bill: ${shareUrl}`;
+    const shareText = `Official Tax Invoice #${invoice.invoiceNumber} for Order #${invoice.orderId} from LAPIEZ Showroom (Amount: ₹${invoice.grandTotal.toLocaleString('en-IN')}).\nClick link to view bill: ${shareUrl}`;
 
-    // 1. Try Native Web Share API (opens native apps tray on Android / iOS / Desktop)
-    if (typeof navigator !== 'undefined' && navigator.share) {
+    // A. Native Web Share API
+    if (navigator.share) {
       try {
         await navigator.share({
           title: shareTitle,
@@ -250,24 +326,68 @@ return null;
       }
     }
 
-    // 2. Fallback: Direct WhatsApp share if native sheet is not supported
+    // B. Hardened fallback without window.opener exposure
     try {
       const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
-      window.open(whatsappUrl, '_blank');
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
     } catch {
       navigator.clipboard?.writeText(shareUrl);
       showToast('Invoice link copied to clipboard!');
     }
-  };
+  }, [invoice, showToast]);
+
+  // Loading Skeleton State
+  if (isLoadingRemote && !invoice) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-3 p-6 text-center" role="status" aria-live="polite">
+        <Loader2 className="w-9 h-9 text-[#1A56DB] animate-spin" />
+        <p className="text-xs font-bold text-gray-700 tracking-wide uppercase">Generating Authentic Tax Invoice...</p>
+        <span className="text-[11px] text-gray-400">Verifying showroom database records</span>
+      </div>
+    );
+  }
+
+  // Not Found / Error Boundary State
+  if (!invoice) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 p-6 text-center max-w-md mx-auto">
+        <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
+          <AlertCircle className="w-7 h-7" />
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-xl font-black text-gray-900">Invoice Record Not Found</h1>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            {verificationError || 'The requested invoice reference could not be retrieved from the showroom database.'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 pt-2">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="rounded-xl border border-gray-300 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+          >
+            Go Back
+          </button>
+          <Link 
+            href="/shop" 
+            className="rounded-xl bg-[#1A56DB] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#1E40AF] transition-colors"
+          >
+            Continue Shopping
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F1F3F6] py-4 sm:py-8 print:p-0 print:bg-white text-gray-800">
       
       {/* 1. TOP ACTION TOOLBAR (Hidden when Printing) */}
-      <div className="max-w-4xl mx-auto px-4 mb-4 sm:mb-6 print:hidden">
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+      <header className="max-w-4xl mx-auto px-4 mb-4 sm:mb-6 print:hidden">
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
+              type="button"
               onClick={() => router.back()}
               className="h-9 px-3 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
@@ -290,6 +410,7 @@ return null;
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
+              type="button"
               onClick={handleShareInvoice}
               className="h-9 px-3.5 rounded-lg border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Share invoice directly to WhatsApp or installed apps"
@@ -299,31 +420,32 @@ return null;
             </button>
 
             <button
+              type="button"
               onClick={handlePrint}
-              className="h-9 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95 flex-1 sm:flex-none justify-center cursor-pointer"
+              className="h-9 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all active:scale-95 flex-1 sm:flex-none justify-center cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>Print / Download PDF</span>
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* PENDING APPROVAL WARNING BANNER */}
       {!isOrderApproved && (
-        <div className="max-w-4xl mx-auto px-4 mb-4 print:hidden">
-          <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 text-amber-900 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+        <section className="max-w-4xl mx-auto px-4 mb-4 print:hidden" aria-label="Order Approval Notice">
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 text-amber-900 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-800 flex-shrink-0 mt-0.5">
                 <AlertCircle className="w-5 h-5 text-amber-700" />
               </div>
               <div>
-                <h3 className="font-extrabold text-sm sm:text-base text-amber-950 flex items-center gap-1.5">
+                <h2 className="font-extrabold text-sm sm:text-base text-amber-950 flex items-center gap-1.5">
                   <span>Bill Pending Showroom Approval</span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">
                     Provisional Slip
                   </span>
-                </h3>
+                </h2>
                 <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
                   Ye bill abhi showroom manager dwara approve nahi hua hai. Official GST Tax Invoice counter approval aur product handover ke baad finalize hoga.
                 </p>
@@ -336,26 +458,35 @@ return null;
             </div>
 
             <button
+              type="button"
+              disabled={isApproving}
               onClick={handleQuickApproveOrder}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold whitespace-nowrap shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-bold whitespace-nowrap shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Approve & Finalize Bill Now</span>
+              {isApproving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Approve & Finalize Bill Now</span>
+                </>
+              )}
             </button>
           </div>
-        </div>
+        </section>
       )}
 
       {/* 2. A4 PRINT-READY INVOICE CONTAINER */}
-      <div 
+      <main 
         ref={printAreaRef}
-        className="invoice-container max-w-4xl mx-auto bg-white border border-gray-300 print:border-none shadow-sm print:shadow-none rounded-xl print:rounded-none p-5 sm:p-8 print:p-0 font-sans text-gray-900"
-        style={{
-          boxSizing: 'border-box'
-        }}
+        className="invoice-container max-w-4xl mx-auto bg-white border border-gray-300 print:border-none shadow-xs print:shadow-none rounded-xl print:rounded-none p-5 sm:p-8 print:p-0 font-sans text-gray-900"
+        style={{ boxSizing: 'border-box' }}
       >
         
-        {/* HEADER: Business Info & Title (Matching Image 2) */}
+        {/* HEADER: Business Info & Title */}
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4 pb-4">
           <div className="space-y-1 max-w-lg">
             <div className="flex items-center gap-2.5">
@@ -705,7 +836,7 @@ return null;
         </div>
 
         {/* TERMS & SIGNATURE FOOTER (Compact, Fits on 1 Page) */}
-        <div className="pt-2 border-t border-gray-300 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end text-[10.5px]">
+        <footer className="pt-2 border-t border-gray-300 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end text-[10.5px]">
           
           <div className="sm:col-span-8 space-y-1 text-gray-600">
             <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-gray-500 block">
@@ -742,9 +873,9 @@ return null;
             </div>
           </div>
 
-        </div>
+        </footer>
 
-      </div>
+      </main>
 
       {/* PRINT CSS STYLES INJECTION */}
       <style jsx global>{`
@@ -760,7 +891,7 @@ return null;
             padding: 0 !important;
             width: 100% !important;
           }
-          header, footer, nav, aside, [role="navigation"], .no-print, .print\:hidden, #sq-panel-top, .sq-ext {
+          header, footer, nav, aside, [role="navigation"], .no-print, .print\\:hidden, #sq-panel-top, .sq-ext {
             display: none !important;
             visibility: hidden !important;
             height: 0 !important;
