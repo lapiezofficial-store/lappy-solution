@@ -38,6 +38,8 @@ export default function AdminPage() {
     updateHomepageSections,
     updateHomepageSectionDetails,
     updateHomepageSectionProducts,
+    resetHomepageSectionsToDefault,
+    makeAllHomepageSectionsVisible,
     customPages,
     blogPosts,
     addCustomPage,
@@ -1312,9 +1314,11 @@ export default function AdminPage() {
     await updateHomepageSections(reindexed);
   };
 
-  // Toggle Section Visibility
-  const handleToggleSection = async (id: string) => {
-    const updated = homepageSections.map((s) => (s.id === id ? { ...s, isVisible: !s.isVisible } : s));
+  // Toggle Section Visibility (Safe match by id or sectionKey)
+  const handleToggleSection = async (idOrKey: string) => {
+    const updated = homepageSections.map((s) => 
+      (s.id === idOrKey || s.sectionKey === idOrKey) ? { ...s, isVisible: !s.isVisible } : s
+    );
     await updateHomepageSections(updated);
   };
 
@@ -6826,18 +6830,50 @@ export default function AdminPage() {
           <div className="space-y-4">
             <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="font-extrabold text-base text-[#111827]">
-                  Homepage Sections & Product Curations ({homepageSections.length})
+                <h3 className="font-extrabold text-base text-[#111827] flex flex-wrap items-center gap-2">
+                  <span>Homepage Sections & Product Curations ({homepageSections.length})</span>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {homepageSections.filter(s => s.isVisible).length} Visible
+                  </span>
+                  {homepageSections.filter(s => !s.isVisible).length > 0 && (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                      {homepageSections.filter(s => !s.isVisible).length} Hidden
+                    </span>
+                  )}
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Rename any section (e.g. Trending Products, Best Seller, Premium Segment, Laptops), select custom products from inventory, or reorder sections live.
+                  Rename any section, select custom products, reorder sections with arrows, or toggle visibility on the live storefront.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => makeAllHomepageSectionsVisible()}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Make all sections visible on storefront"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Show All Sections</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Reset all homepage sections to default recommended layout and make all 13 sections visible?')) {
+                      resetHomepageSectionsToDefault();
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Reset sections order and restore default 13 sections"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-gray-500" />
+                  <span>Reset Layout</span>
+                </button>
+
+                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Real-time Live Sync</span>
+                  <span>Live Sync</span>
                 </span>
               </div>
             </div>
@@ -6868,12 +6904,14 @@ export default function AdminPage() {
                     <div
                       key={section.id || section.sectionKey}
                       className={`p-3.5 sm:p-4.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3 transition-colors ${
-                        section.isVisible ? 'bg-white' : 'bg-gray-50/70 opacity-60'
+                        section.isVisible ? 'bg-white' : 'bg-amber-50/20 opacity-80'
                       }`}
                     >
                       <div className="flex items-start gap-3">
                         {/* Position Badge */}
-                        <div className="w-8 h-8 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center font-extrabold text-xs text-gray-700 flex-shrink-0 mt-0.5">
+                        <div className={`w-8 h-8 rounded-lg border flex items-center justify-center font-extrabold text-xs flex-shrink-0 mt-0.5 ${
+                          section.isVisible ? 'bg-gray-100 border-gray-200 text-gray-700' : 'bg-amber-100 border-amber-300 text-amber-800'
+                        }`}>
                           #{idx + 1}
                         </div>
 
@@ -6890,6 +6928,17 @@ export default function AdminPage() {
                             <span className="font-mono text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.2 rounded">
                               {section.sectionKey}
                             </span>
+                            {section.isVisible ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                                <span>Visible on Storefront</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                                <span>Hidden from Storefront</span>
+                              </span>
+                            )}
                           </div>
 
                           {section.subtitle && (
@@ -6954,7 +7003,7 @@ export default function AdminPage() {
                         <button
                           onClick={() => handleMoveSection(idx, 'up')}
                           disabled={idx === 0}
-                          className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-gray-700 transition-colors"
+                          className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-gray-700 transition-colors cursor-pointer"
                           title="Move Up"
                         >
                           <ArrowUp className="w-3.5 h-3.5" />
@@ -6964,30 +7013,32 @@ export default function AdminPage() {
                         <button
                           onClick={() => handleMoveSection(idx, 'down')}
                           disabled={idx === arr.length - 1}
-                          className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-gray-700 transition-colors"
+                          className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-gray-700 transition-colors cursor-pointer"
                           title="Move Down"
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Visibility Toggle */}
+                        {/* Visibility Toggle Button */}
                         <button
-                          onClick={() => handleToggleSection(section.id)}
-                          className={`h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                          type="button"
+                          onClick={() => handleToggleSection(section.id || section.sectionKey)}
+                          className={`h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                             section.isVisible
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                              ? 'bg-gray-100 hover:bg-rose-50 text-gray-600 hover:text-rose-600 border border-gray-200 hover:border-rose-200'
+                              : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
                           }`}
+                          title={section.isVisible ? "Click to hide from storefront (stays in admin)" : "Click to make visible on storefront"}
                         >
                           {section.isVisible ? (
                             <>
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>Visible</span>
+                              <EyeOff className="w-3.5 h-3.5 text-gray-500" />
+                              <span>Hide</span>
                             </>
                           ) : (
                             <>
-                              <EyeOff className="w-3.5 h-3.5" />
-                              <span>Hidden</span>
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Make Visible</span>
                             </>
                           )}
                         </button>

@@ -102,14 +102,6 @@ export default function Home() {
       ] as CMSSection[];
     }
 
-    // Ensure 'brands' is positioned directly underneath 'banners'
-    const bannersIdx = sectionsList.findIndex(s => s.sectionKey === 'banners');
-    const brandsIdx = sectionsList.findIndex(s => s.sectionKey === 'brands');
-    if (bannersIdx !== -1 && brandsIdx !== -1 && brandsIdx !== bannersIdx + 1) {
-      const [brandSec] = sectionsList.splice(brandsIdx, 1);
-      const newBannersIdx = sectionsList.findIndex(s => s.sectionKey === 'banners');
-      sectionsList.splice(newBannersIdx + 1, 0, brandSec);
-    }
     return sectionsList;
   }, [homepageSections]);
 
@@ -269,7 +261,8 @@ export default function Home() {
       }
 
       case 'bestsellers': {
-        const bestSellerFallback = products.filter(p => !isDemoProduct(p) && ((p.rating && p.rating >= 4.4) || p.featured)).slice(0, 8);
+        const bestSellerFiltered = products.filter(p => !isDemoProduct(p) && ((p.rating && p.rating >= 4.4) || p.featured)).slice(0, 8);
+        const bestSellerFallback = bestSellerFiltered.length > 0 ? bestSellerFiltered : products.slice(0, 8);
         const bestsellerItems = getSectionProducts(sec, bestSellerFallback).filter(p => !isDemoProduct(p));
         if (bestsellerItems.length === 0) return null;
         return (
@@ -304,7 +297,7 @@ export default function Home() {
 
       // 3. PREMIUM SEGMENT SECTION
       case 'premium': {
-        const premiumFallback = products.filter(p => 
+        const premiumFiltered = products.filter(p => 
           !isDemoProduct(p) && (
             p.price >= 14000 || 
             p.name.toLowerCase().includes('200hz') || 
@@ -313,6 +306,7 @@ export default function Home() {
             p.name.toLowerCase().includes('curved')
           )
         ).slice(0, 8);
+        const premiumFallback = premiumFiltered.length > 0 ? premiumFiltered : [...products].sort((a, b) => b.price - a.price).slice(0, 8);
         const premiumItems = getSectionProducts(sec, premiumFallback).filter(p => !isDemoProduct(p));
         if (premiumItems.length === 0) return null;
         return (
@@ -347,10 +341,15 @@ export default function Home() {
 
       // 4. REFURBISHED LAPTOPS & PRINTERS SECTION
       case 'refurbished_laptops': {
-        const refurbishedFallback = [
+        const refCandidate = [
           ...trendingLaptops.filter(p => !isDemoProduct(p)).slice(0, 4),
           ...trendingPrinters.filter(p => !isDemoProduct(p)).slice(0, 4)
         ];
+        const refurbishedFallback = refCandidate.length > 0 
+          ? refCandidate 
+          : products.filter(p => p.category === 'Laptops' || p.category === 'Printers').slice(0, 8).length > 0
+          ? products.filter(p => p.category === 'Laptops' || p.category === 'Printers').slice(0, 8)
+          : products.slice(0, 8);
         const refItems = getSectionProducts(sec, refurbishedFallback).filter(p => !isDemoProduct(p));
         if (refItems.length === 0) return null;
         return (

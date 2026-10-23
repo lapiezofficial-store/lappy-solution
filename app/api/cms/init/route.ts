@@ -100,7 +100,7 @@ export async function GET(request: Request) {
       prisma.paymentSettings.findUnique({ where: { id: 'default' } }).catch(() => null),
       prisma.themeSettings.findUnique({ where: { id: 'default' } }).catch(() => null),
       prisma.banner.findMany({ where: { status: 'active' }, orderBy: { position: 'asc' } }).catch(() => []),
-      prisma.homepageSection.findMany({ where: { isVisible: true }, orderBy: { position: 'asc' } }).catch(() => []),
+      prisma.homepageSection.findMany({ orderBy: { position: 'asc' } }).catch(() => []),
       prisma.category.findMany({ orderBy: { position: 'asc' } }).catch(() => []),
       prisma.product.findMany({ where: { status: 'active' }, orderBy: { createdAt: 'desc' } }).catch(() => []),
       prisma.customPage.findMany({ where: { status: 'published' }, orderBy: { updatedAt: 'desc' } }).catch(() => []),

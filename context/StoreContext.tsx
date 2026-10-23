@@ -262,6 +262,8 @@ interface StoreContextType {
   updateHomepageSections: (sections: CMSSection[]) => Promise<void>;
   updateHomepageSectionDetails: (sectionKey: string, details: Partial<CMSSection>) => Promise<void>;
   updateHomepageSectionProducts: (sectionKey: string, productIds: string[]) => Promise<void>;
+  resetHomepageSectionsToDefault: () => Promise<void>;
+  makeAllHomepageSectionsVisible: () => Promise<void>;
   addCustomPage: (page: Partial<CMSCustomPage>) => Promise<CMSCustomPage>;
   editCustomPage: (page: CMSCustomPage) => Promise<void>;
   deleteCustomPage: (id: string) => Promise<void>;
@@ -2164,46 +2166,137 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateHomepageSections = async (sections: CMSSection[]) => {
     setHomepageSections(sections);
     try {
-      await fetch('/api/cms/homepage-sections', {
+      localStorage.setItem('ls_homepage_sections', JSON.stringify(sections));
+    } catch (e) {}
+
+    try {
+      const res = await fetch('/api/cms/homepage-sections', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sections }),
       });
-      showToast('Homepage section order saved to database!');
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.sections && Array.isArray(data.sections)) {
+          setHomepageSections(data.sections);
+          try {
+            localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
+          } catch (e) {}
+        }
+        showToast('Homepage section order saved!');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || 'Failed to save sections to database');
+      }
     } catch (e) {
       console.error('Failed to update homepage sections:', e);
+      showToast('Error saving sections');
     }
   };
 
   const updateHomepageSectionDetails = async (sectionKey: string, details: Partial<CMSSection>) => {
-    setHomepageSections((prev) =>
-      prev.map((s) => (s.sectionKey === sectionKey ? { ...s, ...details } : s))
-    );
+    setHomepageSections((prev) => {
+      const updated = prev.map((s) => (s.sectionKey === sectionKey ? { ...s, ...details } : s));
+      try { localStorage.setItem('ls_homepage_sections', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+
     try {
-      await fetch('/api/cms/homepage-sections', {
+      const res = await fetch('/api/cms/homepage-sections', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sectionKey, ...details }),
       });
-      showToast(`Section "${details.title || sectionKey}" updated!`);
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.sections && Array.isArray(data.sections)) {
+          setHomepageSections(data.sections);
+          try {
+            localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
+          } catch (e) {}
+        }
+        showToast(`Section "${details.title || sectionKey}" updated!`);
+      }
     } catch (e) {
       console.error('Failed to update section:', e);
     }
   };
 
   const updateHomepageSectionProducts = async (sectionKey: string, productIds: string[]) => {
-    setHomepageSections((prev) =>
-      prev.map((s) => (s.sectionKey === sectionKey ? { ...s, productIds } : s))
-    );
+    setHomepageSections((prev) => {
+      const updated = prev.map((s) => (s.sectionKey === sectionKey ? { ...s, productIds } : s));
+      try { localStorage.setItem('ls_homepage_sections', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+
     try {
-      await fetch('/api/cms/homepage-sections', {
+      const res = await fetch('/api/cms/homepage-sections', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sectionKey, productIds }),
       });
-      showToast(`Products updated for section!`);
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.sections && Array.isArray(data.sections)) {
+          setHomepageSections(data.sections);
+          try {
+            localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
+          } catch (e) {}
+        }
+        showToast(`Products updated for section!`);
+      }
     } catch (e) {
       console.error('Failed to update section products:', e);
+    }
+  };
+
+  const resetHomepageSectionsToDefault = async () => {
+    try {
+      const res = await fetch('/api/cms/homepage-sections', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resetToDefaults: true }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.sections && Array.isArray(data.sections)) {
+          setHomepageSections(data.sections);
+          try {
+            localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
+          } catch (e) {}
+        }
+        showToast('All homepage sections reset to default layout!');
+      } else {
+        showToast('Failed to reset homepage sections');
+      }
+    } catch (e) {
+      console.error('Failed to reset sections:', e);
+      showToast('Error resetting sections');
+    }
+  };
+
+  const makeAllHomepageSectionsVisible = async () => {
+    try {
+      const res = await fetch('/api/cms/homepage-sections', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ makeAllVisible: true }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.sections && Array.isArray(data.sections)) {
+          setHomepageSections(data.sections);
+          try {
+            localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
+          } catch (e) {}
+        }
+        showToast('All homepage sections are now visible!');
+      } else {
+        showToast('Failed to update section visibility');
+      }
+    } catch (e) {
+      console.error('Failed to make all visible:', e);
+      showToast('Error updating visibility');
     }
   };
 
@@ -2927,6 +3020,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateHomepageSections,
         updateHomepageSectionDetails,
         updateHomepageSectionProducts,
+        resetHomepageSectionsToDefault,
+        makeAllHomepageSectionsVisible,
         addCustomPage,
         editCustomPage,
         deleteCustomPage,
