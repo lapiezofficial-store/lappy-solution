@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { hasAdminSession } from '@/lib/adminAuth';
 import { INITIAL_COUPONS, Coupon, calculateCouponDiscount } from '@/data/coupons';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface RateLimitRecord {
   count: number;
   resetAt: number;

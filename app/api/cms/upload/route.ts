@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { hasAdminSession } from '@/lib/adminAuth';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(request: Request) {
   if (!hasAdminSession(request)) {
     return NextResponse.json({ error: 'Unauthorized. Please login as admin.' }, { status: 401 });

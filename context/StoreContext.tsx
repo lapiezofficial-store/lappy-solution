@@ -16,6 +16,7 @@ import { Coupon, INITIAL_COUPONS, calculateCouponDiscount } from '../data/coupon
 import { CMSBrand, DEFAULT_BRANDS } from '../data/brands';
 import { CATEGORIES } from '../data/categories';
 import { INITIAL_BANNERS } from '../data/banners';
+import { adminFetch, broadcastCmsUpdate, subscribeToCmsUpdates } from '../lib/adminApi';
 
 export interface CMSSubcategory {
   id: string;
@@ -778,9 +779,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Synchronize state with Database via unified /api/cms/init endpoint
   const syncWithDatabase = useCallback(async (options?: { forceFresh?: boolean }) => {
     try {
-      // 1. Unified Fast Batch Fetch (Edge CDN Cached / Force Fresh on Admin updates)
+      // 1. Unified Fast Batch Fetch (Always fresh, bypass stale cache)
       const url = options?.forceFresh ? '/api/cms/init?fresh=true' : '/api/cms/init';
-      const resInit = await fetch(url);
+      const resInit = await adminFetch(url, { cache: 'no-store' });
       if (resInit.ok) {
         const initData = await resInit.json();
 
@@ -959,7 +960,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const isConsoleRoute = typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/portal'));
       if (isConsoleRoute || options?.forceFresh) {
         try {
-          const resOrders = await fetch('/api/cms/orders');
+          const resOrders = await adminFetch('/api/cms/orders', { cache: 'no-store' });
           if (resOrders.ok) {
             const data = await resOrders.json();
             if (Array.isArray(data.orders)) {
@@ -975,7 +976,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Brands (cached, only re-fetch if forceFresh is requested)
       if (options?.forceFresh) {
         try {
-          const resBrands = await fetch('/api/cms/brands');
+          const resBrands = await adminFetch('/api/cms/brands', { cache: 'no-store' });
           if (resBrands.ok) {
             const data = await resBrands.json();
             if (Array.isArray(data.brands) && data.brands.length > 0) {
@@ -1202,18 +1203,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
 
+    const unsubscribeBroadcast = subscribeToCmsUpdates(() => {
+      syncWithDatabase({ forceFresh: true }).catch(() => {});
+    });
+
     window.addEventListener('focus', handleForegroundSync);
     document.addEventListener('visibilitychange', handleForegroundSync);
     window.addEventListener('storage', handleStorageChange);
 
-    // 25-second background heartbeat to auto-fetch admin updates on phone & web without manual refresh
+    // 15-second background heartbeat to auto-fetch admin updates on phone & web without manual refresh
     const heartbeat = setInterval(() => {
       if (document.visibilityState === 'visible') {
         syncWithDatabase({ forceFresh: true }).catch(() => {});
       }
-    }, 25000);
+    }, 15000);
 
     return () => {
+      unsubscribeBroadcast();
       window.removeEventListener('focus', handleForegroundSync);
       document.removeEventListener('visibilitychange', handleForegroundSync);
       window.removeEventListener('storage', handleStorageChange);
@@ -1337,6 +1343,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('ls_last_invoice', JSON.stringify(newInvoice));
       localStorage.setItem('ls_cart', JSON.stringify([]));
       showToast(`Order #${savedOrder.orderId} placed. Payment verification is pending.`);
+      broadcastCmsUpdate('orders');
       syncWithDatabase({ forceFresh: true }).catch(() => {});
       return newInvoice;
     } catch (e) {
@@ -1347,7 +1354,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fetchOrders = useCallback(async (): Promise<any[]> => {
     try {
-      const res = await fetch('/api/cms/orders');
+      const res = await adminFetch('/api/cms/orders');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.orders)) {
@@ -1389,16 +1396,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateProducts = async (prods: Product[]) => {
+    const previous = [...products];
     setProducts(prods);
     try {
       safeSaveProductsToLocalStorage(prods);
       const changes = prods.filter((product) => {
-        const previous = products.find((current) => current.id === product.id || (product.sku && current.sku === product.sku));
-        return previous && (previous.inStock !== product.inStock || previous.stockQuantity !== product.stockQuantity);
+        const prevProd = previous.find((current) => current.id === product.id || (product.sku && current.sku === product.sku));
+        return prevProd && (prevProd.inStock !== product.inStock || prevProd.stockQuantity !== product.stockQuantity);
       });
-      await Promise.all(changes.map((product) => fetch('/api/cms/products', {
+      const responses = await Promise.all(changes.map((product) => adminFetch('/api/cms/products', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           id: product.id, 
           sku: product.sku,
@@ -1407,15 +1414,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           stockQuantity: product.inStock === false ? 0 : (product.stockQuantity || 10) 
         }),
       })));
-    } catch (e) {}
+      const hasFailed = responses.some(r => !r.ok);
+      if (hasFailed) {
+        setProducts(previous);
+        safeSaveProductsToLocalStorage(previous);
+        showToast('Failed to save stock changes to database. Reverted.');
+      } else {
+        broadcastCmsUpdate('products');
+      }
+    } catch (e) {
+      setProducts(previous);
+      safeSaveProductsToLocalStorage(previous);
+      showToast('Error saving stock to database.');
+    }
   };
 
   const updateOrders = async (ords: any[]) => {
+    const prevOrders = [...orders];
     setOrders(ords);
     try {
       localStorage.setItem('ls_orders', JSON.stringify(ords));
       const changes = ords.filter((order) => {
-        const previous = orders.find((current) => current.orderId === order.orderId);
+        const previous = prevOrders.find((current) => current.orderId === order.orderId);
         return previous && (
           previous.paymentStatus !== order.paymentStatus || 
           previous.orderStatus !== order.orderStatus ||
@@ -1423,9 +1443,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           (previous as any).approvedBy !== (order as any).approvedBy
         );
       });
-      await Promise.all(changes.map((order) => fetch('/api/cms/orders', {
+      const responses = await Promise.all(changes.map((order) => adminFetch('/api/cms/orders', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId: order.orderId,
           paymentStatus: order.paymentStatus,
@@ -1434,7 +1453,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           approvedBy: (order as any).approvedBy,
         }),
       })));
-    } catch (e) {}
+      const hasFailed = responses.some(r => !r.ok);
+      if (hasFailed) {
+        setOrders(prevOrders);
+        try { localStorage.setItem('ls_orders', JSON.stringify(prevOrders)); } catch {}
+        showToast('Failed to update orders in database. Reverted.');
+      } else {
+        broadcastCmsUpdate('orders');
+      }
+    } catch (e) {
+      setOrders(prevOrders);
+      try { localStorage.setItem('ls_orders', JSON.stringify(prevOrders)); } catch {}
+    }
   };
 
   const updateLeads = (lds: any[]) => {
@@ -1446,51 +1476,55 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // CMS Server Update Handlers
   const updateSiteSettings = async (settings: Partial<SiteSettings>) => {
+    const prevSite = siteSettings;
     const updated = { ...siteSettings, ...settings };
     setSiteSettings(updated);
     try {
       localStorage.setItem('ls_site_settings', JSON.stringify(updated));
     } catch (e) {}
     try {
-      const res = await fetch('/api/cms/settings', {
+      const res = await adminFetch('/api/cms/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ siteSettings: updated }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
+      broadcastCmsUpdate('settings');
       showToast('Store settings saved successfully!');
     } catch (e: any) {
       console.error('Failed to update site settings in DB:', e);
-      showToast(`Saved locally! (DB: ${e.message || 'notice'})`);
+      setSiteSettings(prevSite);
+      try { localStorage.setItem('ls_site_settings', JSON.stringify(prevSite)); } catch {}
+      showToast(`Database error: ${e.message || 'Failed to save settings'}. Reverted.`);
     }
   };
 
   const updateThemeSettings = async (theme: Partial<ThemeSettings>) => {
+    const prevTheme = themeSettings;
     const updated = { ...themeSettings, ...theme };
     setThemeSettings(updated);
     try {
-      const res = await fetch('/api/cms/theme', {
+      const res = await adminFetch('/api/cms/theme', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(updated),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
+      broadcastCmsUpdate('theme');
       showToast('Theme colors updated in database!');
     } catch (e: any) {
       console.error('Failed to update theme:', e);
-      showToast(`Theme saved locally! (DB: ${e.message || 'notice'})`);
+      setThemeSettings(prevTheme);
+      showToast(`Database error: ${e.message || 'Failed to save theme'}. Reverted.`);
     }
   };
 
   const updatePaymentSettings = async (payment: Partial<PaymentSettings>) => {
+    const prevPayment = paymentSettings;
     const updated = { 
       ...paymentSettings, 
       ...payment,
@@ -1501,24 +1535,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('ls_payment_settings', JSON.stringify(updated));
     } catch (e) {}
     try {
-      const res = await fetch('/api/cms/settings', {
+      const res = await adminFetch('/api/cms/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ paymentSettings: updated }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
+      broadcastCmsUpdate('payment');
       showToast('Payment & UPI settings saved successfully!');
     } catch (e: any) {
       console.error('Failed to update payment settings in DB:', e);
-      showToast(`Saved locally! (DB: ${e.message || 'notice'})`);
+      setPaymentSettings(prevPayment);
+      try { localStorage.setItem('ls_payment_settings', JSON.stringify(prevPayment)); } catch {}
+      showToast(`Database error: ${e.message || 'Failed to save payment settings'}. Reverted.`);
     }
   };
 
   const updatePaymentMethodsConfig = async (config: Partial<PaymentMethodsConfig>) => {
+    const prevMethods = paymentMethodsConfig;
+    const prevPayment = paymentSettings;
     const updatedMethods = { ...paymentMethodsConfig, ...config };
     setPaymentMethodsConfig(updatedMethods);
     try {
@@ -1536,20 +1573,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {}
 
     try {
-      const res = await fetch('/api/cms/settings', {
+      const res = await adminFetch('/api/cms/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ paymentSettings: updatedPayment }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
+      broadcastCmsUpdate('payment_methods');
       showToast('Payment methods configuration saved!');
     } catch (e: any) {
       console.error('Failed to update payment methods in DB:', e);
-      showToast(`Saved locally! (DB: ${e.message || 'notice'})`);
+      setPaymentMethodsConfig(prevMethods);
+      setPaymentSettings(prevPayment);
+      showToast(`Database error: ${e.message || 'Failed to save payment methods'}. Reverted.`);
     }
   };
 
@@ -1558,6 +1596,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     payment: Partial<PaymentSettings>,
     methodsConfig?: Partial<PaymentMethodsConfig>
   ) => {
+    const prevSite = siteSettings;
+    const prevPayment = paymentSettings;
+    const prevMethods = paymentMethodsConfig;
+
     const updatedMethods = methodsConfig ? { ...paymentMethodsConfig, ...methodsConfig } : paymentMethodsConfig;
     if (methodsConfig) {
       setPaymentMethodsConfig(updatedMethods);
@@ -1592,20 +1634,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('ls_payment_settings', JSON.stringify(updatedPayment));
     } catch (e) {}
     try {
-      const res = await fetch('/api/cms/settings', {
+      const res = await adminFetch('/api/cms/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ siteSettings: updatedSite, paymentSettings: updatedPayment }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
+      broadcastCmsUpdate('store_settings');
       showToast('Store details & Payment settings saved permanently to database!');
     } catch (e: any) {
       console.error('Failed to update settings in DB:', e);
-      showToast(`Settings saved locally! (DB: ${e.message || 'notice'})`);
+      setSiteSettings(prevSite);
+      setPaymentSettings(prevPayment);
+      if (methodsConfig) setPaymentMethodsConfig(prevMethods);
+      showToast(`Database error: ${e.message || 'Failed to save settings'}. Reverted.`);
     }
   };
 
@@ -1636,10 +1680,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     try {
-      await fetch('/api/cms/settings', {
+      const res = await adminFetch('/api/cms/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           paymentSettings: {
             ...paymentSettings,
@@ -1647,6 +1689,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           },
         }),
       });
+      if (res.ok) {
+        broadcastCmsUpdate('bank_accounts');
+      }
     } catch (e) {}
 
     showToast(`Bank account "${newAccount.bankName}" added!`);
@@ -1680,10 +1725,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     try {
-      await fetch('/api/cms/settings', {
+      const res = await adminFetch('/api/cms/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           paymentSettings: {
             ...paymentSettings,
@@ -1691,6 +1734,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           },
         }),
       });
+      if (res.ok) {
+        broadcastCmsUpdate('bank_accounts');
+      }
     } catch (e) {}
 
     showToast('Bank details updated successfully!');
@@ -1720,10 +1766,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {}
 
     try {
-      await fetch('/api/cms/settings', {
+      const res = await adminFetch('/api/cms/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           paymentSettings: {
             ...paymentSettings,
@@ -1731,6 +1775,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           },
         }),
       });
+      if (res.ok) {
+        broadcastCmsUpdate('bank_accounts');
+      }
     } catch (e) {}
 
     showToast('Bank account removed successfully!');
@@ -1759,10 +1806,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     try {
-      await fetch('/api/cms/settings', {
+      const res = await adminFetch('/api/cms/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           paymentSettings: {
             ...paymentSettings,
@@ -1770,6 +1815,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           },
         }),
       });
+      if (res.ok) {
+        broadcastCmsUpdate('bank_accounts');
+      }
     } catch (e) {}
 
     showToast(`"${primary?.bankName}" set as primary bank account!`);
@@ -1792,56 +1840,73 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const addBanner = async (bannerData: Partial<CMSBanner>) => {
     try {
-      const res = await fetch('/api/cms/banners', {
+      const res = await adminFetch('/api/cms/banners', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bannerData),
       });
       if (res.ok) {
         const data = await res.json();
         setBanners((prev) => [...prev, data.banner]);
+        broadcastCmsUpdate('banners');
         showToast('New Banner added to database!');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || 'Failed to add banner');
       }
     } catch (e) {
       console.error('Failed to add banner:', e);
+      showToast('Error saving banner');
     }
   };
 
   const editBanner = async (bannerData: CMSBanner) => {
+    const prevBanners = banners;
     try {
-      const res = await fetch('/api/cms/banners', {
+      setBanners((prev) => prev.map((b) => (b.id === bannerData.id ? bannerData : b)));
+      const res = await adminFetch('/api/cms/banners', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bannerData),
       });
       if (res.ok) {
-        setBanners((prev) => prev.map((b) => (b.id === bannerData.id ? bannerData : b)));
+        broadcastCmsUpdate('banners');
         showToast('Banner updated in database!');
+      } else {
+        setBanners(prevBanners);
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || 'Failed to update banner. Reverted.');
       }
     } catch (e) {
+      setBanners(prevBanners);
       console.error('Failed to update banner:', e);
+      showToast('Error updating banner');
     }
   };
 
   const deleteBanner = async (id: string) => {
+    const prevBanners = banners;
     try {
-      const res = await fetch(`/api/cms/banners?id=${encodeURIComponent(id)}`, {
+      setBanners((prev) => prev.filter((b) => b.id !== id));
+      const res = await adminFetch(`/api/cms/banners?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       });
       if (res.ok) {
-        setBanners((prev) => prev.filter((b) => b.id !== id));
+        broadcastCmsUpdate('banners');
         showToast('Banner deleted from database!');
+      } else {
+        setBanners(prevBanners);
+        showToast('Failed to delete banner from database. Reverted.');
       }
     } catch (e) {
+      setBanners(prevBanners);
       console.error('Failed to delete banner:', e);
+      showToast('Error deleting banner');
     }
   };
 
   const resetBannersToDefault = async () => {
     try {
-      const res = await fetch('/api/cms/banners', {
+      const res = await adminFetch('/api/cms/banners', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'seed_defaults' }),
       });
       if (res.ok) {
@@ -1849,6 +1914,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         try {
           localStorage.setItem('ls_banners', JSON.stringify(INITIAL_BANNERS));
         } catch (e) {}
+        broadcastCmsUpdate('banners');
         showToast('All 6 official storefront banners restored!');
         return true;
       }
@@ -1873,10 +1939,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const finalProd = { ...prod, sku };
 
     try {
-      const res = await fetch('/api/cms/products', {
+      const res = await adminFetch('/api/cms/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(finalProd),
       });
 
@@ -1888,6 +1952,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           safeSaveProductsToLocalStorage(updated);
           return updated;
         });
+        broadcastCmsUpdate('products');
         showToast(`Product "${created.name}" saved to database!`);
         return created;
       } else {
@@ -1907,7 +1972,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const fetchTrashProducts = async () => {
     try {
       setIsLoadingTrash(true);
-      const res = await fetch('/api/cms/products?trash=true', { credentials: 'include' });
+      const res = await adminFetch('/api/cms/products?trash=true');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.products)) {
@@ -1922,6 +1987,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteProductFromDb = async (id: string, permanent = false) => {
+    const prevProducts = products;
+    const prevTrash = trashProducts;
     try {
       const prodToDelete = products.find(p => p.id === id || p.sku === id || (p as any).dbId === id)
         || trashProducts.find(p => p.id === id || p.sku === id || (p as any).dbId === id);
@@ -1951,45 +2018,58 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setTrashProducts(prev => [trashedItem, ...prev.filter(p => p.id !== targetId)]);
         }
 
-        const res = await fetch(`/api/cms/products?id=${encodeURIComponent(targetId)}`, {
+        const res = await adminFetch(`/api/cms/products?id=${encodeURIComponent(targetId)}`, {
           method: 'DELETE',
-          credentials: 'include',
         });
         if (res.ok) {
+          broadcastCmsUpdate('products');
           showToast('Product moved to Dustbin! Kept safely for 15 days.');
         } else {
-          showToast('Product moved to Dustbin locally');
+          setProducts(prevProducts);
+          setTrashProducts(prevTrash);
+          safeSaveProductsToLocalStorage(prevProducts);
+          const err = await res.json().catch(() => ({}));
+          showToast(err.error || 'Failed to move product to Dustbin on server');
         }
       } else {
         // Hard delete: Permanent deletion from database
         setTrashProducts(prev => prev.filter(p => p.id !== id && p.id !== targetId));
         setProducts(prev => prev.filter(p => p.id !== id && p.id !== targetId));
-        try {
-          const saved = localStorage.getItem('ls_products');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            const filtered = parsed.filter((p: any) => p.id !== id && p.id !== targetId);
-            safeSaveProductsToLocalStorage(filtered);
-          }
-        } catch (e) {}
 
-        const res = await fetch(`/api/cms/products?id=${encodeURIComponent(targetId)}&permanent=true`, {
+        const res = await adminFetch(`/api/cms/products?id=${encodeURIComponent(targetId)}&permanent=true`, {
           method: 'DELETE',
-          credentials: 'include',
         });
         if (res.ok) {
+          try {
+            const saved = localStorage.getItem('ls_products');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              const filtered = parsed.filter((p: any) => p.id !== id && p.id !== targetId);
+              safeSaveProductsToLocalStorage(filtered);
+            }
+          } catch (e) {}
+          broadcastCmsUpdate('products');
           showToast('Product permanently deleted from database!');
         } else {
-          showToast('Product permanently deleted');
+          setProducts(prevProducts);
+          setTrashProducts(prevTrash);
+          safeSaveProductsToLocalStorage(prevProducts);
+          const err = await res.json().catch(() => ({}));
+          showToast(err.error || 'Failed to permanently delete product on server');
         }
       }
     } catch (e) {
       console.error('Failed to delete product:', e);
-      showToast('Action completed locally');
+      setProducts(prevProducts);
+      setTrashProducts(prevTrash);
+      safeSaveProductsToLocalStorage(prevProducts);
+      showToast('Error communicating with server');
     }
   };
 
   const restoreProductFromDb = async (id: string) => {
+    const prevProducts = products;
+    const prevTrash = trashProducts;
     try {
       const prodToRestore = trashProducts.find(p => p.id === id || p.sku === id || (p as any).dbId === id);
       const targetId = prodToRestore?.id || id;
@@ -2010,22 +2090,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
       }
 
-      const res = await fetch(`/api/cms/products?action=restore&id=${encodeURIComponent(targetId)}`, {
+      const res = await adminFetch(`/api/cms/products?action=restore&id=${encodeURIComponent(targetId)}`, {
         method: 'PATCH',
-        credentials: 'include'
       });
       if (res.ok) {
+        broadcastCmsUpdate('products');
         showToast('Product restored to Active Catalog!');
       } else {
-        showToast('Product restored locally');
+        setProducts(prevProducts);
+        setTrashProducts(prevTrash);
+        safeSaveProductsToLocalStorage(prevProducts);
+        showToast('Failed to restore product on server');
       }
     } catch (e) {
       console.error('Failed to restore product:', e);
-      showToast('Product restored locally');
+      setProducts(prevProducts);
+      setTrashProducts(prevTrash);
+      safeSaveProductsToLocalStorage(prevProducts);
+      showToast('Error communicating with server');
     }
   };
 
   const restoreAllTrash = async () => {
+    const prevProducts = products;
+    const prevTrash = trashProducts;
     try {
       const items = [...trashProducts];
       setTrashProducts([]);
@@ -2036,34 +2124,51 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return next;
       });
 
-      const res = await fetch('/api/cms/products?action=restoreAll', {
+      const res = await adminFetch('/api/cms/products?action=restoreAll', {
         method: 'PATCH',
-        credentials: 'include'
       });
       if (res.ok) {
+        broadcastCmsUpdate('products');
         showToast('All products restored to active catalog!');
+      } else {
+        setProducts(prevProducts);
+        setTrashProducts(prevTrash);
+        safeSaveProductsToLocalStorage(prevProducts);
+        showToast('Failed to restore all trash on server');
       }
     } catch (e) {
       console.error('Failed to restore all trash:', e);
+      setProducts(prevProducts);
+      setTrashProducts(prevTrash);
+      safeSaveProductsToLocalStorage(prevProducts);
+      showToast('Error communicating with server');
     }
   };
 
   const emptyTrashDb = async () => {
+    const prevTrash = trashProducts;
     try {
       setTrashProducts([]);
-      const res = await fetch('/api/cms/products?emptyTrash=true', {
+      const res = await adminFetch('/api/cms/products?emptyTrash=true', {
         method: 'DELETE',
-        credentials: 'include'
       });
       if (res.ok) {
+        broadcastCmsUpdate('products');
         showToast('Dustbin emptied permanently!');
+      } else {
+        setTrashProducts(prevTrash);
+        showToast('Failed to empty dustbin on server');
       }
     } catch (e) {
       console.error('Failed to empty dustbin:', e);
+      setTrashProducts(prevTrash);
+      showToast('Error communicating with server');
     }
   };
 
   const wipeAllProductsFromDb = async (): Promise<boolean> => {
+    const prevProducts = products;
+    const prevTrash = trashProducts;
     try {
       setProducts([]);
       setTrashProducts([]);
@@ -2071,28 +2176,34 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         localStorage.setItem('ls_products', '[]');
       } catch (e) {}
 
-      const res = await fetch('/api/cms/wipe-products', {
+      const res = await adminFetch('/api/cms/wipe-products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ secret: 'Lapiez@2026#' }),
       });
       if (res.ok) {
+        broadcastCmsUpdate('products');
         showToast('All products successfully deleted from database!');
         return true;
       } else {
+        setProducts(prevProducts);
+        setTrashProducts(prevTrash);
+        safeSaveProductsToLocalStorage(prevProducts);
         const err = await res.json().catch(() => ({}));
         showToast(err.error || 'Failed to wipe products from database');
         return false;
       }
     } catch (e) {
       console.error('Failed to wipe all products:', e);
-      showToast('Wipe completed locally');
+      setProducts(prevProducts);
+      setTrashProducts(prevTrash);
+      safeSaveProductsToLocalStorage(prevProducts);
+      showToast('Error communicating with server');
       return false;
     }
   };
 
   const updateProductInDb = async (id: string, updatedFields: Partial<Product>): Promise<boolean> => {
+    const prevProducts = products;
     try {
       const currentProd = products.find((p) => p.id === id || p.sku === id || (p as any).dbId === id);
       const sku = currentProd?.sku;
@@ -2119,10 +2230,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
 
       // 2. Persist to Prisma DB
-      const res = await fetch('/api/cms/products', {
+      const res = await adminFetch('/api/cms/products', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ 
           id, 
           sku: sku || (id.startsWith('LS-') || id.startsWith('MON-') || id.startsWith('FT-') || id.startsWith('KB-') ? id : undefined),
@@ -2147,30 +2256,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             return next;
           });
         }
-        showToast('Product updated successfully!');
+        broadcastCmsUpdate('products');
+        showToast('Product updated successfully in database!');
         return true;
       } else {
+        setProducts(prevProducts);
+        safeSaveProductsToLocalStorage(prevProducts);
         const err = await res.json().catch(() => ({}));
         showToast(err.error || 'Failed to update product in database');
         return false;
       }
     } catch (e) {
       console.error('Failed to update product:', e);
+      setProducts(prevProducts);
+      safeSaveProductsToLocalStorage(prevProducts);
       showToast('Error saving product changes');
       return false;
     }
   };
 
   const updateHomepageSections = async (sections: CMSSection[]) => {
+    const prevSections = homepageSections;
     setHomepageSections(sections);
     try {
       localStorage.setItem('ls_homepage_sections', JSON.stringify(sections));
     } catch (e) {}
 
     try {
-      const res = await fetch('/api/cms/homepage-sections', {
+      const res = await adminFetch('/api/cms/homepage-sections', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sections }),
       });
       if (res.ok) {
@@ -2181,28 +2295,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
           } catch (e) {}
         }
+        broadcastCmsUpdate('homepage_sections');
         showToast('Homepage section order saved!');
       } else {
+        setHomepageSections(prevSections);
+        try {
+          localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections));
+        } catch (e) {}
         const err = await res.json().catch(() => ({}));
         showToast(err.error || 'Failed to save sections to database');
       }
     } catch (e) {
       console.error('Failed to update homepage sections:', e);
+      setHomepageSections(prevSections);
+      try {
+        localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections));
+      } catch (e) {}
       showToast('Error saving sections');
     }
   };
 
   const updateHomepageSectionDetails = async (sectionKey: string, details: Partial<CMSSection>) => {
-    setHomepageSections((prev) => {
-      const updated = prev.map((s) => (s.sectionKey === sectionKey ? { ...s, ...details } : s));
-      try { localStorage.setItem('ls_homepage_sections', JSON.stringify(updated)); } catch (e) {}
-      return updated;
-    });
+    const prevSections = homepageSections;
+    const optimistic = prevSections.map((s) => (s.sectionKey === sectionKey ? { ...s, ...details } : s));
+    setHomepageSections(optimistic);
+    try { localStorage.setItem('ls_homepage_sections', JSON.stringify(optimistic)); } catch (e) {}
 
     try {
-      const res = await fetch('/api/cms/homepage-sections', {
+      const res = await adminFetch('/api/cms/homepage-sections', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sectionKey, ...details }),
       });
       if (res.ok) {
@@ -2213,24 +2334,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
           } catch (e) {}
         }
+        broadcastCmsUpdate('homepage_sections');
         showToast(`Section "${details.title || sectionKey}" updated!`);
+      } else {
+        setHomepageSections(prevSections);
+        try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) {}
+        showToast('Failed to update section on server');
       }
     } catch (e) {
       console.error('Failed to update section:', e);
+      setHomepageSections(prevSections);
+      try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) {}
+      showToast('Error updating section');
     }
   };
 
   const updateHomepageSectionProducts = async (sectionKey: string, productIds: string[]) => {
-    setHomepageSections((prev) => {
-      const updated = prev.map((s) => (s.sectionKey === sectionKey ? { ...s, productIds } : s));
-      try { localStorage.setItem('ls_homepage_sections', JSON.stringify(updated)); } catch (e) {}
-      return updated;
-    });
+    const prevSections = homepageSections;
+    const optimistic = prevSections.map((s) => (s.sectionKey === sectionKey ? { ...s, productIds } : s));
+    setHomepageSections(optimistic);
+    try { localStorage.setItem('ls_homepage_sections', JSON.stringify(optimistic)); } catch (e) {}
 
     try {
-      const res = await fetch('/api/cms/homepage-sections', {
+      const res = await adminFetch('/api/cms/homepage-sections', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sectionKey, productIds }),
       });
       if (res.ok) {
@@ -2241,18 +2368,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
           } catch (e) {}
         }
+        broadcastCmsUpdate('homepage_sections');
         showToast(`Products updated for section!`);
+      } else {
+        setHomepageSections(prevSections);
+        try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) {}
+        showToast('Failed to update section products on server');
       }
     } catch (e) {
       console.error('Failed to update section products:', e);
+      setHomepageSections(prevSections);
+      try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) {}
+      showToast('Error updating section products');
     }
   };
 
   const resetHomepageSectionsToDefault = async () => {
     try {
-      const res = await fetch('/api/cms/homepage-sections', {
+      const res = await adminFetch('/api/cms/homepage-sections', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resetToDefaults: true }),
       });
       if (res.ok) {
@@ -2263,9 +2397,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
           } catch (e) {}
         }
+        broadcastCmsUpdate('homepage_sections');
         showToast('All homepage sections reset to default layout!');
       } else {
-        showToast('Failed to reset homepage sections');
+        showToast('Failed to reset homepage sections on server');
       }
     } catch (e) {
       console.error('Failed to reset sections:', e);
@@ -2275,9 +2410,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const makeAllHomepageSectionsVisible = async () => {
     try {
-      const res = await fetch('/api/cms/homepage-sections', {
+      const res = await adminFetch('/api/cms/homepage-sections', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ makeAllVisible: true }),
       });
       if (res.ok) {
@@ -2288,9 +2422,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
           } catch (e) {}
         }
+        broadcastCmsUpdate('homepage_sections');
         showToast('All homepage sections are now visible!');
       } else {
-        showToast('Failed to update section visibility');
+        showToast('Failed to update section visibility on server');
       }
     } catch (e) {
       console.error('Failed to make all visible:', e);
@@ -2300,14 +2435,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const addCustomPage = async (page: Partial<CMSCustomPage>): Promise<CMSCustomPage> => {
     try {
-      const res = await fetch('/api/cms/pages', {
+      const res = await adminFetch('/api/cms/pages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(page),
       });
       const data = await res.json();
-      if (data.page) {
+      if (res.ok && data.page) {
         setCustomPages((prev) => [data.page, ...prev]);
+        broadcastCmsUpdate('pages');
         showToast('Page published successfully!');
         return data.page;
       }
@@ -2326,39 +2461,56 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const editCustomPage = async (page: CMSCustomPage) => {
+    const prevPages = customPages;
     setCustomPages((prev) => prev.map((p) => (p.id === page.id ? page : p)));
     try {
-      await fetch('/api/cms/pages', {
+      const res = await adminFetch('/api/cms/pages', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(page),
       });
-      showToast('Page updated successfully!');
+      if (res.ok) {
+        broadcastCmsUpdate('pages');
+        showToast('Page updated successfully!');
+      } else {
+        setCustomPages(prevPages);
+        showToast('Failed to update page on server');
+      }
     } catch (e) {
       console.error('Failed to update page:', e);
+      setCustomPages(prevPages);
+      showToast('Error updating page');
     }
   };
 
   const deleteCustomPage = async (id: string) => {
+    const prevPages = customPages;
     setCustomPages((prev) => prev.filter((p) => p.id !== id));
     try {
-      await fetch(`/api/cms/pages?id=${id}`, { method: 'DELETE' });
-      showToast('Page deleted!');
+      const res = await adminFetch(`/api/cms/pages?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        broadcastCmsUpdate('pages');
+        showToast('Page deleted!');
+      } else {
+        setCustomPages(prevPages);
+        showToast('Failed to delete page on server');
+      }
     } catch (e) {
       console.error('Failed to delete page:', e);
+      setCustomPages(prevPages);
+      showToast('Error deleting page');
     }
   };
 
   const addBlogPost = async (post: Partial<CMSBlogPost>): Promise<CMSBlogPost> => {
     try {
-      const res = await fetch('/api/cms/blogs', {
+      const res = await adminFetch('/api/cms/blogs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(post),
       });
       const data = await res.json();
-      if (data.blog) {
+      if (res.ok && data.blog) {
         setBlogPosts((prev) => [data.blog, ...prev]);
+        broadcastCmsUpdate('blogs');
         showToast('Blog article published!');
         return data.blog;
       }
@@ -2382,33 +2534,50 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const editBlogPost = async (post: CMSBlogPost) => {
+    const prevBlogs = blogPosts;
     setBlogPosts((prev) => prev.map((b) => (b.id === post.id ? post : b)));
     try {
-      await fetch('/api/cms/blogs', {
+      const res = await adminFetch('/api/cms/blogs', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(post),
       });
-      showToast('Blog article updated!');
+      if (res.ok) {
+        broadcastCmsUpdate('blogs');
+        showToast('Blog article updated!');
+      } else {
+        setBlogPosts(prevBlogs);
+        showToast('Failed to update blog on server');
+      }
     } catch (e) {
       console.error('Failed to update blog:', e);
+      setBlogPosts(prevBlogs);
+      showToast('Error updating blog');
     }
   };
 
   const deleteBlogPost = async (id: string) => {
+    const prevBlogs = blogPosts;
     setBlogPosts((prev) => prev.filter((b) => b.id !== id));
     try {
-      await fetch(`/api/cms/blogs?id=${id}`, { method: 'DELETE' });
-      showToast('Blog article deleted!');
+      const res = await adminFetch(`/api/cms/blogs?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        broadcastCmsUpdate('blogs');
+        showToast('Blog article deleted!');
+      } else {
+        setBlogPosts(prevBlogs);
+        showToast('Failed to delete blog on server');
+      }
     } catch (e) {
       console.error('Failed to delete blog:', e);
+      setBlogPosts(prevBlogs);
+      showToast('Error deleting blog');
     }
   };
 
   // Coupon Engine Methods
   const fetchCoupons = useCallback(async () => {
     try {
-      const res = await fetch('/api/cms/coupons');
+      const res = await adminFetch('/api/cms/coupons');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.coupons) && data.coupons.length > 0) {
@@ -2455,14 +2624,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const createCoupon = useCallback(async (couponData: any) => {
     try {
-      const res = await fetch('/api/cms/coupons', {
+      const res = await adminFetch('/api/cms/coupons', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(couponData),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create coupon');
       await fetchCoupons();
+      broadcastCmsUpdate('coupons');
       showToast(`Coupon ${couponData.code?.toUpperCase()} created successfully!`);
       return { success: true };
     } catch (err: any) {
@@ -2472,14 +2641,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateCoupon = useCallback(async (id: string, couponData: any) => {
     try {
-      const res = await fetch('/api/cms/coupons', {
+      const res = await adminFetch('/api/cms/coupons', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...couponData }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update coupon');
       await fetchCoupons();
+      broadcastCmsUpdate('coupons');
       showToast('Coupon updated successfully!');
       return { success: true };
     } catch (err: any) {
@@ -2489,12 +2658,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const deleteCoupon = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/cms/coupons?id=${encodeURIComponent(id)}`, {
+      const res = await adminFetch(`/api/cms/coupons?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete coupon');
       await fetchCoupons();
+      broadcastCmsUpdate('coupons');
       showToast('Coupon deleted!');
       return { success: true };
     } catch (err: any) {
@@ -2505,15 +2675,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Brand Engine Methods
   const addBrand = async (brandData: Partial<CMSBrand>): Promise<CMSBrand | null> => {
     try {
-      const res = await fetch('/api/cms/brands', {
+      const res = await adminFetch('/api/cms/brands', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(brandData),
       });
       const data = await res.json();
-      if (data.brands) {
+      if (res.ok && data.brands) {
         setBrands(data.brands);
         localStorage.setItem('ls_brands', JSON.stringify(data.brands));
+        broadcastCmsUpdate('brands');
         showToast(`Brand "${brandData.name || 'New'}" added successfully!`);
         return data.brand || null;
       }
@@ -2535,85 +2705,126 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const updated = [...brands, newBrand];
     setBrands(updated);
     localStorage.setItem('ls_brands', JSON.stringify(updated));
-    showToast(`Brand "${newBrand.name}" added!`);
+    showToast(`Brand "${newBrand.name}" added locally!`);
     return newBrand;
   };
 
   const updateBrand = async (id: string, updates: Partial<CMSBrand>): Promise<boolean> => {
+    const prevBrands = brands;
     const updated = brands.map((b) => (b.id === id ? { ...b, ...updates } : b));
     setBrands(updated);
     localStorage.setItem('ls_brands', JSON.stringify(updated));
     try {
-      await fetch('/api/cms/brands', {
+      const res = await adminFetch('/api/cms/brands', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...updates }),
       });
-      showToast('Brand updated successfully!');
-      return true;
+      if (res.ok) {
+        broadcastCmsUpdate('brands');
+        showToast('Brand updated successfully!');
+        return true;
+      } else {
+        setBrands(prevBrands);
+        localStorage.setItem('ls_brands', JSON.stringify(prevBrands));
+        showToast('Failed to update brand on server');
+        return false;
+      }
     } catch (e) {
       console.error('Failed to update brand:', e);
-      showToast('Saved locally!');
-      return true;
+      setBrands(prevBrands);
+      localStorage.setItem('ls_brands', JSON.stringify(prevBrands));
+      showToast('Error updating brand');
+      return false;
     }
   };
 
   const deleteBrand = async (id: string): Promise<boolean> => {
+    const prevBrands = brands;
     const filtered = brands.filter((b) => b.id !== id).map((b, idx) => ({ ...b, position: idx }));
     setBrands(filtered);
     localStorage.setItem('ls_brands', JSON.stringify(filtered));
     try {
-      await fetch(`/api/cms/brands?id=${encodeURIComponent(id)}`, {
+      const res = await adminFetch(`/api/cms/brands?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       });
-      showToast('Brand removed!');
-      return true;
+      if (res.ok) {
+        broadcastCmsUpdate('brands');
+        showToast('Brand removed!');
+        return true;
+      } else {
+        setBrands(prevBrands);
+        localStorage.setItem('ls_brands', JSON.stringify(prevBrands));
+        showToast('Failed to delete brand on server');
+        return false;
+      }
     } catch (e) {
       console.error('Failed to delete brand:', e);
-      showToast('Removed locally!');
-      return true;
+      setBrands(prevBrands);
+      localStorage.setItem('ls_brands', JSON.stringify(prevBrands));
+      showToast('Error deleting brand');
+      return false;
     }
   };
 
   const reorderBrands = async (newBrands: CMSBrand[]): Promise<boolean> => {
+    const prevBrands = brands;
     const reindexed = newBrands.map((b, idx) => ({ ...b, position: idx }));
     setBrands(reindexed);
     localStorage.setItem('ls_brands', JSON.stringify(reindexed));
     try {
-      await fetch('/api/cms/brands', {
+      const res = await adminFetch('/api/cms/brands', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ brands: reindexed }),
       });
-      showToast('Brand order saved!');
-      return true;
+      if (res.ok) {
+        broadcastCmsUpdate('brands');
+        showToast('Brand order saved!');
+        return true;
+      } else {
+        setBrands(prevBrands);
+        localStorage.setItem('ls_brands', JSON.stringify(prevBrands));
+        showToast('Failed to save brand order on server');
+        return false;
+      }
     } catch (e) {
       console.error('Failed to save brand order:', e);
-      return true;
+      setBrands(prevBrands);
+      localStorage.setItem('ls_brands', JSON.stringify(prevBrands));
+      return false;
     }
   };
 
   const resetBrandsToDefault = async (): Promise<boolean> => {
+    const prevBrands = brands;
     setBrands(DEFAULT_BRANDS);
     localStorage.setItem('ls_brands', JSON.stringify(DEFAULT_BRANDS));
     try {
-      await fetch('/api/cms/brands', {
+      const res = await adminFetch('/api/cms/brands', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resetToDefaults: true }),
       });
-      showToast('Brands restored to defaults!');
-      return true;
+      if (res.ok) {
+        broadcastCmsUpdate('brands');
+        showToast('Brands restored to defaults!');
+        return true;
+      } else {
+        setBrands(prevBrands);
+        localStorage.setItem('ls_brands', JSON.stringify(prevBrands));
+        showToast('Failed to reset brands on server');
+        return false;
+      }
     } catch (e) {
       console.error('Failed to reset brands:', e);
-      return true;
+      setBrands(prevBrands);
+      localStorage.setItem('ls_brands', JSON.stringify(prevBrands));
+      return false;
     }
   };
 
   // Categories & Subcategories CMS Methods
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/api/cms/categories');
+      const res = await adminFetch('/api/cms/categories');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.categories) && data.categories.length > 0) {
@@ -2625,6 +2836,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const addCategory = async (catData: Partial<CMSCategory>) => {
+    const prevCategories = categories;
     const newCat: CMSCategory = {
       id: catData.id || `cat-${Date.now()}`,
       name: catData.name || 'New Category',
@@ -2643,60 +2855,91 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const updated = [...categories, newCat];
     setCategories(updated);
     try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
-    showToast(`Category "${newCat.name}" added!`);
 
     try {
-      const res = await fetch('/api/cms/categories', {
+      const res = await adminFetch('/api/cms/categories', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(catData),
       });
       if (res.ok) {
         await fetchCategories();
+        broadcastCmsUpdate('categories');
+        showToast(`Category "${newCat.name}" added!`);
+      } else {
+        setCategories(prevCategories);
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        showToast('Failed to add category on server');
       }
     } catch (e) {
       console.error(e);
+      setCategories(prevCategories);
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      showToast('Error saving category');
     }
     return newCat;
   };
 
   const updateCategory = async (id: string, updates: Partial<CMSCategory>) => {
-    // Optimistic local state update
+    const prevCategories = categories;
     const updated = categories.map((c) => (c.id === id || c.slug === id ? { ...c, ...updates } : c));
     setCategories(updated);
     try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
-    showToast('Category updated!');
 
     try {
-      await fetch('/api/cms/categories', {
+      const res = await adminFetch('/api/cms/categories', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...updates }),
       });
+      if (res.ok) {
+        broadcastCmsUpdate('categories');
+        showToast('Category updated!');
+        return true;
+      } else {
+        setCategories(prevCategories);
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        showToast('Failed to update category on server');
+        return false;
+      }
     } catch (e) {
       console.error(e);
+      setCategories(prevCategories);
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      showToast('Error updating category');
+      return false;
     }
-    return true;
   };
 
   const deleteCategory = async (id: string) => {
-    // Optimistic local state update
+    const prevCategories = categories;
     const updated = categories.filter((c) => c.id !== id && c.slug !== id).map((c, idx) => ({ ...c, position: idx }));
     setCategories(updated);
     try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
-    showToast('Category deleted!');
 
     try {
-      await fetch(`/api/cms/categories?id=${encodeURIComponent(id)}`, {
+      const res = await adminFetch(`/api/cms/categories?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       });
+      if (res.ok) {
+        broadcastCmsUpdate('categories');
+        showToast('Category deleted!');
+        return true;
+      } else {
+        setCategories(prevCategories);
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        showToast('Failed to delete category on server');
+        return false;
+      }
     } catch (e) {
       console.error(e);
+      setCategories(prevCategories);
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      showToast('Error deleting category');
+      return false;
     }
-    return true;
   };
 
   const addSubcategory = async (parentId: string, subData: Partial<CMSSubcategory>) => {
+    const prevCategories = categories;
     const newSub: CMSSubcategory = {
       id: subData.id || `sub-${Date.now()}`,
       name: subData.name || 'New Subcategory',
@@ -2708,7 +2951,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ...subData,
     };
 
-    // Optimistic local state update
     const updated = categories.map((c) => {
       if (c.id === parentId || c.slug === parentId) {
         return {
@@ -2720,81 +2962,121 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     setCategories(updated);
     try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
-    showToast(`Subcategory "${newSub.name}" added!`);
 
     try {
-      const res = await fetch('/api/cms/categories', {
+      const res = await adminFetch('/api/cms/categories', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...subData, parentId }),
       });
       if (res.ok) {
         await fetchCategories();
+        broadcastCmsUpdate('categories');
+        showToast(`Subcategory "${newSub.name}" added!`);
+      } else {
+        setCategories(prevCategories);
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        showToast('Failed to add subcategory on server');
       }
     } catch (e) {
       console.error(e);
+      setCategories(prevCategories);
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      showToast('Error adding subcategory');
     }
     return newSub;
   };
 
   const updateSubcategory = async (id: string, updates: Partial<CMSSubcategory>) => {
-    // Optimistic local state update
+    const prevCategories = categories;
     const updated = categories.map((c) => ({
       ...c,
       subcategories: (c.subcategories || []).map((s) => (s.id === id || s.slug === id ? { ...s, ...updates } : s)),
     }));
     setCategories(updated);
     try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
-    showToast('Subcategory updated!');
 
     try {
-      await fetch('/api/cms/categories', {
+      const res = await adminFetch('/api/cms/categories', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...updates }),
       });
+      if (res.ok) {
+        broadcastCmsUpdate('categories');
+        showToast('Subcategory updated!');
+        return true;
+      } else {
+        setCategories(prevCategories);
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        showToast('Failed to update subcategory on server');
+        return false;
+      }
     } catch (e) {
       console.error(e);
+      setCategories(prevCategories);
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      showToast('Error updating subcategory');
+      return false;
     }
-    return true;
   };
 
   const deleteSubcategory = async (id: string) => {
-    // Optimistic local state update
+    const prevCategories = categories;
     const updated = categories.map((c) => ({
       ...c,
       subcategories: (c.subcategories || []).filter((s) => s.id !== id && s.slug !== id),
     }));
     setCategories(updated);
     try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
-    showToast('Subcategory removed!');
 
     try {
-      await fetch(`/api/cms/categories?id=${encodeURIComponent(id)}`, {
+      const res = await adminFetch(`/api/cms/categories?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       });
+      if (res.ok) {
+        broadcastCmsUpdate('categories');
+        showToast('Subcategory removed!');
+        return true;
+      } else {
+        setCategories(prevCategories);
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        showToast('Failed to remove subcategory on server');
+        return false;
+      }
     } catch (e) {
       console.error(e);
+      setCategories(prevCategories);
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      showToast('Error removing subcategory');
+      return false;
     }
-    return true;
   };
 
   const reorderCategories = async (newCategories: CMSCategory[]) => {
+    const prevCategories = categories;
     const reindexed = newCategories.map((c, i) => ({ ...c, position: i }));
     setCategories(reindexed);
     try { localStorage.setItem('ls_categories', JSON.stringify(reindexed)); } catch (e) {}
-    showToast('Category order saved!');
 
     try {
       const items = reindexed.map((c, i) => ({ id: c.id, position: i }));
-      await fetch('/api/cms/categories', {
+      const res = await adminFetch('/api/cms/categories', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ categories: items }),
       });
-      return true;
+      if (res.ok) {
+        broadcastCmsUpdate('categories');
+        showToast('Category order saved!');
+        return true;
+      } else {
+        setCategories(prevCategories);
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        showToast('Failed to save category order on server');
+        return false;
+      }
     } catch (e) {
       console.error(e);
+      setCategories(prevCategories);
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
       return false;
     }
   };
@@ -2802,6 +3084,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const resetCategoriesToDefault = async (): Promise<boolean> => {
     setCategories(DEFAULT_CMS_CATEGORIES);
     try { localStorage.setItem('ls_categories', JSON.stringify(DEFAULT_CMS_CATEGORIES)); } catch (e) {}
+    try {
+      const res = await adminFetch('/api/cms/categories', {
+        method: 'PUT',
+        body: JSON.stringify({ resetToDefaults: true }),
+      });
+      if (res.ok) {
+        broadcastCmsUpdate('categories');
+      }
+    } catch (e) {}
     showToast('Categories restored to 10 homepage showroom defaults!');
     return true;
   };

@@ -6,6 +6,9 @@ import { INITIAL_COUPONS, Coupon } from '@/data/coupons';
 // In-memory fallback cache for development/offline resilience
 let memoryCoupons: Coupon[] = [...INITIAL_COUPONS];
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

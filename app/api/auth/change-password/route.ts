@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hasAdminSession, verifyAdminPassword, validatePasswordPolicy, adminSessionCookie, createAdminSession, hashPassword } from '@/lib/adminAuth';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(request: NextRequest) {
   try {
     const isAuthed = hasAdminSession(request);

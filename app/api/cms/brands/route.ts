@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { hasAdminSession } from '@/lib/adminAuth';
 import { DEFAULT_BRANDS, CMSBrand } from '@/data/brands';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Helper to get stored brands from database
 async function getStoredBrands(): Promise<CMSBrand[]> {
   try {

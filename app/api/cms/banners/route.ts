@@ -4,6 +4,9 @@ import { hasAdminSession } from '@/lib/adminAuth';
 import { invalidateInitCache } from '@/app/api/cms/init/route';
 import { INITIAL_BANNERS } from '@/data/banners';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     let banners = await prisma.banner.findMany({

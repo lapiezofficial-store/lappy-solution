@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSessionCookie, createAdminSession, isAdminConfigured, verifyAndCheckAdminPassword, migrateAdminPassword } from '@/lib/adminAuth';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface RateLimitRecord {
   attempts: number;
   resetAt: number;
@@ -102,8 +105,9 @@ export async function POST(request: NextRequest) {
 
   clearRateLimit(clientIp);
 
-  const response = NextResponse.json({ success: true });
-  response.cookies.set(adminSessionCookie.name, createAdminSession(), adminSessionCookie.options);
+  const sessionToken = createAdminSession();
+  const response = NextResponse.json({ success: true, token: sessionToken });
+  response.cookies.set(adminSessionCookie.name, sessionToken, adminSessionCookie.options);
   return response;
 }
 

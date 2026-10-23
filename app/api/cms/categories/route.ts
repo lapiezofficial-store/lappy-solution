@@ -4,6 +4,9 @@ import { hasAdminSession } from '@/lib/adminAuth';
 import { invalidateInitCache } from '@/app/api/cms/init/route';
 import { CATEGORIES } from '@/data/categories';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Helper to seed categories & subcategories from default taxonomy if empty
 async function ensureDefaultCategories() {
   const count = await prisma.category.count();

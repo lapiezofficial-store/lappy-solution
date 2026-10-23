@@ -20,6 +20,7 @@ import { BrandLogoRenderer, PRESET_BRANDS_CONFIG } from '../../components/BrandL
 import { STORE_INFO } from '../../data/storeData';
 import { Product } from '../../data/products';
 import scrapedBrandProductsData from '../../data/scrapedBrandProducts.json';
+import { adminFetch, setAdminToken, removeAdminToken } from '../../lib/adminApi';
 
 export default function AdminPage() {
   const { 
@@ -478,17 +479,20 @@ export default function AdminPage() {
   const [isRefreshingOrders, setIsRefreshingOrders] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/session')
+    adminFetch('/api/auth/session')
       .then((response) => response.json())
       .then((data) => {
         const isAuthed = Boolean(data.authenticated);
         setIsAuthenticated(isAuthed);
         if (isAuthed) {
+          syncWithDatabase({ forceFresh: true }).catch(() => {});
           fetchOrders().catch(() => {});
+        } else {
+          removeAdminToken();
         }
       })
       .catch(() => setIsAuthenticated(false));
-  }, [fetchOrders]);
+  }, [fetchOrders, syncWithDatabase]);
 
   // Real-Time Background Order Polling for Admin (every 15s)
   useEffect(() => {
@@ -541,10 +545,15 @@ export default function AdminPage() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ password: trimmed }),
       });
 
       if (response.ok) {
+        const data = await response.json().catch(() => null);
+        if (data?.token) {
+          setAdminToken(data.token);
+        }
         setIsAuthenticated(true);
         setAuthPassword('');
         setAuthError('');
@@ -1088,9 +1097,8 @@ export default function AdminPage() {
       formData.append('file', file);
       formData.append('folder', folder);
 
-      const res = await fetch('/api/cms/upload', {
+      const res = await adminFetch('/api/cms/upload', {
         method: 'POST',
-        credentials: 'include',
         body: formData,
       });
 
@@ -1683,7 +1691,7 @@ export default function AdminPage() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('folder', 'brands');
-      const res = await fetch('/api/cms/upload', {
+      const res = await adminFetch('/api/cms/upload', {
         method: 'POST',
         body: formData,
       });
@@ -1984,7 +1992,7 @@ export default function AdminPage() {
       formData.append('file', file);
       formData.append('folder', 'branding');
 
-      const res = await fetch('/api/cms/upload', {
+      const res = await adminFetch('/api/cms/upload', {
         method: 'POST',
         body: formData,
       });
@@ -2013,7 +2021,7 @@ export default function AdminPage() {
       formData.append('file', file);
       formData.append('folder', 'branding');
 
-      const res = await fetch('/api/cms/upload', {
+      const res = await adminFetch('/api/cms/upload', {
         method: 'POST',
         body: formData,
       });
@@ -2119,9 +2127,8 @@ export default function AdminPage() {
 
     setIsChangingPassword(true);
     try {
-      const res = await fetch('/api/auth/change-password', {
+      const res = await adminFetch('/api/auth/change-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currentPassword: currentAdminPassword,
           newPassword: newAdminPassword,
@@ -2888,7 +2895,8 @@ export default function AdminPage() {
           {/* Logout / Lock */}
           <button
             onClick={async () => {
-              await fetch('/api/auth/logout', { method: 'POST' });
+              await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+              removeAdminToken();
               setIsAuthenticated(false);
               showToast('Admin Portal locked securely.');
             }}
@@ -3130,7 +3138,8 @@ export default function AdminPage() {
                 </Link>
                 <button
                   onClick={async () => {
-                    await fetch('/api/auth/logout', { method: 'POST' });
+                    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+                    removeAdminToken();
                     setIsAuthenticated(false);
                     showToast('Admin Portal locked securely.');
                   }}

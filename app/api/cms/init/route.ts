@@ -5,6 +5,9 @@ import { PRODUCTS } from '@/data/products';
 import { INITIAL_COUPONS } from '@/data/coupons';
 import { INITIAL_BANNERS } from '@/data/banners';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Server-side in-memory cache for ultra-low latency & database relief
 interface CachedInitData {
   payload: any;
@@ -13,7 +16,7 @@ interface CachedInitData {
 }
 
 let inMemoryCache: CachedInitData | null = null;
-const CACHE_TTL_MS = 10 * 1000; // 10 seconds in-memory TTL for instant phone & web synchronization
+const CACHE_TTL_MS = 2 * 1000; // 2 seconds in-memory TTL to prevent multi-lambda stale data
 
 export function invalidateInitCache() {
   inMemoryCache = null;
@@ -64,9 +67,12 @@ export async function GET(request: Request) {
   const now = Date.now();
   const ifNoneMatch = request.headers.get('if-none-match');
 
-  // 1. Check if client explicitly requests fresh data (e.g., after CMS edit or manual refresh)
+  // 1. Check if client explicitly requests fresh data or is from admin / tab sync
   const url = new URL(request.url);
-  const isFreshRequested = url.searchParams.get('fresh') === 'true' || request.headers.get('cache-control')?.includes('no-cache');
+  const isFreshRequested = url.searchParams.get('fresh') === 'true' || 
+    request.headers.get('cache-control')?.includes('no-cache') ||
+    Boolean(request.headers.get('x-admin-token')) ||
+    Boolean(request.headers.get('cookie')?.includes('ls_admin_session'));
 
   // Serve from in-memory cache if warm and fresh data is not requested
   if (!isFreshRequested && inMemoryCache && (now - inMemoryCache.cachedAt) < CACHE_TTL_MS) {

@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { hasAdminSession } from '@/lib/adminAuth';
 import { invalidateInitCache } from '@/app/api/cms/init/route';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function purgeExpiredTrash() {
   try {
     const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);

@@ -210,12 +210,28 @@ export function verifyAdminSessionToken(cookieValue?: string | null): boolean {
 }
 
 export function hasAdminSession(request: NextRequest | Request): boolean {
-  const cookieHeader = request.headers.get('cookie');
-  if (!cookieHeader) return false;
+  // 1. Check custom Authorization header (Bearer <token>)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+    const bearerToken = authHeader.substring(7).trim();
+    if (verifyAdminSessionToken(bearerToken)) return true;
+  }
 
-  const match = cookieHeader.match(new RegExp(`(?:^|; )${COOKIE_NAME}=([^;]+)`));
-  const cookie = match?.[1];
-  return verifyAdminSessionToken(cookie);
+  // 2. Check dedicated x-admin-token header
+  const xAdminToken = request.headers.get('x-admin-token');
+  if (xAdminToken && verifyAdminSessionToken(xAdminToken.trim())) {
+    return true;
+  }
+
+  // 3. Check httpOnly Cookie (ls_admin_session)
+  const cookieHeader = request.headers.get('cookie');
+  if (cookieHeader) {
+    const match = cookieHeader.match(new RegExp(`(?:^|; )${COOKIE_NAME}=([^;]+)`));
+    const cookie = match?.[1];
+    if (cookie && verifyAdminSessionToken(cookie)) return true;
+  }
+
+  return false;
 }
 
 export const adminSessionCookie = {
