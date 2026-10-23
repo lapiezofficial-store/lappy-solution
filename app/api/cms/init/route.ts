@@ -91,7 +91,7 @@ export async function GET(request: Request) {
 
   try {
     // 2. Single-pass parallel batch fetch across all public CMS collections
-    const [
+    let [
       siteSettings,
       paymentSettings,
       themeSettings,
@@ -111,7 +111,7 @@ export async function GET(request: Request) {
       prisma.category.findMany({ orderBy: { position: 'asc' } }).catch(() => []),
       prisma.product.findMany({ where: { status: 'active' }, orderBy: { createdAt: 'desc' }, take: 1000 }).catch((err) => {
         console.error('[Init] Error fetching products from DB:', err);
-        return null; // Return null instead of [] so we know the query failed
+        return { __error: (err as any)?.message || String(err) } as any;
       }),
       prisma.customPage.findMany({ where: { status: 'published' }, orderBy: { updatedAt: 'desc' } }).catch(() => []),
       prisma.blogPost.findMany({ where: { status: 'published' }, orderBy: { createdAt: 'desc' } }).catch(() => []),
@@ -171,19 +171,29 @@ export async function GET(request: Request) {
 
     let formattedProducts: any[] = [];
     let productsQueryFailed = false;
+    let productsErrorMessage: string | null = null;
+
+    if (dbProducts && (dbProducts as any).__error) {
+      productsQueryFailed = true;
+      productsErrorMessage = (dbProducts as any).__error;
+      dbProducts = null;
+    }
 
     if (dbProducts === null) {
       // Query failed due to database connectivity/pool issue
       productsQueryFailed = true;
       if (lastKnownGoodProducts && lastKnownGoodProducts.length > 0) {
         formattedProducts = lastKnownGoodProducts;
+      } else {
+        formattedProducts = PRODUCTS.map((p) => formatProduct(p));
       }
     } else if (Array.isArray(dbProducts)) {
       if (dbProducts.length > 0) {
         formattedProducts = dbProducts.map((p) => formatProduct(p, richSkuMap.get(p.sku) || richIdMap.get(p.id)));
         lastKnownGoodProducts = formattedProducts;
       } else {
-        formattedProducts = [];
+        // If DB has 0 rows, use last known good or default catalog
+        formattedProducts = lastKnownGoodProducts || PRODUCTS.map((p) => formatProduct(p));
       }
     }
 
@@ -216,6 +226,7 @@ export async function GET(request: Request) {
       categories: categoriesTree,
       products: formattedProducts,
       productsQueryFailed,
+      productsErrorMessage,
       customPages: customPages || [],
       blogPosts: blogPosts || [],
       coupons,
@@ -249,7 +260,7 @@ export async function GET(request: Request) {
         banners: INITIAL_BANNERS,
         homepageSections: [],
         categories: CATEGORIES,
-        products: lastKnownGoodProducts || [],
+        products: lastKnownGoodProducts || PRODUCTS.map((p) => formatProduct(p)),
         productsQueryFailed: true,
         customPages: [],
         blogPosts: [],

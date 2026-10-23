@@ -92,12 +92,16 @@ export async function GET(request: Request) {
       take: limit,
     });
 
-    // Enrich with gallery images, verified reviews & subcategory metadata
     const { PRODUCTS } = await import('@/data/products');
     const richMap = new Map(PRODUCTS.map(p => [p.sku, p]));
     const idMap = new Map(PRODUCTS.map(p => [p.id, p]));
 
-    const enrichedProducts = products.map((p) => {
+    let effectiveProducts = products;
+    if ((!effectiveProducts || effectiveProducts.length === 0) && !search && !id && !slug) {
+      effectiveProducts = PRODUCTS.slice(0, limit) as any;
+    }
+
+    const enrichedProducts = effectiveProducts.map((p) => {
       const rich = richMap.get(p.sku) || idMap.get(p.id);
       return formatProductPayload(p, rich);
     });
@@ -105,7 +109,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ products: enrichedProducts });
   } catch (error) {
     console.error('Error fetching products from DB:', error);
-    return NextResponse.json({ products: [] });
+    try {
+      const { PRODUCTS } = await import('@/data/products');
+      return NextResponse.json({ products: PRODUCTS.slice(0, 100).map(p => formatProductPayload(p)) });
+    } catch {
+      return NextResponse.json({ products: [] });
+    }
   }
 }
 
