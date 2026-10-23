@@ -252,6 +252,7 @@ interface StoreContextType {
   resetBannersToDefault: () => Promise<boolean>;
   addProductToDb: (prod: Partial<Product>) => Promise<Product | void>;
   updateProductInDb: (id: string, updatedFields: Partial<Product>) => Promise<boolean>;
+  updateProductsBulkStock: (ids: string[], inStock: boolean) => Promise<boolean>;
   deleteProductFromDb: (id: string, permanent?: boolean) => Promise<void>;
   wipeAllProductsFromDb: () => Promise<boolean>;
   trashProducts: Product[];
@@ -776,222 +777,254 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
 
+  // Concurrency lock and deduplication for database synchronization
+  const inFlightSyncRef = React.useRef<Promise<void> | null>(null);
+  const pendingFreshSyncRef = React.useRef<boolean>(false);
+  const mutationSeqRef = React.useRef<Map<string, number>>(new Map());
+
   // Synchronize state with Database via unified /api/cms/init endpoint
-  const syncWithDatabase = useCallback(async (options?: { forceFresh?: boolean }) => {
-    try {
-      // 1. Unified Fast Batch Fetch (Always fresh, bypass stale cache)
-      const url = options?.forceFresh ? '/api/cms/init?fresh=true' : '/api/cms/init';
-      const resInit = await adminFetch(url, { cache: 'no-store' });
-      if (resInit.ok) {
-        const initData = await resInit.json();
+  const syncWithDatabase = useCallback(async (options?: { forceFresh?: boolean; explicitAdminWipe?: boolean }) => {
+    // If a sync is already running, avoid duplicate concurrent network requests
+    if (inFlightSyncRef.current) {
+      if (options?.forceFresh) {
+        pendingFreshSyncRef.current = true;
+      }
+      return inFlightSyncRef.current;
+    }
 
-        // 1. Settings
-        if (initData.siteSettings) {
-          const site = {
-            ...initData.siteSettings,
-            siteName: initData.siteSettings.siteName || 'Lapiez',
-            googleMapsUrl: initData.siteSettings.googleMapsUrl || initData.siteSettings.twitterUrl || STORE_INFO.mapsUrl,
-            twitterUrl: initData.siteSettings.twitterUrl || STORE_INFO.mapsUrl,
-          };
-          setSiteSettings(site);
-          try {
-            localStorage.setItem('ls_site_settings', JSON.stringify(site));
-          } catch (e) {}
-        }
-        if (initData.paymentSettings) {
-          const payment = {
-            ...initData.paymentSettings,
-            upiId: initData.paymentSettings.upiId || 'lappy.solution@ybl',
-            upiName: initData.paymentSettings.upiName || 'LAPIEZ GARHWA',
-          };
-          setPaymentSettings(payment);
-          try {
-            localStorage.setItem('ls_payment_settings', JSON.stringify(payment));
-          } catch (e) {}
+    const runSync = async () => {
+      try {
+        // 1. Unified Fast Batch Fetch (Always fresh, bypass stale cache)
+        const url = options?.forceFresh ? '/api/cms/init?fresh=true' : '/api/cms/init';
+        const resInit = await adminFetch(url, { cache: 'no-store' });
+        if (resInit.ok) {
+          const initData = await resInit.json();
 
-          if (initData.paymentSettings.bankAccountsJson) {
+          // 1. Settings
+          if (initData.siteSettings) {
+            const site = {
+              ...initData.siteSettings,
+              siteName: initData.siteSettings.siteName || 'Lapiez',
+              googleMapsUrl: initData.siteSettings.googleMapsUrl || initData.siteSettings.twitterUrl || STORE_INFO.mapsUrl,
+              twitterUrl: initData.siteSettings.twitterUrl || STORE_INFO.mapsUrl,
+            };
+            setSiteSettings(site);
             try {
-              const parsedBanks = JSON.parse(initData.paymentSettings.bankAccountsJson);
-              if (Array.isArray(parsedBanks) && parsedBanks.length > 0) {
-                const configObj = parsedBanks.find((b: any) => b.id === '__payment_methods_config__');
-                const realBanks = parsedBanks.filter((b: any) => b.id !== '__payment_methods_config__');
-
-                if (configObj) {
-                  const resolvedConfig: PaymentMethodsConfig = {
-                    enableUPI: configObj.enableUPI !== false,
-                    enableBankTransfer: configObj.enableBankTransfer !== false,
-                    enableStorePickup: configObj.enableStorePickup !== false,
-                    enableCOD: configObj.enableCOD !== false && initData.paymentSettings.codEnabled !== false,
-                  };
-                  setPaymentMethodsConfig(resolvedConfig);
-                  try {
-                    localStorage.setItem('ls_payment_methods_config', JSON.stringify(resolvedConfig));
-                  } catch (e) {}
-                } else if (initData.paymentSettings.codEnabled !== undefined) {
-                  setPaymentMethodsConfig((prev) => ({
-                    ...prev,
-                    enableCOD: Boolean(initData.paymentSettings.codEnabled),
-                  }));
-                }
-
-                if (realBanks.length > 0) {
-                  setBankAccounts(realBanks);
-                  try {
-                    localStorage.setItem('ls_bank_accounts', JSON.stringify(realBanks));
-                  } catch (e) {}
-                  const primary = realBanks.find((b: any) => b.isPrimary) || realBanks[0];
-                  if (primary) {
-                    setInvoiceSettings((prev) => ({
-                      ...prev,
-                      accountHolderName: primary.accountHolderName || prev.accountHolderName,
-                      bankName: primary.bankName || prev.bankName,
-                      accountNumber: primary.accountNumber || prev.accountNumber,
-                      ifscCode: primary.ifscCode || prev.ifscCode,
-                      branch: primary.branch || prev.branch,
-                    }));
-                  }
-                }
-              }
+              localStorage.setItem('ls_site_settings', JSON.stringify(site));
             } catch (e) {}
           }
-        }
+          if (initData.paymentSettings) {
+            const payment = {
+              ...initData.paymentSettings,
+              upiId: initData.paymentSettings.upiId || 'lappy.solution@ybl',
+              upiName: initData.paymentSettings.upiName || 'LAPIEZ GARHWA',
+            };
+            setPaymentSettings(payment);
+            try {
+              localStorage.setItem('ls_payment_settings', JSON.stringify(payment));
+            } catch (e) {}
 
-        // 2. Theme
-        if (initData.themeSettings) {
-          setThemeSettings(initData.themeSettings);
-        }
-
-        // 3. Banners
-        if (initData.banners && Array.isArray(initData.banners) && initData.banners.length > 0) {
-          setBanners(initData.banners);
-          try {
-            localStorage.setItem('ls_banners', JSON.stringify(initData.banners));
-          } catch (e) {}
-        } else {
-          setBanners((prev) => (prev && prev.length > 0 ? prev : INITIAL_BANNERS));
-        }
-
-        // 4. Homepage Sections
-        if (initData.homepageSections && Array.isArray(initData.homepageSections) && initData.homepageSections.length > 0) {
-          setHomepageSections(initData.homepageSections);
-          try {
-            localStorage.setItem('ls_homepage_sections', JSON.stringify(initData.homepageSections));
-          } catch (e) {}
-        }
-
-        // 5. Categories
-        if (initData.categories && Array.isArray(initData.categories) && initData.categories.length > 0) {
-          setCategories(initData.categories);
-          try {
-            localStorage.setItem('ls_categories', JSON.stringify(initData.categories));
-          } catch (e) {}
-        }
-
-        // 6. Products: Database is the authoritative source of truth
-        if (initData.products && Array.isArray(initData.products)) {
-          if (initData.products.length === 0) {
-            if (options?.forceFresh) {
-              setProducts([]);
+            if (initData.paymentSettings.bankAccountsJson) {
               try {
-                localStorage.setItem('ls_products', '[]');
+                const parsedBanks = JSON.parse(initData.paymentSettings.bankAccountsJson);
+                if (Array.isArray(parsedBanks) && parsedBanks.length > 0) {
+                  const configObj = parsedBanks.find((b: any) => b.id === '__payment_methods_config__');
+                  const realBanks = parsedBanks.filter((b: any) => b.id !== '__payment_methods_config__');
+
+                  if (configObj) {
+                    const resolvedConfig: PaymentMethodsConfig = {
+                      enableUPI: configObj.enableUPI !== false,
+                      enableBankTransfer: configObj.enableBankTransfer !== false,
+                      enableStorePickup: configObj.enableStorePickup !== false,
+                      enableCOD: configObj.enableCOD !== false && initData.paymentSettings.codEnabled !== false,
+                    };
+                    setPaymentMethodsConfig(resolvedConfig);
+                    try {
+                      localStorage.setItem('ls_payment_methods_config', JSON.stringify(resolvedConfig));
+                    } catch (e) {}
+                  } else if (initData.paymentSettings.codEnabled !== undefined) {
+                    setPaymentMethodsConfig((prev) => ({
+                      ...prev,
+                      enableCOD: Boolean(initData.paymentSettings.codEnabled),
+                    }));
+                  }
+
+                  if (realBanks.length > 0) {
+                    setBankAccounts(realBanks);
+                    try {
+                      localStorage.setItem('ls_bank_accounts', JSON.stringify(realBanks));
+                    } catch (e) {}
+                    const primary = realBanks.find((b: any) => b.isPrimary) || realBanks[0];
+                    if (primary) {
+                      setInvoiceSettings((prev) => ({
+                        ...prev,
+                        accountHolderName: primary.accountHolderName || prev.accountHolderName,
+                        bankName: primary.bankName || prev.bankName,
+                        accountNumber: primary.accountNumber || prev.accountNumber,
+                        ifscCode: primary.ifscCode || prev.ifscCode,
+                        branch: primary.branch || prev.branch,
+                      }));
+                    }
+                  }
+                }
               } catch (e) {}
             }
+          }
+
+          // 2. Theme
+          if (initData.themeSettings) {
+            setThemeSettings(initData.themeSettings);
+          }
+
+          // 3. Banners
+          if (initData.banners && Array.isArray(initData.banners) && initData.banners.length > 0) {
+            setBanners(initData.banners);
+            try {
+              localStorage.setItem('ls_banners', JSON.stringify(initData.banners));
+            } catch (e) {}
           } else {
-            const cleanProds = initData.products
-              .filter((p: any) => !isDemoProduct(p))
-              .map(normalizeProduct);
+            setBanners((prev) => (prev && prev.length > 0 ? prev : INITIAL_BANNERS));
+          }
 
-            // Fast DB index maps for exact SKU, Name, and ID matching
-            const dbBySku = new Map<string, Product>();
-            const dbByName = new Map<string, Product>();
-            const dbById = new Map<string, Product>();
-            cleanProds.forEach((p: Product) => {
-              if (p.sku) dbBySku.set(p.sku.trim().toLowerCase(), p);
-              if (p.name) dbByName.set(p.name.trim().toLowerCase(), p);
-              if (p.id) dbById.set(p.id.trim().toLowerCase(), p);
-            });
+          // 4. Homepage Sections
+          if (initData.homepageSections && Array.isArray(initData.homepageSections) && initData.homepageSections.length > 0) {
+            setHomepageSections(initData.homepageSections);
+            try {
+              localStorage.setItem('ls_homepage_sections', JSON.stringify(initData.homepageSections));
+            } catch (e) {}
+          }
 
-            setProducts((prev) => {
-              const nextList = cleanProds;
+          // 5. Categories
+          if (initData.categories && Array.isArray(initData.categories) && initData.categories.length > 0) {
+            setCategories(initData.categories);
+            try {
+              localStorage.setItem('ls_categories', JSON.stringify(initData.categories));
+            } catch (e) {}
+          }
 
-              // Deep check to prevent re-rendering when state is already identical
-              if (
-                prev.length === nextList.length &&
-                prev.every((item, i) => 
-                  item.id === nextList[i]?.id && 
-                  item.price === nextList[i]?.price && 
-                  item.inStock === nextList[i]?.inStock &&
-                  item.stockQuantity === nextList[i]?.stockQuantity
-                )
-              ) {
-                return prev;
+          // 6. Products: Database is the authoritative source of truth
+          if (initData.products && Array.isArray(initData.products)) {
+            if (initData.productsQueryFailed) {
+              console.warn('[StoreContext] Server indicated products query failed. Retaining local products catalog.');
+            } else if (initData.products.length === 0) {
+              setProducts((prev) => {
+                // Crucial guard: Never wipe an existing catalog on a transient background sync!
+                // Only allow wipe if catalog was already empty or explicitly wiped by admin.
+                if (prev.length > 0 && !options?.explicitAdminWipe) {
+                  console.warn('[StoreContext] Ignored transient empty products response; retaining existing', prev.length, 'products.');
+                  return prev;
+                }
+                safeSaveProductsToLocalStorage([]);
+                return [];
+              });
+            } else {
+              const cleanProds = initData.products
+                .filter((p: any) => !isDemoProduct(p))
+                .map(normalizeProduct);
+
+              // Fast DB index maps for exact SKU, Name, and ID matching
+              const dbBySku = new Map<string, Product>();
+              const dbByName = new Map<string, Product>();
+              const dbById = new Map<string, Product>();
+              cleanProds.forEach((p: Product) => {
+                if (p.sku) dbBySku.set(p.sku.trim().toLowerCase(), p);
+                if (p.name) dbByName.set(p.name.trim().toLowerCase(), p);
+                if (p.id) dbById.set(p.id.trim().toLowerCase(), p);
+              });
+
+              setProducts((prev) => {
+                const nextList = cleanProds;
+
+                // Deep check to prevent re-rendering when state is already identical
+                if (
+                  prev.length === nextList.length &&
+                  prev.every((item, i) => 
+                    item.id === nextList[i]?.id && 
+                    item.price === nextList[i]?.price && 
+                    item.inStock === nextList[i]?.inStock &&
+                    item.stockQuantity === nextList[i]?.stockQuantity
+                  )
+                ) {
+                  return prev;
+                }
+
+                safeSaveProductsToLocalStorage(nextList);
+
+                return nextList;
+              });
+            }
+          }
+
+          // 7. Custom Pages
+          if (initData.customPages && Array.isArray(initData.customPages) && initData.customPages.length > 0) {
+            setCustomPages(initData.customPages);
+            try {
+              localStorage.setItem('ls_custom_pages', JSON.stringify(initData.customPages));
+            } catch (e) {}
+          }
+
+          // 8. Blog Posts
+          if (initData.blogPosts && Array.isArray(initData.blogPosts) && initData.blogPosts.length > 0) {
+            setBlogPosts(initData.blogPosts);
+            try {
+              localStorage.setItem('ls_blog_posts', JSON.stringify(initData.blogPosts));
+            } catch (e) {}
+          }
+
+          // 9. Coupons
+          if (initData.coupons && Array.isArray(initData.coupons) && initData.coupons.length > 0) {
+            setCoupons(initData.coupons);
+          }
+        }
+
+        // Sync admin orders if on admin / portal route or forced fresh sync
+        const isConsoleRoute = typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/portal'));
+        if (isConsoleRoute || options?.forceFresh) {
+          try {
+            const resOrders = await adminFetch('/api/cms/orders', { cache: 'no-store' });
+            if (resOrders.ok) {
+              const data = await resOrders.json();
+              if (Array.isArray(data.orders)) {
+                setOrders(data.orders);
+                try {
+                  localStorage.setItem('ls_orders', JSON.stringify(data.orders));
+                } catch (e) {}
               }
-
-              safeSaveProductsToLocalStorage(nextList);
-
-              return nextList;
-            });
-          }
-        }
-
-        // 7. Custom Pages
-        if (initData.customPages && Array.isArray(initData.customPages) && initData.customPages.length > 0) {
-          setCustomPages(initData.customPages);
-          try {
-            localStorage.setItem('ls_custom_pages', JSON.stringify(initData.customPages));
+            }
           } catch (e) {}
         }
 
-        // 8. Blog Posts
-        if (initData.blogPosts && Array.isArray(initData.blogPosts) && initData.blogPosts.length > 0) {
-          setBlogPosts(initData.blogPosts);
+        // Brands (cached, only re-fetch if forceFresh is requested)
+        if (options?.forceFresh) {
           try {
-            localStorage.setItem('ls_blog_posts', JSON.stringify(initData.blogPosts));
+            const resBrands = await adminFetch('/api/cms/brands', { cache: 'no-store' });
+            if (resBrands.ok) {
+              const data = await resBrands.json();
+              if (Array.isArray(data.brands) && data.brands.length > 0) {
+                setBrands(data.brands);
+                try {
+                  localStorage.setItem('ls_brands', JSON.stringify(data.brands));
+                } catch (e) {}
+              }
+            }
           } catch (e) {}
         }
 
-        // 9. Coupons
-        if (initData.coupons && Array.isArray(initData.coupons) && initData.coupons.length > 0) {
-          setCoupons(initData.coupons);
+      } catch (e) {
+        console.warn('CMS DB sync fallback to local cache:', e);
+      } finally {
+        inFlightSyncRef.current = null;
+        if (pendingFreshSyncRef.current) {
+          pendingFreshSyncRef.current = false;
+          setTimeout(() => {
+            syncWithDatabase({ forceFresh: true }).catch(() => {});
+          }, 60);
         }
       }
+    };
 
-      // Sync admin orders if on admin / portal route or forced fresh sync
-      const isConsoleRoute = typeof window !== 'undefined' && (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/portal'));
-      if (isConsoleRoute || options?.forceFresh) {
-        try {
-          const resOrders = await adminFetch('/api/cms/orders', { cache: 'no-store' });
-          if (resOrders.ok) {
-            const data = await resOrders.json();
-            if (Array.isArray(data.orders)) {
-              setOrders(data.orders);
-              try {
-                localStorage.setItem('ls_orders', JSON.stringify(data.orders));
-              } catch (e) {}
-            }
-          }
-        } catch (e) {}
-      }
-
-      // Brands (cached, only re-fetch if forceFresh is requested)
-      if (options?.forceFresh) {
-        try {
-          const resBrands = await adminFetch('/api/cms/brands', { cache: 'no-store' });
-          if (resBrands.ok) {
-            const data = await resBrands.json();
-            if (Array.isArray(data.brands) && data.brands.length > 0) {
-              setBrands(data.brands);
-              try {
-                localStorage.setItem('ls_brands', JSON.stringify(data.brands));
-              } catch (e) {}
-            }
-          }
-        } catch (e) {}
-      }
-
-    } catch (e) {
-      console.warn('CMS DB sync fallback to local cache:', e);
-    }
+    inFlightSyncRef.current = runSync();
+    return inFlightSyncRef.current;
   }, []);
 
   // Initial Load from localStorage & trigger DB sync
@@ -1197,32 +1230,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
 
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key && e.key.startsWith('ls_')) {
-        syncWithDatabase({ forceFresh: true }).catch(() => {});
-      }
-    };
-
     const unsubscribeBroadcast = subscribeToCmsUpdates(() => {
       syncWithDatabase({ forceFresh: true }).catch(() => {});
     });
 
     window.addEventListener('focus', handleForegroundSync);
     document.addEventListener('visibilitychange', handleForegroundSync);
-    window.addEventListener('storage', handleStorageChange);
 
-    // 15-second background heartbeat to auto-fetch admin updates on phone & web without manual refresh
+    // 20-second background heartbeat to auto-fetch admin updates without flooding network
     const heartbeat = setInterval(() => {
       if (document.visibilityState === 'visible') {
         syncWithDatabase({ forceFresh: true }).catch(() => {});
       }
-    }, 15000);
+    }, 20000);
 
     return () => {
       unsubscribeBroadcast();
       window.removeEventListener('focus', handleForegroundSync);
       document.removeEventListener('visibilitychange', handleForegroundSync);
-      window.removeEventListener('storage', handleStorageChange);
       clearInterval(heartbeat);
     };
   }, [syncWithDatabase]);
@@ -1402,25 +1427,33 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       safeSaveProductsToLocalStorage(prods);
       const changes = prods.filter((product) => {
         const prevProd = previous.find((current) => current.id === product.id || (product.sku && current.sku === product.sku));
-        return prevProd && (prevProd.inStock !== product.inStock || prevProd.stockQuantity !== product.stockQuantity);
+        return prevProd && (prevProd.inStock !== product.inStock || prevProd.stockQuantity !== product.stockQuantity || prevProd.price !== product.price);
       });
-      const responses = await Promise.all(changes.map((product) => adminFetch('/api/cms/products', {
+
+      if (changes.length === 0) return;
+
+      // Single atomic batch update to database instead of flooding with separate PUT requests
+      const res = await adminFetch('/api/cms/products', {
         method: 'PUT',
-        body: JSON.stringify({ 
-          id: product.id, 
-          sku: product.sku,
-          name: product.name,
-          inStock: product.inStock, 
-          stockQuantity: product.inStock === false ? 0 : (product.stockQuantity || 10) 
+        body: JSON.stringify({
+          batch: changes.map((product) => ({
+            id: product.id,
+            sku: product.sku,
+            name: product.name,
+            inStock: product.inStock,
+            stockQuantity: product.inStock === false ? 0 : (product.stockQuantity || 10),
+            price: product.price,
+            status: product.status || 'active',
+          })),
         }),
-      })));
-      const hasFailed = responses.some(r => !r.ok);
-      if (hasFailed) {
+      });
+
+      if (res.ok) {
+        broadcastCmsUpdate('products');
+      } else {
         setProducts(previous);
         safeSaveProductsToLocalStorage(previous);
         showToast('Failed to save stock changes to database. Reverted.');
-      } else {
-        broadcastCmsUpdate('products');
       }
     } catch (e) {
       setProducts(previous);
@@ -2203,32 +2236,37 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateProductInDb = async (id: string, updatedFields: Partial<Product>): Promise<boolean> => {
-    const prevProducts = products;
-    try {
-      const currentProd = products.find((p) => p.id === id || p.sku === id || (p as any).dbId === id);
-      const sku = currentProd?.sku;
-      const name = currentProd?.name;
-      const finalFields: Partial<Product> = { ...updatedFields };
+    // Find current product snapshot for precise granular rollback
+    const currentProd = products.find((p) => p.id === id || p.sku === id || (p as any).dbId === id);
+    const originalProdSnapshot = currentProd ? { ...currentProd } : undefined;
+    const sku = currentProd?.sku;
+    const name = currentProd?.name;
+    const finalFields: Partial<Product> = { ...updatedFields };
 
-      if (finalFields.inStock === false) {
-        finalFields.stockQuantity = 0;
-      } else if (finalFields.inStock === true && (finalFields.stockQuantity === undefined || finalFields.stockQuantity <= 0)) {
-        finalFields.stockQuantity = (currentProd?.stockQuantity && currentProd.stockQuantity > 0) ? currentProd.stockQuantity : 10;
-      }
+    if (finalFields.inStock === false) {
+      finalFields.stockQuantity = 0;
+    } else if (finalFields.inStock === true && (finalFields.stockQuantity === undefined || finalFields.stockQuantity <= 0)) {
+      finalFields.stockQuantity = (currentProd?.stockQuantity && currentProd.stockQuantity > 0) ? currentProd.stockQuantity : 10;
+    }
 
-      // 1. Instant local state update across all instances
-      setProducts((prev) => {
-        const next = prev.map((p) => {
-          const isMatch = p.id === id || 
-            (p as any).dbId === id ||
-            (sku && p.sku && p.sku.toLowerCase() === sku.toLowerCase()) || 
-            (name && p.name && p.name.trim().toLowerCase() === name.trim().toLowerCase());
-          return isMatch ? { ...p, ...finalFields } : p;
-        });
-        safeSaveProductsToLocalStorage(next);
-        return next;
+    // Sequence ID for this specific product to ignore stale out-of-order network responses
+    const nextSeq = (mutationSeqRef.current.get(id) || 0) + 1;
+    mutationSeqRef.current.set(id, nextSeq);
+
+    // 1. Instant optimistic local state update
+    setProducts((prev) => {
+      const next = prev.map((p) => {
+        const isMatch = p.id === id || 
+          (p as any).dbId === id ||
+          (sku && p.sku && p.sku.toLowerCase() === sku.toLowerCase()) || 
+          (name && p.name && p.name.trim().toLowerCase() === name.trim().toLowerCase());
+        return isMatch ? { ...p, ...finalFields } : p;
       });
+      safeSaveProductsToLocalStorage(next);
+      return next;
+    });
 
+    try {
       // 2. Persist to Prisma DB
       const res = await adminFetch('/api/cms/products', {
         method: 'PUT',
@@ -2239,6 +2277,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           ...finalFields 
         }),
       });
+
+      // If a newer mutation for this product occurred while in flight, ignore this older response
+      if (mutationSeqRef.current.get(id) !== nextSeq) {
+        return true;
+      }
 
       if (res.ok) {
         const data = await res.json();
@@ -2257,20 +2300,81 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
         }
         broadcastCmsUpdate('products');
-        showToast('Product updated successfully in database!');
         return true;
       } else {
-        setProducts(prevProducts);
-        safeSaveProductsToLocalStorage(prevProducts);
+        // Granular rollback: ONLY revert this single product, leaving all other products intact
+        if (originalProdSnapshot) {
+          setProducts((prev) => {
+            const reverted = prev.map((p) => {
+              const isMatch = p.id === id || (p as any).dbId === id || (sku && p.sku === sku);
+              return isMatch ? originalProdSnapshot : p;
+            });
+            safeSaveProductsToLocalStorage(reverted);
+            return reverted;
+          });
+        }
         const err = await res.json().catch(() => ({}));
         showToast(err.error || 'Failed to update product in database');
         return false;
       }
     } catch (e) {
       console.error('Failed to update product:', e);
-      setProducts(prevProducts);
-      safeSaveProductsToLocalStorage(prevProducts);
+      if (mutationSeqRef.current.get(id) === nextSeq && originalProdSnapshot) {
+        setProducts((prev) => {
+          const reverted = prev.map((p) => {
+            const isMatch = p.id === id || (p as any).dbId === id || (sku && p.sku === sku);
+            return isMatch ? originalProdSnapshot : p;
+          });
+          safeSaveProductsToLocalStorage(reverted);
+          return reverted;
+        });
+      }
       showToast('Error saving product changes');
+      return false;
+    }
+  };
+
+  const updateProductsBulkStock = async (ids: string[], inStock: boolean): Promise<boolean> => {
+    if (!ids || ids.length === 0) return true;
+    const targetSet = new Set(ids);
+
+    // 1. Instant optimistic update in local state
+    setProducts((prev) => {
+      const next = prev.map((p) => {
+        if (targetSet.has(p.id) || (p.sku && targetSet.has(p.sku))) {
+          return {
+            ...p,
+            inStock,
+            stockQuantity: inStock ? (p.stockQuantity && p.stockQuantity > 0 ? p.stockQuantity : 10) : 0,
+          };
+        }
+        return p;
+      });
+      safeSaveProductsToLocalStorage(next);
+      return next;
+    });
+
+    try {
+      // 2. Persist in database using single atomic updateMany call
+      const res = await adminFetch('/api/cms/products', {
+        method: 'PUT',
+        body: JSON.stringify({
+          ids,
+          inStock,
+          stockQuantity: inStock ? 10 : 0,
+        }),
+      });
+
+      if (res.ok) {
+        broadcastCmsUpdate('products');
+        return true;
+      } else {
+        syncWithDatabase({ forceFresh: true });
+        return false;
+      }
+    } catch (e) {
+      console.error('Failed bulk stock update:', e);
+      syncWithDatabase({ forceFresh: true });
       return false;
     }
   };
@@ -3298,6 +3402,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         resetBannersToDefault,
         addProductToDb,
         updateProductInDb,
+        updateProductsBulkStock,
         deleteProductFromDb,
         wipeAllProductsFromDb,
         trashProducts,

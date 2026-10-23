@@ -16,6 +16,7 @@ interface CachedInitData {
 }
 
 let inMemoryCache: CachedInitData | null = null;
+let lastKnownGoodProducts: any[] | null = null;
 const CACHE_TTL_MS = 2 * 1000; // 2 seconds in-memory TTL to prevent multi-lambda stale data
 
 export function invalidateInitCache() {
@@ -108,7 +109,10 @@ export async function GET(request: Request) {
       prisma.banner.findMany({ where: { status: 'active' }, orderBy: { position: 'asc' } }).catch(() => []),
       prisma.homepageSection.findMany({ orderBy: { position: 'asc' } }).catch(() => []),
       prisma.category.findMany({ orderBy: { position: 'asc' } }).catch(() => []),
-      prisma.product.findMany({ where: { status: 'active' }, orderBy: { createdAt: 'desc' }, take: 1000 }).catch(() => []),
+      prisma.product.findMany({ where: { status: 'active' }, orderBy: { createdAt: 'desc' }, take: 1000 }).catch((err) => {
+        console.error('[Init] Error fetching products from DB:', err);
+        return null; // Return null instead of [] so we know the query failed
+      }),
       prisma.customPage.findMany({ where: { status: 'published' }, orderBy: { updatedAt: 'desc' } }).catch(() => []),
       prisma.blogPost.findMany({ where: { status: 'published' }, orderBy: { createdAt: 'desc' } }).catch(() => []),
       prisma.coupon.findMany({ where: { isActive: true }, orderBy: { createdAt: 'desc' } }).catch(() => []),
@@ -161,13 +165,27 @@ export async function GET(request: Request) {
       })) as any;
     }
 
-    // Format Products with Rich Metadata
+    // Format Products with Rich Metadata and resilient failure handling
     const richSkuMap = new Map(PRODUCTS.map((p) => [p.sku, p]));
     const richIdMap = new Map(PRODUCTS.map((p) => [p.id, p]));
 
-    const formattedProducts = (dbProducts && dbProducts.length > 0)
-      ? dbProducts.map((p) => formatProduct(p, richSkuMap.get(p.sku) || richIdMap.get(p.id)))
-      : [];
+    let formattedProducts: any[] = [];
+    let productsQueryFailed = false;
+
+    if (dbProducts === null) {
+      // Query failed due to database connectivity/pool issue
+      productsQueryFailed = true;
+      if (lastKnownGoodProducts && lastKnownGoodProducts.length > 0) {
+        formattedProducts = lastKnownGoodProducts;
+      }
+    } else if (Array.isArray(dbProducts)) {
+      if (dbProducts.length > 0) {
+        formattedProducts = dbProducts.map((p) => formatProduct(p, richSkuMap.get(p.sku) || richIdMap.get(p.id)));
+        lastKnownGoodProducts = formattedProducts;
+      } else {
+        formattedProducts = [];
+      }
+    }
 
     // Format Coupons
     const coupons = (dbCoupons && dbCoupons.length > 0)
@@ -197,6 +215,7 @@ export async function GET(request: Request) {
       homepageSections: homepageSections || [],
       categories: categoriesTree,
       products: formattedProducts,
+      productsQueryFailed,
       customPages: customPages || [],
       blogPosts: blogPosts || [],
       coupons,
@@ -230,7 +249,8 @@ export async function GET(request: Request) {
         banners: INITIAL_BANNERS,
         homepageSections: [],
         categories: CATEGORIES,
-        products: [],
+        products: lastKnownGoodProducts || [],
+        productsQueryFailed: true,
         customPages: [],
         blogPosts: [],
         coupons: INITIAL_COUPONS,

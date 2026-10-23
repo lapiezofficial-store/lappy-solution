@@ -261,6 +261,60 @@ export async function PUT(request: Request) {
   if (!hasAdminSession(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const body = await request.json();
+
+    // 1. Bulk toggle / update across multiple IDs
+    if (Array.isArray(body.ids) && body.ids.length > 0) {
+      const updateData: Record<string, any> = {};
+      if (body.inStock !== undefined) {
+        updateData.inStock = Boolean(body.inStock);
+        updateData.stockQuantity = updateData.inStock ? (Number(body.stockQuantity) > 0 ? Number(body.stockQuantity) : 10) : 0;
+      }
+      if (body.price !== undefined) updateData.price = Number(body.price);
+      if (body.status !== undefined) updateData.status = String(body.status);
+
+      const res = await prisma.product.updateMany({
+        where: {
+          OR: [
+            { id: { in: body.ids } },
+            { sku: { in: body.ids } }
+          ]
+        },
+        data: updateData,
+      });
+
+      invalidateInitCache();
+      return NextResponse.json({ success: true, count: res.count });
+    }
+
+    // 2. Batch update: array of individual product items in a single transaction
+    if (Array.isArray(body.batch) && body.batch.length > 0) {
+      const transactions = body.batch.map((item: any) => {
+        const itemData: Record<string, any> = {};
+        if (item.inStock !== undefined) {
+          itemData.inStock = Boolean(item.inStock);
+          itemData.stockQuantity = itemData.inStock ? (Number(item.stockQuantity) > 0 ? Number(item.stockQuantity) : 10) : 0;
+        }
+        if (item.price !== undefined) itemData.price = Number(item.price);
+        if (item.mrp !== undefined) itemData.mrp = Number(item.mrp);
+        if (item.status !== undefined) itemData.status = String(item.status);
+        if (item.name !== undefined) itemData.name = String(item.name);
+
+        return prisma.product.updateMany({
+          where: {
+            OR: [
+              { id: item.id },
+              ...(item.sku ? [{ sku: item.sku }] : [])
+            ]
+          },
+          data: itemData
+        });
+      });
+
+      const results = await prisma.$transaction(transactions);
+      invalidateInitCache();
+      return NextResponse.json({ success: true, batchCount: results.length });
+    }
+
     const { id } = body;
     if (typeof id !== 'string') return NextResponse.json({ error: 'Product ID is required.' }, { status: 400 });
     const allowedFields = ['name', 'slug', 'category', 'brand', 'price', 'mrp', 'discount', 'specs', 'description', 'image', 'inStock', 'stockQuantity', 'sku', 'rating', 'featured', 'status', 'gstRate', 'hsnCode'];

@@ -71,6 +71,7 @@ export default function AdminPage() {
     updateInvoice,
     addProductToDb,
     updateProductInDb,
+    updateProductsBulkStock,
     deleteProductFromDb,
     wipeAllProductsFromDb,
     trashProducts,
@@ -260,6 +261,7 @@ export default function AdminPage() {
   const [inventoryPriceRange, setInventoryPriceRange] = useState<'all' | 'under_1k' | '1k_10k' | '10k_50k' | 'above_50k'>('all');
   const [inventorySort, setInventorySort] = useState<'newest' | 'oldest' | 'price_asc' | 'price_desc' | 'name_asc' | 'stock_asc'>('newest');
   const [inventorySelectedIds, setInventorySelectedIds] = useState<string[]>([]);
+  const [togglingStockIds, setTogglingStockIds] = useState<string[]>([]);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
 
   // Dustbin (Trash / Recycle Bin - 15 Days Retention) States
@@ -798,13 +800,21 @@ export default function AdminPage() {
     }
   };
 
-  // Inventory Toggle Stock (Persists directly to DB)
+  // Inventory Toggle Stock (Persists directly to DB with instant feedback)
   const handleToggleStock = async (productId: string) => {
+    if (togglingStockIds.includes(productId)) return;
     const prod = products.find(p => p.id === productId);
     if (!prod) return;
     const nextInStock = !prod.inStock;
-    await updateProductInDb(productId, { inStock: nextInStock });
-    showToast(`"${prod.name.slice(0, 22)}..." marked as ${nextInStock ? 'In Stock' : 'Out of Stock'}`);
+    setTogglingStockIds(prev => [...prev, productId]);
+    try {
+      const ok = await updateProductInDb(productId, { inStock: nextInStock });
+      if (ok) {
+        showToast(`"${prod.name.slice(0, 22)}..." marked as ${nextInStock ? 'In Stock' : 'Out of Stock'}`);
+      }
+    } finally {
+      setTogglingStockIds(prev => prev.filter(id => id !== productId));
+    }
   };
 
   // Live Inline Price Editing Handlers
@@ -929,11 +939,15 @@ export default function AdminPage() {
 
   const handleBulkToggleStock = async (inStock: boolean) => {
     if (inventorySelectedIds.length === 0) return;
-    for (const id of inventorySelectedIds) {
-      await updateProductInDb(id, { inStock });
-    }
-    showToast(`Updated stock status for ${inventorySelectedIds.length} products!`);
+    const count = inventorySelectedIds.length;
+    const targetIds = [...inventorySelectedIds];
     setInventorySelectedIds([]);
+    const success = await updateProductsBulkStock(targetIds, inStock);
+    if (success) {
+      showToast(`Updated stock status for ${count} products in database!`);
+    } else {
+      showToast('Failed to update bulk stock in database.');
+    }
   };
 
   const handleBulkDelete = async () => {
@@ -5623,7 +5637,10 @@ export default function AdminPage() {
                               <td className="py-3 px-3 whitespace-nowrap">
                                 <button
                                   onClick={() => handleToggleStock(product.id)}
+                                  disabled={togglingStockIds.includes(product.id)}
                                   className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+                                    togglingStockIds.includes(product.id) ? 'opacity-50 cursor-wait' : ''
+                                  } ${
                                     isOutOfStock
                                       ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
                                       : isLowStock

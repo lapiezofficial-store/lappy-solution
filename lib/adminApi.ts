@@ -59,38 +59,55 @@ export async function adminFetch(input: RequestInfo | URL, init: RequestInit = {
   });
 }
 
+let broadcastDebounceTimer: NodeJS.Timeout | null = null;
+
 /**
  * Broadcasts a CMS mutation event across all browser tabs and windows.
- * Any other open tab (storefront or admin) will immediately re-sync its state.
+ * Debounced to avoid hammering channels during rapid successive mutations.
  */
 export function broadcastCmsUpdate(source: string = 'admin'): void {
   if (typeof window === 'undefined') return;
-  const now = Date.now().toString();
 
-  try {
-    localStorage.setItem(CMS_LAST_SYNC_KEY, now);
-  } catch {}
+  if (broadcastDebounceTimer) {
+    clearTimeout(broadcastDebounceTimer);
+  }
 
-  try {
-    if (typeof BroadcastChannel !== 'undefined') {
-      const channel = new BroadcastChannel(CMS_SYNC_CHANNEL_NAME);
-      channel.postMessage({ type: 'CMS_MUTATION', timestamp: now, source });
-      channel.close();
-    }
-  } catch {}
+  broadcastDebounceTimer = setTimeout(() => {
+    const now = Date.now().toString();
+    try {
+      localStorage.setItem(CMS_LAST_SYNC_KEY, now);
+    } catch {}
+
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel(CMS_SYNC_CHANNEL_NAME);
+        channel.postMessage({ type: 'CMS_MUTATION', timestamp: now, source });
+        channel.close();
+      }
+    } catch {}
+  }, 120);
 }
 
 /**
  * Subscribes to cross-tab CMS mutation broadcasts.
- * Calls onUpdate whenever another tab modifies products, sections, settings, etc.
+ * Debounced to guarantee only one authoritative database sync occurs even if many broadcasts arrive.
  */
 export function subscribeToCmsUpdates(onUpdate: () => void): () => void {
   if (typeof window === 'undefined') return () => {};
 
   let channel: BroadcastChannel | null = null;
+  let syncDebounceTimer: NodeJS.Timeout | null = null;
+
+  const debouncedOnUpdate = () => {
+    if (syncDebounceTimer) clearTimeout(syncDebounceTimer);
+    syncDebounceTimer = setTimeout(() => {
+      onUpdate();
+    }, 300);
+  };
+
   const handleStorage = (e: StorageEvent) => {
     if (e.key === CMS_LAST_SYNC_KEY && e.newValue) {
-      onUpdate();
+      debouncedOnUpdate();
     }
   };
 
@@ -99,7 +116,7 @@ export function subscribeToCmsUpdates(onUpdate: () => void): () => void {
       channel = new BroadcastChannel(CMS_SYNC_CHANNEL_NAME);
       channel.onmessage = (event) => {
         if (event.data?.type === 'CMS_MUTATION') {
-          onUpdate();
+          debouncedOnUpdate();
         }
       };
     }
@@ -108,6 +125,7 @@ export function subscribeToCmsUpdates(onUpdate: () => void): () => void {
   window.addEventListener('storage', handleStorage);
 
   return () => {
+    if (syncDebounceTimer) clearTimeout(syncDebounceTimer);
     window.removeEventListener('storage', handleStorage);
     if (channel) {
       try {
