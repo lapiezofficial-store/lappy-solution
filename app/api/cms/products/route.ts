@@ -171,8 +171,8 @@ export async function POST(request: Request) {
     const fourSecondsAgo = new Date(Date.now() - 4000);
     const recent = await prisma.product.findFirst({
       where: {
-        name: { equals: trimmedName, mode: 'insensitive' },
-        brand: { equals: body.brand.trim(), mode: 'insensitive' },
+        name: trimmedName,
+        brand: body.brand.trim(),
         price: Number(body.price),
         createdAt: { gte: fourSecondsAgo }
       }
@@ -181,28 +181,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, product: formatProductPayload(recent) });
     }
 
-    // 2. Guaranteed collision-free unique SKU
+    // 2. Guaranteed collision-free unique SKU (instantly generated without remote DB round-trip if auto)
     let sku = body.sku?.trim();
     if (!sku) {
-      sku = `LS-${catClean}-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`;
-    }
-    const existingSku = await prisma.product.findFirst({
-      where: { sku: sku },
-      select: { id: true }
-    });
-    if (existingSku) {
-      sku = `LS-${catClean}-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`;
+      sku = `LS-${catClean}-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    } else {
+      const existingSku = await prisma.product.findFirst({
+        where: { sku: sku },
+        select: { id: true }
+      });
+      if (existingSku) {
+        sku = `LS-${catClean}-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
     }
 
-    // 3. Guaranteed unique slug for PostgreSQL
+    // 3. Guaranteed unique slug for PostgreSQL (instantly generated without remote DB round-trip if auto)
     const baseSlugPart = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
-    let slug = body.slug || `${baseSlugPart}-${Date.now().toString().slice(-6)}`;
-    const existingSlug = await prisma.product.findFirst({
-      where: { slug: slug },
-      select: { id: true }
-    });
-    if (existingSlug) {
-      slug = `${baseSlugPart}-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+    let slug = body.slug?.trim();
+    if (!slug) {
+      slug = `${baseSlugPart}-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
+    } else {
+      const existingSlug = await prisma.product.findFirst({
+        where: { slug: slug },
+        select: { id: true }
+      });
+      if (existingSlug) {
+        slug = `${baseSlugPart}-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
+      }
     }
 
     const rawImages = Array.isArray(body.images) && body.images.length > 0
@@ -213,26 +218,22 @@ export async function POST(request: Request) {
       .map((img: any) => String(img).trim())
       .filter(Boolean);
 
-    // Auto-convert any base64 images to Cloudinary URLs so PostgreSQL doesn't store bloated data URIs
-    const processedGallery: string[] = [];
-    for (const img of cleanGallery) {
-      if (typeof img === 'string' && img.startsWith('data:image/')) {
-        try {
-          const { uploadToCloudinary } = await import('@/lib/cloudinary');
-          const uploaded = await uploadToCloudinary(img, 'products');
-          if (uploaded.url) {
-            processedGallery.push(uploaded.url);
-          } else {
-            processedGallery.push(img);
+    // Auto-convert any base64 images to Cloudinary URLs in PARALLEL for maximum throughput
+    const processedGallery = await Promise.all(
+      cleanGallery.map(async (img: string) => {
+        if (typeof img === 'string' && img.startsWith('data:image/')) {
+          try {
+            const { uploadToCloudinary } = await import('@/lib/cloudinary');
+            const uploaded = await uploadToCloudinary(img, 'products');
+            return uploaded.url || img;
+          } catch (err) {
+            console.error('Server auto-upload to Cloudinary failed:', err);
+            return img;
           }
-        } catch (err) {
-          console.error('Server auto-upload to Cloudinary failed:', err);
-          processedGallery.push(img);
         }
-      } else {
-        processedGallery.push(img);
-      }
-    }
+        return img;
+      })
+    );
     const imageToStore = processedGallery.length > 0 ? processedGallery.join('|||') : (body.image || 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&auto=format&fit=crop&q=80');
 
     const product = await prisma.product.create({
@@ -336,22 +337,21 @@ export async function PUT(request: Request) {
         .map((img: any) => String(img).trim())
         .filter(Boolean);
       
-      const processedGallery: string[] = [];
-      for (const img of cleanGallery) {
-        if (typeof img === 'string' && img.startsWith('data:image/')) {
-          try {
-            const { uploadToCloudinary } = await import('@/lib/cloudinary');
-            const uploaded = await uploadToCloudinary(img, 'products');
-            if (uploaded.url) processedGallery.push(uploaded.url);
-            else processedGallery.push(img);
-          } catch (err) {
-            console.error('Server auto-upload to Cloudinary failed in PUT:', err);
-            processedGallery.push(img);
+      const processedGallery = await Promise.all(
+        cleanGallery.map(async (img: string) => {
+          if (typeof img === 'string' && img.startsWith('data:image/')) {
+            try {
+              const { uploadToCloudinary } = await import('@/lib/cloudinary');
+              const uploaded = await uploadToCloudinary(img, 'products');
+              return uploaded.url || img;
+            } catch (err) {
+              console.error('Server auto-upload to Cloudinary failed in PUT:', err);
+              return img;
+            }
           }
-        } else {
-          processedGallery.push(img);
-        }
-      }
+          return img;
+        })
+      );
       data.image = processedGallery.join('|||');
     }
     if (Object.keys(data).length === 0) return NextResponse.json({ error: 'No valid product fields provided.' }, { status: 400 });

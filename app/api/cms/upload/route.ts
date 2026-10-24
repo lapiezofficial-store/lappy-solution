@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { uploadToCloudinary } from '@/lib/cloudinary';
+import { uploadToCloudinary, uploadBufferToCloudinary } from '@/lib/cloudinary';
 import { hasAdminSession } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
@@ -25,10 +25,8 @@ export async function POST(request: Request) {
 
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const mimeType = file.type || 'image/jpeg';
-      const base64Data = `data:${mimeType};base64,${buffer.toString('base64')}`;
 
-      const uploadResult = await uploadToCloudinary(base64Data, folder);
+      const uploadResult = await uploadBufferToCloudinary(buffer, folder);
 
       return NextResponse.json({
         success: true,

@@ -63,4 +63,53 @@ export async function uploadToCloudinary(
   }
 }
 
+/**
+ * Uploads a raw Buffer directly to Cloudinary via upload_stream for lowest latency and zero base64 bloat
+ */
+export async function uploadBufferToCloudinary(
+  buffer: Buffer,
+  folder: string = 'lapiez-products'
+): Promise<CloudinaryUploadResult> {
+  const currentCloudName = process.env.CLOUDINARY_CLOUD_NAME || 'ydugu2xq';
+  const currentApiKey = process.env.CLOUDINARY_API_KEY || '825948682878493';
+  const currentApiSecret = process.env.CLOUDINARY_API_SECRET || '5TWFbLWdkLS_rD8lMGTSM7KdOGM';
+
+  cloudinary.config({
+    cloud_name: currentCloudName,
+    api_key: currentApiKey,
+    api_secret: currentApiSecret,
+    secure: true,
+  });
+
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: `lapiez/${folder}`,
+        resource_type: 'image',
+        transformation: [
+          { quality: 'auto:good' },
+          { fetch_format: 'auto' }
+        ]
+      },
+      (error, result) => {
+        if (error || !result) {
+          console.error('Cloudinary upload_stream failure:', error);
+          reject(new Error(error?.message || 'Failed to upload image buffer to Cloudinary'));
+        } else {
+          resolve({
+            url: result.secure_url,
+            publicId: result.public_id,
+            format: result.format,
+            width: result.width,
+            height: result.height,
+            bytes: result.bytes,
+          });
+        }
+      }
+    );
+    stream.end(buffer);
+  });
+}
+
 export default cloudinary;
+

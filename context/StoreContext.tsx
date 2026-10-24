@@ -1967,9 +1967,41 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const catClean = ((prod.category || 'GEN') as string).replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase() || 'GEN';
     let sku = prod.sku?.trim();
     if (!sku || products.some(p => p.sku && p.sku.toLowerCase() === sku!.toLowerCase())) {
-      sku = `LS-${catClean}-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`;
+      sku = `LS-${catClean}-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
     const finalProd = { ...prod, sku };
+
+    // 1. Instant optimistic catalog insertion so admin sees it with 0ms delay!
+    const tempId = `prod-temp-${Date.now()}`;
+    const optimisticProduct: Product = {
+      id: tempId,
+      name: finalProd.name || 'New Product',
+      slug: finalProd.slug || `prod-${Date.now()}`,
+      category: finalProd.category || ('Laptops' as any),
+      subcategory: finalProd.subcategory || undefined,
+      brand: finalProd.brand || 'Generic',
+      price: Number(finalProd.price) || 0,
+      mrp: Number(finalProd.mrp) || Number(finalProd.price) || 0,
+      discount: Number(finalProd.discount) || 0,
+      specs: finalProd.specs || '',
+      description: finalProd.description || '',
+      image: finalProd.image || '',
+      images: Array.isArray(finalProd.images) && finalProd.images.length > 0 ? finalProd.images : (finalProd.image ? [finalProd.image] : []),
+      inStock: finalProd.inStock ?? true,
+      stockQuantity: finalProd.stockQuantity !== undefined ? Number(finalProd.stockQuantity) : 10,
+      sku: sku,
+      rating: finalProd.rating || 4.8,
+      reviewsCount: finalProd.reviewsCount || 12,
+      status: 'active',
+      gstRate: finalProd.gstRate !== undefined ? Number(finalProd.gstRate) : 18,
+      hsnCode: finalProd.hsnCode || '8471',
+    };
+
+    setProducts((prev) => {
+      const updated = [optimisticProduct, ...prev.filter(p => p.id !== tempId && (!p.sku || p.sku.toLowerCase() !== sku.toLowerCase()))];
+      safeSaveProductsToLocalStorage(updated);
+      return updated;
+    });
 
     try {
       const res = await adminFetch('/api/cms/products', {
@@ -1981,14 +2013,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const data = await res.json();
         const created = normalizeProduct(data.product);
         setProducts((prev) => {
-          const updated = [created, ...prev.filter(p => p.id !== created.id && p.sku !== created.sku)];
+          const updated = prev.map(p => (p.id === tempId || p.sku === created.sku ? created : p));
           safeSaveProductsToLocalStorage(updated);
           return updated;
         });
         broadcastCmsUpdate('products');
-        showToast(`Product "${created.name}" saved to database!`);
+        showToast(`Product "${created.name}" saved to database! ✨`);
         return created;
       } else {
+        // Rollback optimistic product
+        setProducts((prev) => {
+          const reverted = prev.filter(p => p.id !== tempId);
+          safeSaveProductsToLocalStorage(reverted);
+          return reverted;
+        });
         const err = await res.json().catch(() => ({}));
         const errorMessage = res.status === 401 
           ? 'Admin session expired. Please re-login to the Admin Panel.'
@@ -1997,6 +2035,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         throw new Error(errorMessage);
       }
     } catch (e: any) {
+      // Rollback optimistic product
+      setProducts((prev) => {
+        const reverted = prev.filter(p => p.id !== tempId);
+        safeSaveProductsToLocalStorage(reverted);
+        return reverted;
+      });
       console.error('Failed to add product to DB:', e);
       throw e;
     }
