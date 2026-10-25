@@ -29,27 +29,28 @@ export default function Home() {
   }, [products]);
 
   const trendingPrinters = useMemo(() => {
-    return products.filter(p => p.category === 'Printers');
+    return products.filter(p => (p.category || '').toLowerCase().includes('printer'));
   }, [products]);
 
   const trendingMemory = useMemo(() => {
-    return products.filter(p => p.name.toLowerCase().includes('ram') || p.category === 'Storage & Memory');
+    return products.filter(p => p.name.toLowerCase().includes('ram') || (p.category || '').toLowerCase().includes('storage') || (p.category || '').toLowerCase().includes('memory'));
   }, [products]);
 
   const trendingLaptops = useMemo(() => {
-    return products.filter(p => p.category === 'Laptops');
+    return products.filter(p => (p.category || '').toLowerCase().includes('laptop'));
   }, [products]);
 
   const trendingCctv = useMemo(() => {
-    return products.filter(p => p.category === 'CCTV & Security');
+    return products.filter(p => (p.category || '').toLowerCase().includes('cctv') || (p.category || '').toLowerCase().includes('security'));
   }, [products]);
 
   const trendingAccessories = useMemo(() => {
-    return products.filter(p => 
-      (p.brand === 'Frontech' || p.category === 'Accessories' || p.category === 'Storage & Parts' || p.category === 'Computer Peripherals') &&
-      !p.name.toLowerCase().includes('monitor') &&
-      !p.name.toLowerCase().includes('ram')
-    );
+    return products.filter(p => {
+      const cat = (p.category || '').toLowerCase();
+      return (p.brand === 'Frontech' || cat.includes('accessories') || cat.includes('parts') || cat.includes('peripheral')) &&
+        !p.name.toLowerCase().includes('monitor') &&
+        !p.name.toLowerCase().includes('ram');
+    });
   }, [products]);
 
   // Mixed Trending showcasing Frontech Displays + Printers + RAM & Memory
@@ -71,10 +72,10 @@ export default function Home() {
   // Quick category tags
   const quickCategories = useMemo(() => [
     { name: 'Frontech Monitors', count: products.filter(p => p.name.toLowerCase().includes('monitor')).length, href: '/shop?search=Monitor' },
-    { name: 'Printers & Inks', count: products.filter(p => p.category === 'Printers').length, href: '/shop?cat=Printers' },
+    { name: 'Printers & Inks', count: products.filter(p => (p.category || '').toLowerCase().includes('printer') || (p.category || '').toLowerCase().includes('ink') || (p.category || '').toLowerCase().includes('toner')).length, href: '/shop?cat=Printers' },
     { name: 'Desktop & Laptop RAM', count: products.filter(p => p.name.toLowerCase().includes('ram')).length, href: '/shop?search=RAM' },
-    { name: 'Laptops', count: products.filter(p => p.category === 'Laptops').length, href: '/shop?cat=Laptops' },
-    { name: 'CCTV Security', count: products.filter(p => p.category === 'CCTV & Security').length, href: '/shop?cat=CCTV%20%26%20Security' },
+    { name: 'Laptops', count: products.filter(p => (p.category || '').toLowerCase().includes('laptop')).length, href: '/shop?cat=Computer%20%26%20Laptops' },
+    { name: 'CCTV Security', count: products.filter(p => (p.category || '').toLowerCase().includes('cctv') || (p.category || '').toLowerCase().includes('security')).length, href: '/shop?cat=CCTV%20%26%20Security' },
   ], [products]);
 
   // Sorted list of active homepage sections (Brands placed directly below banners)

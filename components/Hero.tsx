@@ -6,14 +6,14 @@ import { useRouter } from 'next/navigation';
 import { 
   ArrowRight, ShieldCheck, CheckCircle2, ShoppingCart, 
   Laptop, Camera, Cpu, Zap, MessageSquare, 
-  MapPin, Store, BadgePercent, Receipt, Truck, Flame, Clock
+  MapPin, Store, BadgePercent, Receipt, Truck, Flame, Clock, Plus, Minus
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 
 export const Hero: React.FC = () => {
   const router = useRouter();
-  const { products, addToCart, setSelectedProduct, siteSettings } = useStore();
+  const { products, cart, addToCart, updateQuantity, setSelectedProduct, siteSettings } = useStore();
   const [activeTab, setActiveTab] = useState<'laptop' | 'cctv' | 'pc' | 'spares'>('laptop');
 
   const laptopDeal = products.find(p => p.category === 'Laptops') || {
@@ -284,18 +284,47 @@ export const Hero: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     onClick={handleInstantBuy}
-                    className="h-10 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-[13px] flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98]"
+                    className="h-10 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-[13px] flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98] cursor-pointer"
                   >
                     <span>Buy Now</span>
                   </button>
 
-                  <button
-                    onClick={() => addToCart(currentDeal as any)}
-                    className="h-10 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-[13px] flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98]"
-                  >
-                    <ShoppingCart className="w-3.5 h-3.5" />
-                    <span>Add to Cart</span>
-                  </button>
+                  {(() => {
+                    const dealInCart = currentDeal ? (cart || []).find(item => item.product.id === (currentDeal as any).id) : null;
+                    const dealQty = dealInCart ? dealInCart.quantity : 0;
+                    if (dealQty > 0) {
+                      return (
+                        <div className="h-10 rounded-lg bg-[#1A56DB] text-white flex items-center justify-between px-2 shadow-xs border border-[#1E40AF] select-none">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity((currentDeal as any).id, dealQty - 1)}
+                            className="w-7 h-7 rounded hover:bg-white/20 active:bg-white/30 text-white flex items-center justify-center font-bold transition-colors cursor-pointer"
+                            title="Decrease"
+                          >
+                            <Minus className="w-3.5 h-3.5 stroke-[3]" />
+                          </button>
+                          <span className="font-extrabold text-[13px] px-1">{dealQty} in Cart</span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity((currentDeal as any).id, dealQty + 1)}
+                            className="w-7 h-7 rounded hover:bg-white/20 active:bg-white/30 text-white flex items-center justify-center font-bold transition-colors cursor-pointer"
+                            title="Increase"
+                          >
+                            <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                          </button>
+                        </div>
+                      );
+                    }
+                    return (
+                      <button
+                        onClick={() => addToCart(currentDeal as any, 1)}
+                        className="h-10 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-[13px] flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        <span>Add to Cart</span>
+                      </button>
+                    );
+                  })()}
                 </div>
 
               </div>

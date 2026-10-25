@@ -95,6 +95,22 @@ export async function GET(request: Request) {
     try {
       const order = await prisma.order.findUnique({
         where: { orderId: cleanId },
+        include: {
+          rider: {
+            select: {
+              id: true,
+              riderCode: true,
+              name: true,
+              phone: true,
+              vehicleType: true,
+              vehicleNumber: true,
+              isOnline: true,
+              currentLat: true,
+              currentLng: true,
+              lastLocationText: true,
+            },
+          },
+        },
       });
       if (!order) {
         return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -112,7 +128,25 @@ export async function GET(request: Request) {
   }
 
   try {
-    const orders = await prisma.order.findMany({ orderBy: { createdAt: 'desc' } });
+    const orders = await prisma.order.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        rider: {
+          select: {
+            id: true,
+            riderCode: true,
+            name: true,
+            phone: true,
+            vehicleType: true,
+            vehicleNumber: true,
+            isOnline: true,
+            currentLat: true,
+            currentLng: true,
+            lastLocationText: true,
+          },
+        },
+      },
+    });
     return NextResponse.json({ orders: orders.map(toClientOrder) });
   } catch (error) {
     console.error('Error fetching orders:', error);

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   X, Heart, ShoppingCart, MessageSquare, Star, 
-  ShieldCheck, Truck, Store, ExternalLink
+  ShieldCheck, Truck, Store, ExternalLink, Plus, Minus
 } from 'lucide-react';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore } from '../context/StoreContext';
@@ -15,11 +15,18 @@ export const ProductDetailModal: React.FC = () => {
   const { 
     selectedProduct, 
     setSelectedProduct, 
+    cart,
     addToCart, 
+    updateQuantity,
     toggleWishlist, 
     wishlistIds,
     siteSettings
   } = useStore();
+
+  const cartItem = selectedProduct ? (cart || []).find(
+    (item) => item.product.id === selectedProduct.id || (selectedProduct.sku && item.product.sku === selectedProduct.sku)
+  ) : null;
+  const inCartQty = cartItem ? cartItem.quantity : 0;
 
   const [activeImage, setActiveImage] = useState<string | null>(null);
 
@@ -250,13 +257,35 @@ export const ProductDetailModal: React.FC = () => {
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => addToCart(selectedProduct)}
-                      className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-xs"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      <span>Add to Cart</span>
-                    </button>
+                    {inCartQty > 0 ? (
+                      <div className="h-10 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-between px-2 shadow-xs border border-blue-700 select-none">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(selectedProduct.id, inCartQty - 1)}
+                          className="w-7 h-7 rounded-lg hover:bg-white/20 active:bg-white/30 text-white flex items-center justify-center font-bold transition-colors"
+                          title="Decrease quantity"
+                        >
+                          <Minus className="w-3.5 h-3.5 stroke-[3]" />
+                        </button>
+                        <span className="font-extrabold text-sm px-1">{inCartQty} in Cart</span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(selectedProduct.id, inCartQty + 1)}
+                          className="w-7 h-7 rounded-lg hover:bg-white/20 active:bg-white/30 text-white flex items-center justify-center font-bold transition-colors"
+                          title="Increase quantity"
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => addToCart(selectedProduct, 1)}
+                        className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-xs cursor-pointer active:scale-95"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        <span>Add to Cart</span>
+                      </button>
+                    )}
 
                     <button
                       onClick={handleBuyNow}

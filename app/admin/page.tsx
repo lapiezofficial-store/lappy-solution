@@ -13,7 +13,7 @@ import {
   BookOpen, Star, Crown, Laptop, Box, Award, AlertTriangle, MoreVertical,
   SlidersHorizontal, ArrowUpDown, Pencil, ChevronDown, ChevronRight, ChevronLeft, Download, Upload, Tag,
   Share2, Globe, ArrowLeft, LayoutDashboard, Menu, Wrench, Terminal, Database, Radio, HardDrive, FolderTree, CheckSquare, FileCode,
-  Banknote, Loader2
+  Banknote, Loader2, Bike
 } from 'lucide-react';
 import { useStore, CMSBanner, CMSSection, CMSCustomPage, CMSBlogPost, CMSBrand, CMSCategory, CMSSubcategory, DEFAULT_SHOP_BY_CATEGORIES } from '../../context/StoreContext';
 import { BrandLogoRenderer, PRESET_BRANDS_CONFIG } from '../../components/BrandLogoRenderer';
@@ -22,6 +22,8 @@ import { Product } from '../../data/products';
 import scrapedBrandProductsData from '../../data/scrapedBrandProducts.json';
 import { adminFetch, setAdminToken, removeAdminToken } from '../../lib/adminApi';
 import { optimizeImageForUpload } from '../../lib/imageOptimizer';
+import RidersManager from '../../components/admin/RidersManager';
+import OrderRiderAssignModal from '../../components/admin/OrderRiderAssignModal';
 
 export default function AdminPage() {
   const { 
@@ -126,9 +128,20 @@ export default function AdminPage() {
     | 'header_footer' 
     | 'tools' 
     | 'settings' 
-    | 'leads';
+    | 'leads'
+    | 'riders';
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('inventory');
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as AdminTab | null;
+      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads', 'riders'].includes(tabParam)) {
+        return tabParam;
+      }
+    }
+    return 'inventory';
+  });
+  const [assigningOrder, setAssigningOrder] = useState<any | null>(null);
 
   // Mobile Shell & Drawer State
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -242,7 +255,7 @@ export default function AdminPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads'].includes(tabParam)) {
+      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads', 'riders'].includes(tabParam)) {
         setActiveTab(tabParam as any);
       }
     }
@@ -296,7 +309,7 @@ export default function AdminPage() {
   const [editBrand, setEditBrand] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editMrp, setEditMrp] = useState('');
-  const [editStockQuantity, setEditStockQuantity] = useState(10);
+  const [editStockQuantity, setEditStockQuantity] = useState<number | string>(10);
   const [editInStock, setEditInStock] = useState(true);
   const [editImage, setEditImage] = useState('');
   const [editImages, setEditImages] = useState<string[]>([]);
@@ -314,7 +327,7 @@ export default function AdminPage() {
   const [newProductBrand, setNewProductBrand] = useState('HP');
   const [newProductPrice, setNewProductPrice] = useState('');
   const [newProductMrp, setNewProductMrp] = useState('');
-  const [newProductStockQuantity, setNewProductStockQuantity] = useState(10);
+  const [newProductStockQuantity, setNewProductStockQuantity] = useState<number | string>(10);
   const [newProductSpecs, setNewProductSpecs] = useState('');
   const [newProductDescription, setNewProductDescription] = useState('');
   const [newProductImage, setNewProductImage] = useState('');
@@ -899,6 +912,11 @@ export default function AdminPage() {
       validGallery.push(primaryImg);
     }
 
+    const stockQtyNum = editStockQuantity === '' || editStockQuantity === undefined || editStockQuantity === null
+      ? 0
+      : Number(editStockQuantity);
+    const validEditStock = isNaN(stockQtyNum) ? 0 : stockQtyNum;
+
     const success = await updateProductInDb(editingProduct.id, {
       name: editName.trim(),
       category: editCategory.trim() as any,
@@ -907,8 +925,8 @@ export default function AdminPage() {
       price: priceNum,
       mrp: mrpNum,
       discount: discount > 0 ? discount : 0,
-      stockQuantity: Number(editStockQuantity) || 0,
-      inStock: editInStock,
+      stockQuantity: validEditStock,
+      inStock: validEditStock > 0 ? editInStock : false,
       image: primaryImg,
       images: validGallery,
       specs: editSpecs.trim(),
@@ -1032,6 +1050,11 @@ export default function AdminPage() {
     const catClean = (newProductCategory || 'GEN').replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase() || 'GEN';
     const uniqueSku = `LS-${catClean}-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+    const stockQtyNum = newProductStockQuantity === '' || newProductStockQuantity === undefined || newProductStockQuantity === null
+      ? 10
+      : Number(newProductStockQuantity);
+    const validStock = isNaN(stockQtyNum) ? 10 : stockQtyNum;
+
     const newProd: Partial<Product> = {
       name: newProductName.trim(),
       category: newProductCategory.trim() as any,
@@ -1044,8 +1067,8 @@ export default function AdminPage() {
       description: newProductDescription.trim() || newProductSpecs.trim() || newProductName.trim(),
       image: primaryImg,
       images: validGallery,
-      inStock: true,
-      stockQuantity: Number(newProductStockQuantity) || 10,
+      inStock: validStock > 0,
+      stockQuantity: validStock,
       sku: uniqueSku,
       rating: 4.8,
       gstRate: Number(newProductGstRate) !== undefined && !isNaN(Number(newProductGstRate)) ? Number(newProductGstRate) : 18,
@@ -2468,8 +2491,14 @@ export default function AdminPage() {
       const cat = p.category?.trim() || 'Accessories';
       let entry = catMap.get(cat);
       if (!entry) {
+        const catLower = cat.toLowerCase();
         for (const [k, v] of catMap.entries()) {
-          if (k.toLowerCase() === cat.toLowerCase()) {
+          const kLower = k.toLowerCase();
+          if (
+            kLower === catLower ||
+            kLower.replace(/s\b/g, '') === catLower.replace(/s\b/g, '') ||
+            (kLower.includes('laptop') && catLower.includes('laptop') && !kLower.includes('part') && !catLower.includes('part') && !kLower.includes('body') && !catLower.includes('body') && !kLower.includes('screen') && !catLower.includes('screen') && !kLower.includes('keyboard') && !catLower.includes('keyboard') && !kLower.includes('battery') && !catLower.includes('battery') && !kLower.includes('adaptor') && !catLower.includes('adaptor'))
+          ) {
             entry = v;
             break;
           }
@@ -2579,13 +2608,22 @@ export default function AdminPage() {
   const filteredInventory = useMemo(() => {
     return products.filter((p) => {
       // 1. Department/Category Filter
-      if (inventoryCategory !== 'All' && p.category.toLowerCase() !== inventoryCategory.toLowerCase()) {
-        return false;
+      if (inventoryCategory !== 'All') {
+        const invCat = inventoryCategory.trim().toLowerCase();
+        const pCat = (p.category || '').trim().toLowerCase();
+        const matchesCat = pCat === invCat ||
+          pCat.replace(/s\b/g, '') === invCat.replace(/s\b/g, '') ||
+          (invCat.includes('laptop') && pCat.includes('laptop') && !invCat.includes('part') && !pCat.includes('part') && !invCat.includes('body') && !pCat.includes('body') && !invCat.includes('screen') && !pCat.includes('screen') && !invCat.includes('keyboard') && !pCat.includes('keyboard') && !invCat.includes('battery') && !pCat.includes('battery') && !invCat.includes('adaptor') && !pCat.includes('adaptor'));
+        if (!matchesCat) return false;
       }
 
       // 1.1 Subcategory Filter
-      if (inventorySubcategory !== 'All' && (!p.subcategory || p.subcategory.toLowerCase() !== inventorySubcategory.toLowerCase())) {
-        return false;
+      if (inventorySubcategory !== 'All') {
+        const invSub = inventorySubcategory.trim().toLowerCase();
+        const pSub = (p.subcategory || (p as any).subCategory || '').trim().toLowerCase();
+        if (pSub !== invSub && !pSub.includes(invSub) && !invSub.includes(pSub)) {
+          return false;
+        }
       }
 
       // 2. Brand Filter
@@ -3051,6 +3089,21 @@ export default function AdminPage() {
                   </button>
 
                   <button
+                    onClick={() => { setActiveTab('riders'); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${
+                      activeTab === 'riders' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-amber-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Bike className="w-4 h-4 text-amber-400" />
+                      <span>Delivery Riders</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Fleet
+                    </span>
+                  </button>
+
+                  <button
                     onClick={() => { setActiveTab('bank'); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${
                       activeTab === 'bank' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-emerald-300'
@@ -3116,12 +3169,17 @@ export default function AdminPage() {
 
                   <button
                     onClick={() => { setActiveTab('categories'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${
                       activeTab === 'categories' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
                     }`}
                   >
-                    <Layers className="w-4 h-4" />
-                    <span>Categories</span>
+                    <div className="flex items-center gap-3">
+                      <Layers className="w-4 h-4" />
+                      <span>Categories</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#3c434a] text-white">
+                      {categories.length}
+                    </span>
                   </button>
 
                   <button
@@ -3299,6 +3357,26 @@ export default function AdminPage() {
                 {!isWpSidebarCollapsed && orders.length > 0 && (
                   <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#3c434a] text-white">
                     {orders.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setActiveTab('riders')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'riders'
+                    ? 'bg-[#2271b1] text-white shadow-xs'
+                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                }`}
+                title="Delivery Fleet & Rider Management"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Bike className="w-4 h-4 flex-shrink-0 text-amber-400" />
+                  {!isWpSidebarCollapsed && <span>Delivery Riders</span>}
+                </div>
+                {!isWpSidebarCollapsed && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    Fleet
                   </span>
                 )}
               </button>
@@ -4090,6 +4168,47 @@ export default function AdminPage() {
                                     <span>Mark Delivered</span>
                                   </button>
                                 )}
+
+                                {/* RIDER DISPATCH & ASSIGNMENT SECTION */}
+                                {!isPickupOrder && (
+                                  <div className="pt-2 border-t border-blue-100/60">
+                                    {order.rider ? (
+                                      <div className="bg-blue-50/90 border border-blue-200 rounded-xl p-2 text-xs mb-1.5 shadow-2xs">
+                                        <div className="flex items-center justify-between">
+                                          <span className="font-extrabold text-blue-900 flex items-center gap-1.5">
+                                            <Bike className="w-3.5 h-3.5 text-blue-600" />
+                                            <span className="truncate max-w-[140px]">{order.rider.name}</span>
+                                          </span>
+                                          <span className="text-[10px] font-mono bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-bold border border-blue-200">
+                                            {order.rider.riderCode || 'Assigned'}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[11px] text-gray-500 mt-1">
+                                          <span>📞 {order.rider.phone}</span>
+                                          <span className="text-[10px] text-gray-600 font-medium truncate max-w-[120px]">
+                                            📍 {order.rider.lastLocationText || order.rider.city || 'Garhwa'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ) : order.riderId ? (
+                                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-2 text-xs mb-1.5 flex items-center justify-between shadow-2xs">
+                                        <span className="font-bold text-amber-900 flex items-center gap-1">
+                                          <Bike className="w-3.5 h-3.5 text-amber-600" /> Rider Assigned
+                                        </span>
+                                        <span className="text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.2 rounded font-bold">In Transit</span>
+                                      </div>
+                                    ) : null}
+
+                                    <button
+                                      type="button"
+                                      onClick={() => setAssigningOrder(order)}
+                                      className="w-full h-8.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                                    >
+                                      <Bike className="w-3.5 h-3.5" />
+                                      <span>{order.riderId ? 'Change / Re-assign Rider 🔄' : 'Send to Delivery Rider 🚀'}</span>
+                                    </button>
+                                  </div>
+                                )}
                               </>
                             )}
 
@@ -4165,6 +4284,33 @@ export default function AdminPage() {
                   <span>Refresh Orders from Database</span>
                 </button>
               </div>
+            )}
+
+            {/* ORDER RIDER DISPATCH MODAL */}
+            {assigningOrder && (
+              <OrderRiderAssignModal
+                orderId={assigningOrder.orderId}
+                customerName={assigningOrder.customerName}
+                customerPhone={assigningOrder.phone}
+                address={assigningOrder.address}
+                totalAmount={assigningOrder.totalAmount}
+                currentRiderId={assigningOrder.riderId}
+                onClose={() => setAssigningOrder(null)}
+                onSuccess={(updatedOrder, assignedRider) => {
+                  updateOrders(
+                    orders.map((o) =>
+                      o.orderId === updatedOrder.orderId
+                        ? { ...o, riderId: updatedOrder.riderId, orderStatus: updatedOrder.orderStatus, rider: assignedRider }
+                        : o
+                    )
+                  );
+                  showToast(
+                    assignedRider
+                      ? `Order #${updatedOrder.orderId} assigned to ${assignedRider.name}!`
+                      : `Rider removed from Order #${updatedOrder.orderId}`
+                  );
+                }}
+              />
             )}
 
           </div>
@@ -6806,9 +6952,20 @@ export default function AdminPage() {
                                 <span>{cat.status === 'inactive' ? 'Hidden' : 'Visible'}</span>
                               </button>
                             </div>
-                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">
-                              {cat.startingPrice || 'From Showroom'}
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap flex items-center gap-1">
+                                <Package className="w-3 h-3 text-amber-600" />
+                                <span>{products.filter(p => {
+                                  const pCat = (p.category || '').trim().toLowerCase();
+                                  const cName = (cat.name || '').trim().toLowerCase();
+                                  return pCat === cName || pCat.replace(/s\b/g, '') === cName.replace(/s\b/g, '') ||
+                                    (cName.includes('laptop') && pCat.includes('laptop') && !cName.includes('part') && !pCat.includes('part') && !cName.includes('body') && !pCat.includes('body') && !cName.includes('screen') && !pCat.includes('screen') && !cName.includes('keyboard') && !pCat.includes('keyboard') && !cName.includes('battery') && !pCat.includes('battery') && !cName.includes('adaptor') && !pCat.includes('adaptor'));
+                                }).length} Products</span>
+                              </span>
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">
+                                {cat.startingPrice || 'From Showroom'}
+                              </span>
+                            </div>
                           </div>
 
                           <div className="flex items-center gap-2 mt-1">
@@ -6849,30 +7006,43 @@ export default function AdminPage() {
                           </div>
                         ) : (
                           <div className="flex flex-wrap gap-1.5">
-                            {cat.subcategories.map((sub) => (
-                              <div
-                                key={sub.id || sub.slug}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200/80 text-gray-800 text-xs font-semibold border border-gray-200 transition-colors"
-                              >
-                                <span>{sub.name}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenEditSubcategory(cat.id, sub)}
-                                  className="text-gray-400 hover:text-blue-600 ml-0.5 cursor-pointer"
-                                  title="Edit subcategory"
+                            {cat.subcategories.map((sub) => {
+                              const subCount = products.filter(p => {
+                                const pCat = (p.category || '').trim().toLowerCase();
+                                const cName = (cat.name || '').trim().toLowerCase();
+                                const matchesCat = pCat === cName || pCat.replace(/s\b/g, '') === cName.replace(/s\b/g, '') || (cName.includes('laptop') && pCat.includes('laptop'));
+                                const pSub = (p.subcategory || (p as any).subCategory || '').trim().toLowerCase();
+                                const sName = (sub.name || '').trim().toLowerCase();
+                                return matchesCat && (pSub === sName || pSub.includes(sName));
+                              }).length;
+                              return (
+                                <div
+                                  key={sub.id || sub.slug}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200/80 text-gray-800 text-xs font-semibold border border-gray-200 transition-colors"
                                 >
-                                  <Pencil className="w-3 h-3" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteSubcategory(sub.id, sub.name)}
-                                  className="text-gray-400 hover:text-red-600 ml-0.5 cursor-pointer"
-                                  title="Delete subcategory"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ))}
+                                  <span>{sub.name}</span>
+                                  <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-full bg-white text-blue-700 border border-blue-100">
+                                    {subCount}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditSubcategory(cat.id, sub)}
+                                    className="text-gray-400 hover:text-blue-600 ml-0.5 cursor-pointer"
+                                    title="Edit subcategory"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSubcategory(sub.id, sub.name)}
+                                    className="text-gray-400 hover:text-red-600 ml-0.5 cursor-pointer"
+                                    title="Delete subcategory"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -9882,6 +10052,13 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* Riders Fleet Manager Tab */}
+        {activeTab === 'riders' && (
+          <div className="space-y-6">
+            <RidersManager />
+          </div>
+        )}
+
           </div>
         </main>
       </div>
@@ -10358,9 +10535,10 @@ export default function AdminPage() {
                   <label className="font-bold text-gray-700 block mb-1">Stock Qty</label>
                   <input
                     type="number"
+                    min="0"
                     placeholder="e.g. 25"
                     value={newProductStockQuantity}
-                    onChange={(e) => setNewProductStockQuantity(Number(e.target.value))}
+                    onChange={(e) => setNewProductStockQuantity(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
                   />
                 </div>
@@ -10756,8 +10934,9 @@ export default function AdminPage() {
                   <label className="font-bold text-gray-700 block mb-1">Stock Quantity</label>
                   <input
                     type="number"
+                    min="0"
                     value={editStockQuantity}
-                    onChange={(e) => setEditStockQuantity(Number(e.target.value))}
+                    onChange={(e) => setEditStockQuantity(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
                   />
                 </div>

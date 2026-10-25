@@ -160,14 +160,17 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       { name: 'All', icon: LayoutGrid, count: products.length }
     ];
 
-    // Tally actual product counts per category name
-    const catProductCounts = new Map<string, number>();
-    products.forEach((p) => {
-      const catName = p.category?.trim();
-      if (catName) {
-        catProductCounts.set(catName, (catProductCounts.get(catName) || 0) + 1);
-      }
-    });
+    // Category product counts helper that normalizes casing and variants
+    const getNormalizedCategoryCount = (targetCatName: string): number => {
+      const targetLower = targetCatName.trim().toLowerCase();
+      const targetBase = targetLower.replace(/s\b/g, '');
+      return products.filter((p) => {
+        const pCat = (p.category || '').trim().toLowerCase();
+        const pBase = pCat.replace(/s\b/g, '');
+        return pCat === targetLower || pBase === targetBase ||
+          (targetLower.includes('laptop') && pCat.includes('laptop') && !pCat.includes('part') && !pCat.includes('body') && !pCat.includes('screen') && !pCat.includes('keyboard') && !pCat.includes('battery') && !pCat.includes('adaptor'));
+      }).length;
+    };
 
     const seen = new Set<string>();
     seen.add('all');
@@ -179,7 +182,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .forEach((c) => {
           const cName = c.name.trim();
-          const count = catProductCounts.get(cName) || 0;
+          const count = getNormalizedCategoryCount(cName);
           if (count > 0) {
             seen.add(cName.toLowerCase());
             list.push({
@@ -192,14 +195,22 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     }
 
     // Ensure any category that has active products is included
-    catProductCounts.forEach((count, catName) => {
-      if (!seen.has(catName.toLowerCase()) && count > 0) {
-        seen.add(catName.toLowerCase());
-        list.push({
-          name: catName,
-          icon: getCategoryIcon(catName),
-          count,
-        });
+    const rawCatSet = new Set<string>();
+    products.forEach((p) => {
+      if (p.category?.trim()) rawCatSet.add(p.category.trim());
+    });
+
+    rawCatSet.forEach((catName) => {
+      if (!seen.has(catName.toLowerCase())) {
+        const count = getNormalizedCategoryCount(catName);
+        if (count > 0) {
+          seen.add(catName.toLowerCase());
+          list.push({
+            name: catName,
+            icon: getCategoryIcon(catName),
+            count,
+          });
+        }
       }
     });
 
@@ -468,7 +479,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
         {/* Mobile Fast-Swipe Category Chips (Phone Optimized) */}
         <div className="lg:hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 mb-3">
           {categories.map((cat) => {
-            const count = cat.name === 'All' ? products.length : products.filter(p => p.category === cat.name).length;
+            const count = cat.name === 'All' ? products.length : cat.count;
             const isSelected = selectedCategory === cat.name || (cat.name === 'All' && selectedCategory === 'All Products');
             const Icon = cat.icon;
             return (
@@ -741,8 +752,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                           {availableSubcategories.map((sub) => {
                             const isSubActive = selectedSubcategory.toLowerCase() === sub.name.toLowerCase();
                             const subCount = products.filter(
-                              p => p.category.toLowerCase() === cat.name.toLowerCase() && 
-                              p.subcategory?.toLowerCase() === sub.name.toLowerCase()
+                              p => (p.category || '').trim().toLowerCase() === cat.name.trim().toLowerCase() && 
+                              (p.subcategory || (p as any).subCategory || '').trim().toLowerCase() === sub.name.trim().toLowerCase()
                             ).length;
 
                             return (
@@ -1117,7 +1128,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                 </span>
                 <div className="grid grid-cols-2 gap-1.5">
                   {categories.map((cat) => {
-                    const count = cat.name === 'All' ? products.length : products.filter(p => p.category === cat.name).length;
+                    const count = cat.name === 'All' ? products.length : cat.count;
                     const isSelected = selectedCategory === cat.name || (cat.name === 'All' && selectedCategory === 'All Products');
                     return (
                       <button

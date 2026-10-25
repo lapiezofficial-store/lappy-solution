@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Heart, ShoppingCart, MessageSquare, Star, Truck, Check } from 'lucide-react';
+import { Heart, ShoppingCart, MessageSquare, Star, Truck, Check, Plus, Minus } from 'lucide-react';
 import { Product } from '../data/products';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore } from '../context/StoreContext';
@@ -13,14 +13,22 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { 
+    cart,
     addToCart, 
+    updateQuantity,
     toggleWishlist, 
     wishlistIds,
-    siteSettings
+    siteSettings,
+    showToast
   } = useStore();
 
   const isWishlisted = wishlistIds.includes(product.id);
   const isOutOfStock = product.inStock === false || (product.stockQuantity !== undefined && product.stockQuantity !== null && Number(product.stockQuantity) <= 0);
+
+  const cartItem = (cart || []).find(
+    (item) => item.product.id === product.id || (product.sku && item.product.sku === product.sku)
+  );
+  const inCartQty = cartItem ? cartItem.quantity : 0;
 
   const savings = product.mrp > product.price ? product.mrp - product.price : 0;
   const ratingValue = (product.rating || 4.4).toFixed(1);
@@ -168,12 +176,55 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             >
               <span>Out of Stock</span>
             </button>
+          ) : inCartQty > 0 ? (
+            <div 
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              className="col-span-3 h-8.5 rounded-lg bg-[#1A56DB] text-white flex items-center justify-between px-1 shadow-2xs border border-[#1E40AF] select-none"
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  updateQuantity(product.id, inCartQty - 1);
+                }}
+                className="w-7 h-7 rounded-md hover:bg-white/20 active:bg-white/30 text-white flex items-center justify-center font-black text-sm cursor-pointer transition-colors"
+                title="Decrease Quantity"
+                aria-label="Decrease quantity"
+              >
+                <Minus className="w-3.5 h-3.5 stroke-[3]" />
+              </button>
+
+              <span className="font-black text-xs sm:text-[13px] px-2 text-white tabular-nums tracking-wide">
+                {inCartQty}
+              </span>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const maxStock = product.stockQuantity ?? 10;
+                  if (inCartQty >= maxStock) {
+                    showToast?.(`Only ${maxStock} units available in stock!`);
+                    return;
+                  }
+                  updateQuantity(product.id, inCartQty + 1);
+                }}
+                className="w-7 h-7 rounded-md hover:bg-white/20 active:bg-white/30 text-white flex items-center justify-center font-black text-sm cursor-pointer transition-colors"
+                title="Increase Quantity"
+                aria-label="Increase quantity"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[3]" />
+              </button>
+            </div>
           ) : (
             <button
               type="button"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
-                addToCart(product);
+                addToCart(product, 1);
               }}
               className="col-span-3 h-8.5 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[12px] sm:text-[12.5px] font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs active:scale-95 cursor-pointer"
               title="Add to Shopping Cart"

@@ -185,11 +185,15 @@ model Order {
   paymentMethod   String
   paymentStatus   String   @default("Pending") // Pending | Verification Pending | Paid | Rejected
   utrNumber       String?
-  orderStatus     String   @default("Confirmed") // Confirmed | Packed | Shipped | Delivered | Cancelled
+  orderStatus     String   @default("Confirmed") // Confirmed | Packed | Ready | Out For Delivery | Delivered | Cancelled
   inventoryStatus String   @default("allocated") // allocated | restored
   date            String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  riderId         String?
+  rider           Rider?   @relation(fields: [riderId], references: [id])
+  deliveredAt     DateTime?
 
   @@index([phone])
   @@index([createdAt])
@@ -197,6 +201,7 @@ model Order {
   @@index([utrNumber])
   @@index([orderStatus])
   @@index([paymentStatus])
+  @@index([riderId])
 }
 
 model Coupon {
@@ -226,4 +231,73 @@ model AdminUser {
   name      String
   role      String   @default("SUPER_ADMIN") // SUPER_ADMIN | ORDER_MANAGER | EDITOR
   createdAt DateTime @default(now())
+}
+
+model Rider {
+  id                 String          @id @default(cuid())
+  riderCode          String?         @unique // e.g. "LAP-RD-001"
+  name               String
+  phone              String          @unique
+  email              String?
+  password           String
+  vehicleType        String          @default("BIKE") // BIKE | SCOOTY | CYCLE
+  vehicleNumber      String?         // e.g. "JH-03-AB-1234"
+  dlNumber           String?         // Driving License No
+  city               String?         @default("Garhwa")
+  emergencyContact   String?
+  approvalStatus     String          @default("APPROVED") // APPROVED | PENDING | REJECTED
+  rejectionReason    String?
+  isOnline           Boolean         @default(false)
+  isBlocked          Boolean         @default(false)
+  blockReason        String?
+  commissionPerOrder Float           @default(25) // ₹25 per delivery default
+  walletBalance      Float           @default(0)
+  bankAccountNo      String?
+  bankIfsc           String?
+  bankUpi            String?
+  
+  // Live GPS Tracking & Timestamps
+  currentLat         Float?
+  currentLng         Float?
+  lastLocationText   String?         // e.g. "Near Ranka More, Garhwa"
+  lastActiveAt       DateTime?
+  lastDeliveryAt     DateTime?
+
+  documents          RiderDocument[]
+  payouts            RiderPayout[]
+  orders             Order[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([phone])
+  @@index([isOnline])
+  @@index([isBlocked])
+  @@index([approvalStatus])
+}
+
+model RiderDocument {
+  id          String   @id @default(cuid())
+  riderId     String
+  rider       Rider    @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  docType     String   // AADHAR | DL | RC | PAN
+  docNumber   String
+  docUrl      String
+  status      String   @default("PENDING") // PENDING | VERIFIED | REJECTED
+  createdAt   DateTime @default(now())
+
+  @@index([riderId])
+}
+
+model RiderPayout {
+  id          String   @id @default(cuid())
+  riderId     String
+  rider       Rider    @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  amount      Float
+  paymentMode String   @default("UPI") // UPI | BANK_TRANSFER | CASH
+  utrNumber   String?
+  status      String   @default("PAID") // PAID | PENDING
+  note        String?
+  createdAt   DateTime @default(now())
+
+  @@index([riderId])
 }

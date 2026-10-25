@@ -2018,6 +2018,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           return updated;
         });
         broadcastCmsUpdate('products');
+        syncWithDatabase({ forceFresh: true }).catch(() => {});
         showToast(`Product "${created.name}" saved to database! ✨`);
         return created;
       } else {
@@ -2100,6 +2101,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
         if (res.ok) {
           broadcastCmsUpdate('products');
+          syncWithDatabase({ forceFresh: true }).catch(() => {});
           showToast('Product moved to Dustbin! Kept safely for 15 days.');
         } else {
           setProducts(prevProducts);
@@ -2126,6 +2128,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
           } catch (e) {}
           broadcastCmsUpdate('products');
+          syncWithDatabase({ forceFresh: true }).catch(() => {});
           showToast('Product permanently deleted from database!');
         } else {
           setProducts(prevProducts);
@@ -2172,6 +2175,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       if (res.ok) {
         broadcastCmsUpdate('products');
+        syncWithDatabase({ forceFresh: true }).catch(() => {});
         showToast('Product restored to Active Catalog!');
       } else {
         setProducts(prevProducts);
@@ -2206,6 +2210,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       if (res.ok) {
         broadcastCmsUpdate('products');
+        syncWithDatabase({ forceFresh: true }).catch(() => {});
         showToast('All products restored to active catalog!');
       } else {
         setProducts(prevProducts);
@@ -2344,6 +2349,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
         }
         broadcastCmsUpdate('products');
+        syncWithDatabase({ forceFresh: true }).catch(() => {});
         return true;
       } else {
         // Granular rollback: ONLY revert this single product, leaving all other products intact
