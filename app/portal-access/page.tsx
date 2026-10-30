@@ -179,7 +179,17 @@ export default function PortalAccessPage() {
         </form>
 
         {/* Security Footnote */}
-        <div className="mt-6 pt-4 border-t border-white/10 text-center space-y-2">
+        <div className="mt-6 pt-4 border-t border-white/10 text-center space-y-3">
+          <div>
+            <Link
+              href="/staff"
+              className="w-full p-2.5 rounded-xl bg-blue-900/40 hover:bg-blue-800/60 border border-blue-700/50 text-blue-200 font-semibold flex items-center justify-center gap-1.5 transition-colors text-xs"
+            >
+              <Store className="w-3.5 h-3.5 text-blue-400" />
+              <span>Staff Order Desk (कर्मचारी पोर्टल)</span>
+            </Link>
+          </div>
+
           <div className="text-[11px] text-blue-300/60 font-mono">
             Garhwa Showroom Server • 256-bit Encrypted Session
           </div>

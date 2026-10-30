@@ -517,6 +517,17 @@ export const Navbar: React.FC<NavbarProps> = () => {
               Support
             </Link>
 
+            {/* Warranty Claim Link */}
+            <Link 
+              href="/warranty" 
+              className="hover:text-[#2563EB] transition-colors flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 text-xs"
+              title="Claim Warranty for Online, Showroom & Past Purchases"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Warranty Claim</span>
+            </Link>
+
+
             {/* More with dropdown */}
             <div className="relative">
               <button

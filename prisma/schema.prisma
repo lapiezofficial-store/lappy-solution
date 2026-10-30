@@ -26,6 +26,7 @@ model SiteSettings {
   youtubeUrl       String?  @default("")
   twitterUrl       String?  @default("")
   adminPassword    String?  @default("")
+  staffPin         String?  @default("1234")
   maintenanceMode  Boolean  @default(false)
   updatedAt        DateTime @updatedAt
 }
@@ -300,4 +301,50 @@ model RiderPayout {
   createdAt   DateTime @default(now())
 
   @@index([riderId])
+}
+
+model WarrantyClaim {
+  id                  String    @id @default(cuid())
+  claimId             String    @unique // e.g. "WAR-26-1001"
+  customerName        String
+  customerPhone       String
+  customerEmail       String?
+  customerAddress     String?
+  productName         String
+  productCategory     String?   @default("Laptop") // Laptop | Desktop | CCTV | Printer | Accessory | Other
+  brand               String?   @default("Other") // HP, Dell, Lenovo, Hikvision, CP Plus, Asus, Acer, etc.
+  modelNumber         String?
+  serialNumber        String?   // Serial No / IMEI
+  orderId             String?   // Linked online order ID if applicable
+  invoiceNumber       String?   // Showroom GST Bill or invoice number
+  purchaseDate        String?
+  warrantyType        String    @default("Brand Warranty") // Brand Warranty | Lapiez Store Warranty | Refurbished 6-Month Warranty
+  warrantyPeriod      String    @default("1 Year")
+  issueDescription    String
+  faultCategory       String?   @default("Hardware") // Display | Power/Battery | Motherboard | Storage/RAM | Camera/IR | Software | Physical | Other
+  physicalCondition   String?   @default("Normal wear and tear")
+  accessoriesReceived String?   @default("Device only") // e.g. "Device + Original Charger"
+  purchaseChannel     String?   @default("OFFLINE_STORE") // ONLINE_WEBSITE | OFFLINE_STORE | PAST_LEGACY
+  billDocumentUrl     String?   // URL or base64 of invoice/bill copy
+  devicePhotoUrl      String?   // Photo of serial number / defect
+  verificationStatus  String?   @default("VERIFIED") // VERIFIED | PENDING_VERIFICATION | REJECTED_INVALID_BILL
+  status              String    @default("RECEIVED") // RECEIVED | UNDER_INSPECTION | SENT_TO_BRAND | REPAIRED_READY | DELIVERED_CLOSED | REJECTED
+  serviceCost         Float     @default(0)
+  estimatedReadyDate  String?
+  resolutionNotes     String?
+  technicianNotes     String?
+  staffName           String?   @default("Lapiez Desk")
+  brandRmaNumber      String?
+  handedOverDate      DateTime?
+  customerSignedAt    DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([customerPhone])
+  @@index([serialNumber])
+  @@index([claimId])
+  @@index([status])
+  @@index([orderId])
+  @@index([purchaseChannel])
+  @@index([createdAt])
 }

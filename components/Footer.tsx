@@ -112,6 +112,10 @@ export const Footer: React.FC = () => {
               <button type="button" onClick={() => setActivePolicy('gst')} className="hover:text-blue-600 cursor-pointer">GST 18% ITC</button>
               <span>•</span>
               <Link href="/contact" className="hover:text-blue-600 font-semibold text-blue-700">Support</Link>
+              <span>•</span>
+              <Link href="/warranty" className="hover:text-emerald-600 font-bold text-emerald-700">Warranty Claim</Link>
+              <span>•</span>
+              <Link href="/staff" className="hover:text-blue-600 font-bold text-blue-700">Staff Desk</Link>
             </div>
 
             <div className="text-[10.5px] text-slate-400 space-y-0.5 pt-1">
