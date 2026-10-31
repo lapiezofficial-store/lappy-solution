@@ -36,7 +36,14 @@ import {
   RotateCcw,
   Key,
   HardDrive,
-  Monitor
+  Monitor,
+  Receipt,
+  Palette,
+  Play,
+  Star,
+  ArrowRight,
+  PenTool,
+  CheckCheck
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { STORE_INFO } from '../../data/storeData';
@@ -110,7 +117,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
       showToast('Please enter your feedback description');
       return;
     }
-    showToast('Thank you! Your suggestion has been saved. 🚀');
+    showToast('Thank you! Your feedback has been saved successfully.');
     setIsSuggestionModalOpen(false);
     setSuggestionText('');
   };
@@ -266,7 +273,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
     | 'diwali';
 
   const [selectedTheme, setSelectedTheme] = useState<InvoiceTheme>('modern_teal');
-  const [previewZoom, setPreviewZoom] = useState<number>(100);
+  const [previewZoom, setPreviewZoom] = useState<number>(85);
 
   // Invoice Customizer Toggles
   const [invShowLogo, setInvShowLogo] = useState(true);
@@ -278,16 +285,16 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
 
   // Theme Preset Styles
   const themePresets: Record<InvoiceTheme, { name: string; category: string; primary: string; secondary: string; border: string; bg: string; badge: string }> = {
-    modern_teal: { name: 'Modern Emerald', category: 'Corporate', primary: '#0D9488', secondary: '#14B8A6', border: '#CCFBF1', bg: '#F0FDFA', badge: 'Recommended' },
-    classic_blue: { name: 'Classic Corporate', category: 'Corporate', primary: '#1E40AF', secondary: '#3B82F6', border: '#DBEAFE', bg: '#EFF6FF', badge: 'Standard' },
-    tally_gst: { name: 'Advanced Tally Grid', category: 'Corporate', primary: '#1F2937', secondary: '#4B5563', border: '#E5E7EB', bg: '#F9FAFB', badge: 'Official' },
-    luxury: { name: 'Luxury Dark & Gold', category: 'Corporate', primary: '#78350F', secondary: '#D97706', border: '#FEF3C7', bg: '#FFFBEB', badge: 'Premium' },
-    stylish_pastel: { name: 'Stylish Pastel Mint', category: 'Corporate', primary: '#047857', secondary: '#10B981', border: '#D1FAE5', bg: '#ECFDF5', badge: 'Clean' },
-    navratri: { name: 'Navratri Divine Saffron', category: 'Festival', primary: '#EA580C', secondary: '#F97316', border: '#FFEDD5', bg: '#FFF7ED', badge: 'Festive' },
-    durga_puja: { name: 'Durga Puja Royal Crimson', category: 'Festival', primary: '#BE123C', secondary: '#E11D48', border: '#FFE4E6', bg: '#FFF1F2', badge: 'Festive' },
-    dussehra: { name: 'Dussehra Victory Blue', category: 'Festival', primary: '#4338CA', secondary: '#6366F1', border: '#E0E7FF', bg: '#EEF2FF', badge: 'Festive' },
-    dhanteras: { name: 'Dhanteras Gold Sparkle', category: 'Festival', primary: '#B45309', secondary: '#F59E0B', border: '#FEF3C7', bg: '#FFFDF0', badge: 'Festive' },
-    diwali: { name: 'Diwali Midnight Radiance', category: 'Festival', primary: '#6D28D9', secondary: '#8B5CF6', border: '#EDE9FE', bg: '#F5F3FF', badge: 'Festive' },
+    modern_teal: { name: 'Emerald Minimal', category: 'Corporate', primary: '#0D9488', secondary: '#14B8A6', border: '#CCFBF1', bg: '#F0FDFA', badge: 'Default' },
+    classic_blue: { name: 'Sapphire Executive', category: 'Corporate', primary: '#1E40AF', secondary: '#3B82F6', border: '#DBEAFE', bg: '#EFF6FF', badge: 'Standard' },
+    tally_gst: { name: 'Tally Prime Classic', category: 'Corporate', primary: '#1F2937', secondary: '#4B5563', border: '#E5E7EB', bg: '#F9FAFB', badge: 'Compact' },
+    luxury: { name: 'Amber Gold Pro', category: 'Corporate', primary: '#78350F', secondary: '#D97706', border: '#FEF3C7', bg: '#FFFBEB', badge: 'Premium' },
+    stylish_pastel: { name: 'Mint Corporate', category: 'Corporate', primary: '#047857', secondary: '#10B981', border: '#D1FAE5', bg: '#ECFDF5', badge: 'Clean' },
+    navratri: { name: 'Tuscan Ochre', category: 'Retail POS', primary: '#EA580C', secondary: '#F97316', border: '#FFEDD5', bg: '#FFF7ED', badge: 'Warm' },
+    durga_puja: { name: 'Crimson Corporate', category: 'Retail POS', primary: '#BE123C', secondary: '#E11D48', border: '#FFE4E6', bg: '#FFF1F2', badge: 'Impact' },
+    dussehra: { name: 'Cobalt Slate', category: 'Retail POS', primary: '#4338CA', secondary: '#6366F1', border: '#E0E7FF', bg: '#EEF2FF', badge: 'Tech' },
+    dhanteras: { name: 'Bronze Retail', category: 'Retail POS', primary: '#B45309', secondary: '#F59E0B', border: '#FEF3C7', bg: '#FFFDF0', badge: 'Gold' },
+    diwali: { name: 'Amethyst Pro', category: 'Retail POS', primary: '#6D28D9', secondary: '#8B5CF6', border: '#EDE9FE', bg: '#F5F3FF', badge: 'Vibrant' },
   };
 
   // Sample Invoice Preview Data
@@ -471,27 +478,43 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   // =========================================================================
   // RENDER MASTER-DETAIL LAYOUT
   // =========================================================================
+  const navWorkflows = [
+    { id: 'account', label: 'Account & Security', sublabel: 'Admin PIN, session & lock', icon: UserCircle },
+    { id: 'business', label: 'Manage Business', sublabel: 'Branding, GST, e-Invoice & Tally', icon: Building2 },
+    { id: 'invoice', label: 'Invoice Settings', sublabel: 'A4 live preview & theme presets', icon: Paintbrush, badge: 'Live Preview', badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    { id: 'thermal_print', label: 'Print Settings', sublabel: '2"/3" Thermal POS & Barcodes', icon: Printer, badge: 'POS Ready', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    { id: 'team', label: 'Manage Users & RBAC', sublabel: 'Staff roles, daybook & margins', icon: Users, badge: 'Role Lock', badgeColor: 'bg-amber-50 text-amber-700 border-amber-200' },
+    { id: 'reminders', label: 'Payment Reminders', sublabel: 'WhatsApp overdue recovery & UPI', icon: BellRing, badge: 'Auto Sync', badgeColor: 'bg-teal-50 text-teal-700 border-teal-200' },
+    { id: 'ca_sharing', label: 'CA Reports Sharing', sublabel: 'GSTR-1, 2B, P&L & Daybook pack', icon: Briefcase, badge: 'GST Ready', badgeColor: 'bg-blue-50 text-blue-700 border-blue-200' },
+    { id: 'help_support', label: 'Help & Support', sublabel: 'Priority hotline & video guides', icon: HelpCircle },
+  ];
+
   return (
-    <div className="space-y-6 text-[#1E293B]">
+    <div className="space-y-4 sm:space-y-6 text-[#1E293B]">
       
       {/* 1. TOP BRAND HEADER & COMPANY CONTEXT BAR */}
-      <div className="bg-gradient-to-r from-[#0B132B] via-[#1C2541] to-[#0A1633] text-white rounded-2xl p-4 sm:p-6 shadow-md border border-slate-700/50">
+      <div className="bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-700/60">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-300 font-black text-2xl shadow-inner">
-              ⚡
+            <div className="flex size-11 items-center justify-center rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-300 font-bold shadow-inner">
+              <Receipt className="w-6 h-6 text-teal-400" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl font-black tracking-tight text-white">
-                  myBillBook Enterprise Billing Engine
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">
+                  NirQ Billing System
                 </h2>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                  Full Store Control • All Modules Unlocked
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" /> CBIC Rule 46 Compliant
+                </span>
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                  Enterprise POS & Invoicing
                 </span>
               </div>
-              <p className="text-xs text-slate-300 mt-1">
-                Active Store: <span className="font-bold text-amber-300">{activeCompany.legalName}</span> ({activeCompany.city}, {activeCompany.state}) • GSTIN: <span className="font-mono text-teal-300">{activeCompany.gstin}</span>
+              <p className="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <span>Active Store: <strong className="font-semibold text-amber-300">{activeCompany.legalName}</strong> ({activeCompany.city}, {activeCompany.state})</span>
+                <span className="text-slate-500">•</span>
+                <span>GSTIN: <span className="font-mono text-teal-300 font-semibold">{activeCompany.gstin}</span></span>
               </p>
             </div>
           </div>
@@ -499,7 +522,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setIsBusinessSwitcherOpen(true)}
-              className="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-600 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-600 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Building2 className="w-3.5 h-3.5 text-teal-400" />
               <span>Switch Business</span>
@@ -507,15 +530,15 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
 
             <button
               onClick={() => setIsTallyModalOpen(true)}
-              className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-xs font-bold text-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-xs font-semibold text-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <FileCode className="w-3.5 h-3.5" />
-              <span>Data Export to Tally [New]</span>
+              <span>Export Tally XML</span>
             </button>
 
             <button
               onClick={() => setIsCloseFyModalOpen(true)}
-              className="px-3 py-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Calendar className="w-3.5 h-3.5" />
               <span>Close FY ({currentFy})</span>
@@ -523,7 +546,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
 
             <button
               onClick={() => setActiveTab('invoice')}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Counter Bill</span>
@@ -532,34 +555,47 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
         </div>
       </div>
 
+      {/* MOBILE / TABLET HORIZONTAL TABS (Screen Optimization) */}
+      <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
+        {navWorkflows.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id as SettingsTabId)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                isActive
+                  ? 'bg-teal-700 text-white shadow-xs ring-1 ring-teal-600'
+                  : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* 2. SPLIT-PANE MASTER-DETAIL CONTAINER */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         
-        {/* LEFT COLUMN: DEDICATED SETTINGS NAVIGATION SIDEBAR */}
-        <aside className="w-full lg:w-72 xl:w-80 shrink-0">
+        {/* LEFT COLUMN: DEDICATED SETTINGS NAVIGATION SIDEBAR (DESKTOP) */}
+        <aside className="hidden lg:block w-72 xl:w-80 shrink-0">
           <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden sticky top-4">
             
             <div className="p-3.5 border-b border-gray-100 bg-gray-50/70 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-gray-900 block">Configuration Workflows</span>
-                <span className="text-[10px] text-gray-500 block">Enterprise Management Modules</span>
+                <span className="text-xs font-bold text-gray-900 block">System Workflows</span>
+                <span className="text-[10px] text-gray-500 block">NirQ Operational Modules</span>
               </div>
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200">
                 8 Active
               </span>
             </div>
 
             <nav className="p-2 space-y-1">
-              {[
-                { id: 'account', label: 'Account & Security', sublabel: 'Admin credentials & POS lock', icon: UserCircle },
-                { id: 'business', label: 'Manage Business', sublabel: 'Branding, GST, e-Invoice & Tally', icon: Building2 },
-                { id: 'invoice', label: 'Invoice Settings', sublabel: 'Live preview, festival themes', icon: Paintbrush, badge: 'Live Preview', badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-                { id: 'thermal_print', label: 'Print Settings', sublabel: '2"/3" Thermal POS & Barcodes', icon: Printer, badge: 'POS Ready', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-                { id: 'team', label: 'Manage Users & RBAC', sublabel: 'Salesman daybook & tracker', icon: Users, badge: 'Margin Lock', badgeColor: 'bg-amber-50 text-amber-700 border-amber-200' },
-                { id: 'reminders', label: 'Payment Reminders', sublabel: 'WhatsApp auto तगादा engine', icon: BellRing, badge: 'Auto Sync', badgeColor: 'bg-teal-50 text-teal-700 border-teal-200' },
-                { id: 'ca_sharing', label: 'CA Reports Sharing', sublabel: 'GSTR-1, 2B, P&L & Daybook', icon: Briefcase, badge: 'GST Ready', badgeColor: 'bg-blue-50 text-blue-700 border-blue-200' },
-                { id: 'help_support', label: 'Help & Support', sublabel: 'WhatsApp hotline & tutorials', icon: HelpCircle },
-              ].map((item) => {
+              {navWorkflows.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
                 return (
@@ -602,12 +638,12 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
             <div className="p-3.5 m-2 rounded-xl bg-gradient-to-br from-emerald-50 via-teal-50 to-white border border-emerald-200">
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="size-2 rounded-full bg-emerald-600 animate-ping" />
-                <span className="text-xs font-black text-emerald-900">
+                <span className="text-xs font-bold text-emerald-900">
                   Billing Engine Active
                 </span>
               </div>
               <p className="text-[10px] text-gray-600 leading-tight">
-                CBIC Rule 46 Compliant • Thermal 58/80mm ESC/POS online • Staff security shield engaged.
+                CBIC Rule 46 Compliant • Thermal 58/80mm ESC/POS online • Role-based access locked.
               </p>
             </div>
           </div>
@@ -876,11 +912,11 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                         onChange={(e) => setActiveCompany({ ...activeCompany, classification: e.target.value })}
                         className="w-full h-10 px-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-teal-600"
                       >
-                        <option value="Retailer & IT Solutions">Retailer (रिटेलर)</option>
-                        <option value="Wholesaler & Stockist">Wholesaler (थोक व्यापारी)</option>
-                        <option value="Distributor">Distributor (डिस्ट्रिब्यूटर)</option>
-                        <option value="Manufacturer">Manufacturer (निर्माता)</option>
-                        <option value="Services & Repairs">Services & Repairs (सर्विस सेंटर)</option>
+                        <option value="Retailer & IT Solutions">Retailer & IT Solutions</option>
+                        <option value="Wholesaler & Stockist">Wholesaler & Stockist</option>
+                        <option value="Distributor">Distributor</option>
+                        <option value="Manufacturer">Manufacturer</option>
+                        <option value="Services & Repairs">Services & Repairs</option>
                       </select>
                     </div>
 
@@ -928,7 +964,11 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                           disabled={isGstFetching}
                           className="text-[10px] font-bold text-teal-700 hover:underline flex items-center gap-1 cursor-pointer"
                         >
-                          {isGstFetching ? 'Verifying...' : '⚡ Verify on GSTN Portal'}
+                          {isGstFetching ? (
+                            <span className="flex items-center gap-1"><RotateCcw className="w-3 h-3 animate-spin" /> Verifying...</span>
+                          ) : (
+                            <span className="flex items-center gap-1"><Search className="w-3 h-3" /> Verify on GSTN Portal</span>
+                          )}
                         </button>
                       </div>
                       <input
@@ -1095,7 +1135,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                     />
                     {!hasSignature && (
                       <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-400 pointer-events-none select-none">
-                        ✍️ Draw your signature here
+                        <span className="flex items-center gap-1.5"><PenTool className="w-3.5 h-3.5 text-slate-400" /> Draw digital signature below</span>
                       </div>
                     )}
                   </div>
@@ -1126,7 +1166,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
               <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <div className="size-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
-                    🎨
+                    <Palette className="w-4 h-4 text-indigo-600" />
                   </div>
                   <div>
                     <h3 className="text-xs font-black text-gray-900">Interactive Split-Screen Theme Studio</h3>
@@ -1137,7 +1177,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                 <div className="flex items-center gap-2">
                   <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5">
                     <button
-                      onClick={() => setPreviewZoom(Math.max(75, previewZoom - 10))}
+                      onClick={() => setPreviewZoom(Math.max(65, previewZoom - 10))}
                       className="p-1 rounded text-gray-600 hover:bg-white cursor-pointer"
                       title="Zoom Out"
                     >
@@ -1145,11 +1185,20 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                     </button>
                     <span className="text-[10px] font-mono font-bold px-1.5">{previewZoom}%</span>
                     <button
-                      onClick={() => setPreviewZoom(Math.min(130, previewZoom + 10))}
+                      onClick={() => setPreviewZoom(Math.min(120, previewZoom + 10))}
                       className="p-1 rounded text-gray-600 hover:bg-white cursor-pointer"
                       title="Zoom In"
                     >
                       <ZoomIn className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setPreviewZoom(85)}
+                      className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors cursor-pointer ${
+                        previewZoom === 85 ? 'bg-teal-600 text-white font-bold' : 'text-gray-600 hover:bg-white'
+                      }`}
+                      title="Fit to Screen (85%)"
+                    >
+                      Fit
                     </button>
                   </div>
 
@@ -1818,9 +1867,10 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                                 setSelectedDaybookStaff(m);
                                 setIsStaffDaybookOpen(true);
                               }}
-                              className="text-teal-700 hover:underline font-bold text-[11px] cursor-pointer"
+                              className="text-teal-700 hover:underline font-bold text-[11px] cursor-pointer flex items-center justify-end gap-1"
                             >
-                              View Daybook →
+                              <span>View Daybook</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
                             </button>
                           </td>
                         </tr>
@@ -1920,7 +1970,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
 
                   <div className="p-4 rounded-xl bg-teal-50/60 border border-teal-200 flex items-start justify-between gap-3">
                     <div>
-                      <span className="text-xs font-bold text-teal-950 block">Payment Overdue Reminders (तगादा)</span>
+                      <span className="text-xs font-bold text-teal-950 block">Payment Overdue Reminders</span>
                       <p className="text-[11px] text-teal-800 mt-0.5">Automatically trigger reminder notifications for balances exceeding due date.</p>
                     </div>
                     <input
@@ -2025,7 +2075,10 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                           </span>
                         </div>
 
-                        <span className="text-[9px] text-gray-400 block text-right">10:45 AM ✓✓</span>
+                        <div className="flex items-center justify-end gap-1 text-[9px] text-gray-400 pt-0.5">
+                          <span>10:45 AM</span>
+                          <CheckCheck className="w-3.5 h-3.5 text-blue-500 inline" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2166,7 +2219,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => window.open('https://wa.me/917400174001?text=Hello%20Lapiez%20myBillBook%20Support', '_blank')}
+                      onClick={() => window.open('https://wa.me/917400174001?text=Hello%20Lapiez%20NirQ%20Billing%20Support', '_blank')}
                       className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
@@ -2197,11 +2250,12 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                   {[
                     { title: '1. Fast GST Counter Invoicing in 30 Seconds', duration: '2:15 mins' },
                     { title: '2. Setting up 2" and 3" Thermal POS Printers', duration: '3:40 mins' },
-                    { title: '3. Automating WhatsApp Payment तगादा Reminders', duration: '4:10 mins' },
+                    { title: '3. Automating WhatsApp Payment Reminders & UPI Links', duration: '4:10 mins' },
                   ].map((vid, idx) => (
                     <div key={idx} className="rounded-xl border border-gray-200 p-3 bg-gray-50/50 space-y-2 hover:border-teal-500 transition-colors">
-                      <div className="h-24 rounded-lg bg-slate-900/10 flex items-center justify-center font-bold text-xs text-slate-700">
-                        ▶ Video Tutorial
+                      <div className="h-24 rounded-lg bg-slate-900/10 flex items-center justify-center font-bold text-xs text-slate-700 gap-1.5">
+                        <Play className="w-4 h-4 text-slate-700 fill-slate-700" />
+                        <span>Video Guide</span>
                       </div>
                       <div className="font-bold text-xs text-gray-900 leading-tight">{vid.title}</div>
                       <span className="text-[10px] text-gray-500 block">{vid.duration} • Full HD</span>
@@ -2479,8 +2533,8 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                   onChange={(e) => setSuggestionCategory(e.target.value)}
                   className="w-full h-9 px-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-teal-600"
                 >
-                  <option value="Feature Request">Feature Request (नया फीचर)</option>
-                  <option value="Bug Report">Issue / Bug (समस्या)</option>
+                  <option value="Feature Request">Feature Request</option>
+                  <option value="Bug Report">Issue / Bug Report</option>
                   <option value="Invoice Design">Invoice Design & Printing</option>
                   <option value="Other">Other Feedback</option>
                 </select>
@@ -2488,15 +2542,15 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-700">Rating</label>
-                <div className="flex gap-1 text-amber-400">
+                <div className="flex gap-1.5 text-amber-400 py-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       type="button"
                       key={star}
                       onClick={() => setSuggestionRating(star)}
-                      className="text-lg hover:scale-110 transition-transform cursor-pointer"
+                      className="hover:scale-110 transition-transform cursor-pointer"
                     >
-                      ★
+                      <Star className={`w-5 h-5 transition-colors ${suggestionRating >= star ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
                     </button>
                   ))}
                 </div>

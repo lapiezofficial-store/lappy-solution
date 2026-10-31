@@ -3174,10 +3174,10 @@ export default function AdminPage() {
                   >
                     <div className="flex items-center gap-3">
                       <Sparkles className="w-4 h-4 text-teal-400" />
-                      <span>⚡ myBillBook Cockpit</span>
+                      <span>NirQ Billing System</span>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                      1:1 FloBiz
+                      POS & Tax
                     </span>
                   </button>
 
@@ -3489,15 +3489,15 @@ export default function AdminPage() {
                     ? 'bg-teal-600 text-white shadow-xs'
                     : 'text-teal-300 hover:bg-[#135e96] hover:text-white'
                 }`}
-                title="myBillBook 1:1 FloBiz Enterprise Cockpit"
+                title="NirQ Billing System - POS & GST Invoicing Engine"
               >
                 <div className="flex items-center gap-2.5">
                   <Sparkles className="w-4 h-4 flex-shrink-0 text-teal-400" />
-                  {!isWpSidebarCollapsed && <span>myBillBook 1:1</span>}
+                  {!isWpSidebarCollapsed && <span>NirQ Billing</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
                   <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                    FloBiz
+                    POS
                   </span>
                 )}
               </button>
@@ -3834,7 +3834,7 @@ export default function AdminPage() {
                   {activeTab === 'scraper' && 'Live Web Scraper & Crawler Engine'}
                   {activeTab === 'orders' && `Orders & UTR Verification (${orders.length})`}
                   {activeTab === 'billing' && `GST Invoices & Billing (${invoices.length})`}
-                  {activeTab === 'mybillbook' && '⚡ myBillBook Enterprise Cockpit (1:1 FloBiz Commercial Engine)'}
+                  {activeTab === 'mybillbook' && 'NirQ Billing System • POS & Tax Invoicing'}
                   {activeTab === 'bank' && 'Official Bank Details & Settlement'}
                   {activeTab === 'coupons' && `Coupons & Discounts (${coupons.length})`}
                   {activeTab === 'leads' && `Customer Quotes & Inquiries (${leads.length})`}
@@ -4431,7 +4431,7 @@ export default function AdminPage() {
                 {[
                   { id: 'invoices', label: `All Invoices (${invoices.length})`, icon: FileText },
                   { id: 'create', label: '+ Counter Billing / New Invoice', icon: Plus },
-                  { id: 'mybillbook', label: '⚡ myBillBook Cockpit (1:1 FloBiz)', icon: Sparkles },
+                  { id: 'mybillbook', label: 'NirQ Billing System', icon: Sparkles },
                   { id: 'settings', label: '⚙️ GST & Invoice Configuration', icon: Sliders }
                 ].map((st) => {
                   const Icon = st.icon;
