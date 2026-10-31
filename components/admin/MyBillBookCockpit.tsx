@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   UserCircle,
   Building2,
@@ -9,54 +9,34 @@ import {
   Users,
   BellRing,
   Briefcase,
-  Crown,
-  Gift,
   HelpCircle,
   CheckCircle2,
-  XCircle,
-  AlertCircle,
-  ExternalLink,
   Share2,
   Download,
-  Upload,
   Copy,
-  Eye,
-  EyeOff,
   Save,
-  RotateCcw,
-  Sparkles,
-  Zap,
-  Phone,
-  MessageSquare,
-  Search,
-  Check,
-  ChevronRight,
-  ShieldCheck,
   QrCode,
-  FileText,
-  DollarSign,
-  Clock,
-  Layers,
-  Sliders,
-  Award,
-  Star,
-  Info,
   Calendar,
   Send,
   Plus,
-  Trash2,
-  Edit2,
   X,
-  CreditCard,
-  FileCheck,
-  FileSpreadsheet,
   FileCode,
   Lock,
-  ArrowRight,
-  Maximize2,
   ZoomIn,
   ZoomOut,
-  Tag
+  Tag,
+  Clock,
+  ShieldCheck,
+  Check,
+  MessageSquare,
+  Search,
+  Sparkles,
+  Layers,
+  Sliders,
+  RotateCcw,
+  Key,
+  HardDrive,
+  Monitor
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { STORE_INFO } from '../../data/storeData';
@@ -69,8 +49,6 @@ export type SettingsTabId =
   | 'team'
   | 'reminders'
   | 'ca_sharing'
-  | 'pricing'
-  | 'refer_earn'
   | 'help_support';
 
 interface MyBillBookCockpitProps {
@@ -78,7 +56,7 @@ interface MyBillBookCockpitProps {
 }
 
 export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBookCockpitProps) {
-  const { products, invoices, showToast, siteSettings, updateSiteSettings } = useStore();
+  const { products, invoices, showToast } = useStore();
   const [activeTab, setActiveTab] = useState<SettingsTabId>(initialTab);
 
   // Active Company Context State
@@ -113,32 +91,18 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   });
 
   // =========================================================================
-  // SECTION 1: ACCOUNT PROFILE STATE
+  // SECTION 1: ACCOUNT & STORE ACCESS STATE
   // =========================================================================
   const [profileName, setProfileName] = useState('Anand Kumar (Store Admin)');
   const [profilePhone, setProfilePhone] = useState('+91 94709 90000');
   const [profileEmail, setProfileEmail] = useState('admin@lapiez.com');
-  const [referralInput, setReferralInput] = useState('');
-  const [appliedReferral, setAppliedReferral] = useState<string | null>(null);
+  const [adminPin, setAdminPin] = useState('8221');
+  const [autoPrintOnSave, setAutoPrintOnSave] = useState(true);
+  const [autoLogoutTimer, setAutoLogoutTimer] = useState('30_mins');
   const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
   const [suggestionRating, setSuggestionRating] = useState(5);
   const [suggestionCategory, setSuggestionCategory] = useState('Feature Request');
   const [suggestionText, setSuggestionText] = useState('');
-
-  const handleApplyReferral = () => {
-    if (!referralInput.trim()) {
-      showToast('Please enter a referral or coupon code');
-      return;
-    }
-    const code = referralInput.trim().toUpperCase();
-    if (['MYBILL500', 'FESTIVE15', 'LAPIEZ2026', 'PROMOTER50'].includes(code)) {
-      setAppliedReferral(code);
-      showToast(`Coupon "${code}" applied! Flat 15% discount unlocked on annual plans.`);
-    } else {
-      setAppliedReferral(code);
-      showToast(`Referral code "${code}" registered successfully!`);
-    }
-  };
 
   const handleSubmitSuggestion = (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +110,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
       showToast('Please enter your feedback description');
       return;
     }
-    showToast('Thank you! Your suggestion has been forwarded to the myBillBook product team. 🚀');
+    showToast('Thank you! Your suggestion has been saved. 🚀');
     setIsSuggestionModalOpen(false);
     setSuggestionText('');
   };
@@ -290,20 +254,18 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   // SECTION 3: INVOICE SETTINGS & LIVE PREVIEW
   // =========================================================================
   type InvoiceTheme =
+    | 'modern_teal'
+    | 'classic_blue'
+    | 'tally_gst'
+    | 'luxury'
+    | 'stylish_pastel'
     | 'navratri'
     | 'durga_puja'
     | 'dussehra'
     | 'dhanteras'
-    | 'diwali'
-    | 'luxury'
-    | 'stylish_pastel'
-    | 'tally_gst'
-    | 'classic_blue'
-    | 'modern_teal';
+    | 'diwali';
 
   const [selectedTheme, setSelectedTheme] = useState<InvoiceTheme>('modern_teal');
-  const [invoiceFont, setInvoiceFont] = useState<'sans' | 'roboto' | 'mono'>('sans');
-  const [invoiceHeaderLayout, setInvoiceHeaderLayout] = useState<'split' | 'centered' | 'compact'>('split');
   const [previewZoom, setPreviewZoom] = useState<number>(100);
 
   // Invoice Customizer Toggles
@@ -316,7 +278,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
 
   // Theme Preset Styles
   const themePresets: Record<InvoiceTheme, { name: string; category: string; primary: string; secondary: string; border: string; bg: string; badge: string }> = {
-    modern_teal: { name: 'Modern Teal', category: 'Corporate', primary: '#0D9488', secondary: '#14B8A6', border: '#CCFBF1', bg: '#F0FDFA', badge: 'Popular' },
+    modern_teal: { name: 'Modern Emerald', category: 'Corporate', primary: '#0D9488', secondary: '#14B8A6', border: '#CCFBF1', bg: '#F0FDFA', badge: 'Recommended' },
     classic_blue: { name: 'Classic Corporate', category: 'Corporate', primary: '#1E40AF', secondary: '#3B82F6', border: '#DBEAFE', bg: '#EFF6FF', badge: 'Standard' },
     tally_gst: { name: 'Advanced Tally Grid', category: 'Corporate', primary: '#1F2937', secondary: '#4B5563', border: '#E5E7EB', bg: '#F9FAFB', badge: 'Official' },
     luxury: { name: 'Luxury Dark & Gold', category: 'Corporate', primary: '#78350F', secondary: '#D97706', border: '#FEF3C7', bg: '#FFFBEB', badge: 'Premium' },
@@ -357,9 +319,6 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   const [barcodeLabelFormat, setBarcodeLabelFormat] = useState('a4_24');
   const [barcodeSelectedProduct, setBarcodeSelectedProduct] = useState(products[0]?.name || 'HP Pavilion 15 Laptop');
   const [barcodePriceTag, setBarcodePriceTag] = useState(products[0]?.price || '52,990');
-  const [barcodeCount, setBarcodeCount] = useState(24);
-  const [barcodeIncludeShop, setBarcodeIncludeShop] = useState(true);
-  const [barcodeIncludeMrp, setBarcodeIncludeMrp] = useState(true);
 
   // =========================================================================
   // SECTION 5: MANAGE USERS & RBAC
@@ -409,7 +368,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
     setIsAddStaffOpen(false);
     setNewStaffName('');
     setNewStaffPhone('');
-    showToast(`Staff member "${newMember.name}" invited successfully as ${newStaffRole.toUpperCase()}!`);
+    showToast(`Staff member "${newMember.name}" added successfully as ${newStaffRole.toUpperCase()}!`);
   };
 
   // Activity Log Stream
@@ -449,11 +408,10 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
     phone: '+91 94311 00223',
     email: 'agarwal.ca@gmail.com',
     firm: 'R.K. Agarwal & Associates, Ranchi',
-    period: 'Current Financial Year 2025-26',
   });
 
   const handleShareToCaWhatsApp = () => {
-    const text = `Namaste ${caDetails.name} Sahab,\n\nYeh ${activeCompany.legalName} ki accounting aur GST summary report hai:\n- GSTR-1 Sales Summary: ${invoices.length} invoices\n- GSTR-2B Input Tax Credit reconciliation ready\n- Trading, P&L & Balance Sheet\n- Current FY: ${currentFy}\n\nReports pack generated via myBillBook.\n\nRegards,\n${activeCompany.legalName}`;
+    const text = `Namaste ${caDetails.name} Sahab,\n\nYeh ${activeCompany.legalName} ki accounting aur GST summary report hai:\n- GSTR-1 Sales Summary: ${invoices.length} invoices\n- GSTR-2B Input Tax Credit reconciliation ready\n- Trading, P&L & Balance Sheet\n- Current FY: ${currentFy}\n\nReports pack generated via Lapiez Enterprise Engine.\n\nRegards,\n${activeCompany.legalName}`;
     const cleanPhone = caDetails.phone.replace(/\D/g, '');
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
     showToast('Direct WhatsApp message opened for CA Sahab!');
@@ -497,115 +455,9 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   };
 
   // =========================================================================
-  // SECTION 8: PLANS & PRICING
-  // =========================================================================
-  const [pricingCycle, setPricingCycle] = useState<'annual' | 'monthly'>('annual');
-  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
-  const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<string>('Pro Max');
-  const [selectedPlanAmount, setSelectedPlanAmount] = useState<string>('₹2');
-
-  const plansList = [
-    {
-      id: 'basic',
-      name: 'Basic (Free)',
-      monthlyPrice: '₹0',
-      annualPrice: '₹0',
-      period: 'Forever Free',
-      isCurrent: true,
-      features: [
-        'Single Counter Device',
-        'Standard GST Invoicing',
-        'Customer Khata Ledger',
-        'Standard A4 Bill Prints',
-        'Manual WhatsApp Sharing',
-      ]
-    },
-    {
-      id: 'plus',
-      name: 'Plus Plan',
-      monthlyPrice: '₹349/mo',
-      annualPrice: '₹291/mo',
-      period: 'billed annually (₹3,490/yr)',
-      badge: 'Best Value',
-      features: [
-        'Everything in Basic +',
-        '2 Staff Users RBAC',
-        '2" & 3" Thermal POS Printing',
-        'Dynamic UPI QR on Invoices',
-        'Barcode Label Sheet Generator',
-      ]
-    },
-    {
-      id: 'pro',
-      name: 'Pro Plan',
-      monthlyPrice: '₹420/mo',
-      annualPrice: '₹333/mo',
-      period: 'billed annually (₹3,999/yr)',
-      badge: 'Most Popular',
-      popular: true,
-      features: [
-        'Everything in Plus +',
-        '5 Staff Logins with Salesman Daybook',
-        'Automated WhatsApp तगादा Reminders',
-        'CA Reports 1-Click Sharing Pack',
-        'All Festival & Luxury Invoice Themes',
-        'Tally Prime & ERP 9 XML Export',
-      ]
-    },
-    {
-      id: 'pro_max',
-      name: 'Pro Max',
-      monthlyPrice: '₹699/mo',
-      annualPrice: '₹570/mo',
-      period: 'billed annually (₹6,840/yr)',
-      badge: 'All Access',
-      features: [
-        'Everything in Pro +',
-        'Unlimited Staff & Multi-Godown',
-        'NIC e-Invoicing & E-Way Bill Auto IRN',
-        'Multi-Business Switcher (Up to 5 Shops)',
-        'Priority 24/7 WhatsApp Hotline',
-        'Custom Domain & Online Catalog Store',
-      ]
-    }
-  ];
-
-  const handleStartTrial = () => {
-    setSelectedPlanForCheckout('7-Day Pro Max All Access Trial');
-    setSelectedPlanAmount('₹2');
-    setIsCheckoutModalOpen(true);
-  };
-
-  const handleConfirmCheckout = () => {
-    showToast(`Payment of ${selectedPlanAmount} successful! Welcome to ${selectedPlanForCheckout}. All commercial features unlocked! 🎉`);
-    setIsCheckoutModalOpen(false);
-  };
-
-  // =========================================================================
-  // SECTION 9: REFER & EARN
-  // =========================================================================
-  const [referTab, setReferTab] = useState<'signed_up' | 'purchased'>('purchased');
-  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
-  const [withdrawUpi, setWithdrawUpi] = useState('lappy.solution@ybl');
-  const referralLink = `https://lapiez.com/signup?ref=LAPIEZ-501`;
-
-  const copyReferralLink = () => {
-    navigator.clipboard.writeText(referralLink);
-    showToast('Referral link copied to clipboard! Share on WhatsApp to earn ₹501.');
-  };
-
-  const shareReferralWhatsApp = () => {
-    const text = `Hey trader friend! Start using myBillBook for GST billing, thermal printing, and auto WhatsApp payment reminders. Use my referral link to get Flat 15% OFF on any annual plan:\n${referralLink}`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-  };
-
-  // =========================================================================
-  // SECTION 10: HELP & SUPPORT
+  // SECTION 8: HELP & SUPPORT
   // =========================================================================
   const [faqSearch, setFaqSearch] = useState('');
-  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
-  const [demoPhone, setDemoPhone] = useState('');
-  const [demoName, setDemoName] = useState('');
 
   const faqs = [
     { q: 'How do I connect my 2-inch or 3-inch Bluetooth thermal printer?', a: 'Under Print Settings > Thermal POS, select either 2-inch (58mm) or 3-inch (80mm). Any USB or Bluetooth ESC/POS printer works plug-and-play without special drivers.' },
@@ -623,23 +475,23 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
     <div className="space-y-6 text-[#1E293B]">
       
       {/* 1. TOP BRAND HEADER & COMPANY CONTEXT BAR */}
-      <div className="bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0A1633] text-white rounded-2xl p-4 sm:p-6 shadow-md border border-slate-700/50">
+      <div className="bg-gradient-to-r from-[#0B132B] via-[#1C2541] to-[#0A1633] text-white rounded-2xl p-4 sm:p-6 shadow-md border border-slate-700/50">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-400 font-black text-xl shadow-inner">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-300 font-black text-2xl shadow-inner">
               ⚡
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl font-black tracking-tight text-white">
-                  myBillBook Enterprise Cockpit
+                  myBillBook Enterprise Billing Engine
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                  1:1 FloBiz Commercial Engine
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  Full Store Control • All Modules Unlocked
                 </span>
               </div>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Active Business: <span className="font-bold text-amber-300">{activeCompany.legalName}</span> ({activeCompany.city}, {activeCompany.state}) • GSTIN: <span className="font-mono text-teal-300">{activeCompany.gstin}</span>
+              <p className="text-xs text-slate-300 mt-1">
+                Active Store: <span className="font-bold text-amber-300">{activeCompany.legalName}</span> ({activeCompany.city}, {activeCompany.state}) • GSTIN: <span className="font-mono text-teal-300">{activeCompany.gstin}</span>
               </p>
             </div>
           </div>
@@ -670,11 +522,11 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
             </button>
 
             <button
-              onClick={handleStartTrial}
-              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm animate-pulse"
+              onClick={() => setActiveTab('invoice')}
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
-              <Crown className="w-3.5 h-3.5" />
-              <span>₹2 All-Access Trial</span>
+              <Plus className="w-3.5 h-3.5" />
+              <span>Counter Bill</span>
             </button>
           </div>
         </div>
@@ -689,25 +541,23 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
             
             <div className="p-3.5 border-b border-gray-100 bg-gray-50/70 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-gray-900 block">Settings Workflows</span>
-                <span className="text-[10px] text-gray-500 block">All 9 Commercial Sections</span>
+                <span className="text-xs font-bold text-gray-900 block">Configuration Workflows</span>
+                <span className="text-[10px] text-gray-500 block">Enterprise Management Modules</span>
               </div>
               <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200">
-                10 Active Modules
+                8 Active
               </span>
             </div>
 
             <nav className="p-2 space-y-1">
               {[
-                { id: 'account', label: 'Account Profile', sublabel: 'Profile & subscription', icon: UserCircle },
+                { id: 'account', label: 'Account & Security', sublabel: 'Admin credentials & POS lock', icon: UserCircle },
                 { id: 'business', label: 'Manage Business', sublabel: 'Branding, GST, e-Invoice & Tally', icon: Building2 },
                 { id: 'invoice', label: 'Invoice Settings', sublabel: 'Live preview, festival themes', icon: Paintbrush, badge: 'Live Preview', badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-                { id: 'thermal_print', label: 'Print Settings', sublabel: '2"/3" Thermal POS & Barcode', icon: Printer, badge: 'New', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-                { id: 'team', label: 'Manage Users & RBAC', sublabel: 'Salesman daybook & tracker', icon: Users },
-                { id: 'reminders', label: 'Payment Reminders', sublabel: 'WhatsApp auto तगादा engine', icon: BellRing, badge: 'WhatsApp', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-                { id: 'ca_sharing', label: 'CA Reports Sharing', sublabel: 'GSTR-1, 2B, P&L & Daybook', icon: Briefcase },
-                { id: 'pricing', label: 'Plans & Pricing', sublabel: 'Comparison & ₹2 trial', icon: Crown, badge: '₹2 Offer', badgeColor: 'bg-amber-50 text-amber-700 border-amber-200' },
-                { id: 'refer_earn', label: 'Refer & Earn', sublabel: 'Earn ₹501 per referral', icon: Gift, badge: '₹501', badgeColor: 'bg-rose-50 text-rose-700 border-rose-200' },
+                { id: 'thermal_print', label: 'Print Settings', sublabel: '2"/3" Thermal POS & Barcodes', icon: Printer, badge: 'POS Ready', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                { id: 'team', label: 'Manage Users & RBAC', sublabel: 'Salesman daybook & tracker', icon: Users, badge: 'Margin Lock', badgeColor: 'bg-amber-50 text-amber-700 border-amber-200' },
+                { id: 'reminders', label: 'Payment Reminders', sublabel: 'WhatsApp auto तगादा engine', icon: BellRing, badge: 'Auto Sync', badgeColor: 'bg-teal-50 text-teal-700 border-teal-200' },
+                { id: 'ca_sharing', label: 'CA Reports Sharing', sublabel: 'GSTR-1, 2B, P&L & Daybook', icon: Briefcase, badge: 'GST Ready', badgeColor: 'bg-blue-50 text-blue-700 border-blue-200' },
                 { id: 'help_support', label: 'Help & Support', sublabel: 'WhatsApp hotline & tutorials', icon: HelpCircle },
               ].map((item) => {
                 const Icon = item.icon;
@@ -748,22 +598,16 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
               })}
             </nav>
 
-            {/* UPGRADE PROMPT FOOTER */}
-            <div className="p-3 m-2 rounded-xl bg-gradient-to-br from-teal-50 via-emerald-50 to-white border border-teal-200">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-bold text-gray-900 flex items-center gap-1">
-                  <Crown className="w-3.5 h-3.5 text-amber-500" />
-                  Basic (Free) Plan
+            {/* LIVE STORE ENGINE STATUS WIDGET */}
+            <div className="p-3.5 m-2 rounded-xl bg-gradient-to-br from-emerald-50 via-teal-50 to-white border border-emerald-200">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="size-2 rounded-full bg-emerald-600 animate-ping" />
+                <span className="text-xs font-black text-emerald-900">
+                  Billing Engine Active
                 </span>
-                <button
-                  onClick={() => setActiveTab('pricing')}
-                  className="text-[11px] font-black text-teal-700 hover:text-teal-900 hover:underline cursor-pointer"
-                >
-                  Upgrade →
-                </button>
               </div>
               <p className="text-[10px] text-gray-600 leading-tight">
-                Unlock multi-godown stock, e-invoicing & automated WhatsApp recovery.
+                CBIC Rule 46 Compliant • Thermal 58/80mm ESC/POS online • Staff security shield engaged.
               </p>
             </div>
           </div>
@@ -773,7 +617,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
         <main className="flex-1 min-w-0 w-full">
           
           {/* =============================================================== */}
-          {/* 1. ACCOUNT SECTION                                             */}
+          {/* 1. ACCOUNT & SECURITY SECTION                                   */}
           {/* =============================================================== */}
           {activeTab === 'account' && (
             <div className="space-y-6">
@@ -788,11 +632,11 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                       <div className="flex items-center gap-2">
                         <h3 className="text-lg font-black text-gray-900">{profileName}</h3>
                         <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verified
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Authorized Admin
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Role: <span className="font-bold text-gray-800">Primary Business Owner / Administrator</span>
+                        Permission Level: <span className="font-bold text-gray-800">Master Store Controller (Full Access)</span>
                       </p>
                     </div>
                   </div>
@@ -809,7 +653,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                 {/* Profile Fields */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">Full Name</label>
+                    <label className="text-xs font-bold text-gray-700">Administrator Full Name</label>
                     <input
                       type="text"
                       value={profileName}
@@ -819,7 +663,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">Phone Number (OTP Verified)</label>
+                    <label className="text-xs font-bold text-gray-700">Phone Number (OTP & SMS Alerts)</label>
                     <div className="relative">
                       <input
                         type="text"
@@ -828,13 +672,13 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                         className="w-full h-10 pl-3 pr-20 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-teal-600 font-mono"
                       />
                       <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        Active
+                        Verified
                       </span>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">Email Address</label>
+                    <label className="text-xs font-bold text-gray-700">Admin Email Address</label>
                     <input
                       type="email"
                       value={profileEmail}
@@ -844,98 +688,104 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">Security / 2FA Status</label>
-                    <div className="h-10 px-3 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between">
-                      <span className="text-xs text-gray-600 flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-emerald-600" /> Phone OTP Authentication
+                    <label className="text-xs font-bold text-gray-700">Quick POS Lock PIN (4 Digits)</label>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        maxLength={4}
+                        value={adminPin}
+                        onChange={(e) => setAdminPin(e.target.value)}
+                        className="w-full h-10 pl-3 pr-16 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-teal-600 font-mono font-bold tracking-widest"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-medium">
+                        PIN Set
                       </span>
-                      <span className="text-[10px] font-bold text-teal-700">Enabled</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Plan Status Card */}
-                <div className="bg-gradient-to-r from-teal-50 via-emerald-50 to-teal-100/50 rounded-2xl p-4 sm:p-5 border border-teal-200">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-extrabold uppercase tracking-wider text-teal-800">
-                          Current Subscription Status
-                        </span>
-                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-teal-600 text-white">
-                          Basic (Forever Free)
-                        </span>
+                {/* Counter POS Operational Preferences */}
+                <div className="rounded-2xl border border-gray-200 p-4 sm:p-5 bg-gray-50/50 space-y-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-gray-900 block">
+                    Counter POS Operational Preferences
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-200">
+                      <div>
+                        <span className="text-xs font-bold text-gray-800 block">Auto-Print Receipt upon Save</span>
+                        <span className="text-[10px] text-gray-500">Trigger printer dialog immediately on cash checkout</span>
                       </div>
-                      <p className="text-xs text-gray-700 mt-1">
-                        Enjoying unlimited invoices & POS counter billing. Upgrade to unlock multi-godowns & WhatsApp automated reminders.
-                      </p>
+                      <input
+                        type="checkbox"
+                        checked={autoPrintOnSave}
+                        onChange={(e) => setAutoPrintOnSave(e.target.checked)}
+                        className="size-4 accent-teal-600 rounded cursor-pointer"
+                      />
                     </div>
 
-                    <button
-                      onClick={() => setActiveTab('pricing')}
-                      className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-black transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap self-start sm:self-auto"
-                    >
-                      <Crown className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Upgrade Plan</span>
-                    </button>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-teal-200/60">
-                    {['Unlimited GST Invoices', 'Counter Thermal POS', 'Customer Khata Ledger', 'Staff RBAC Access', 'GST Audit Pack'].map((chip, idx) => (
-                      <span key={idx} className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white/80 text-teal-900 border border-teal-300/60 flex items-center gap-1">
-                        <Check className="w-3 h-3 text-teal-600" /> {chip}
-                      </span>
-                    ))}
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-200">
+                      <div>
+                        <span className="text-xs font-bold text-gray-800 block">POS Terminal Inactivity Lock</span>
+                        <span className="text-[10px] text-gray-500">Require PIN when cash counter is idle</span>
+                      </div>
+                      <select
+                        value={autoLogoutTimer}
+                        onChange={(e) => setAutoLogoutTimer(e.target.value)}
+                        className="text-xs font-bold border border-gray-200 rounded-lg p-1 bg-gray-50 focus:outline-none"
+                      >
+                        <option value="15_mins">15 Mins</option>
+                        <option value="30_mins">30 Mins</option>
+                        <option value="60_mins">1 Hour</option>
+                        <option value="never">Never</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
-                {/* Referral Code Apply Card */}
-                <div className="rounded-2xl border border-gray-200 p-4 bg-gray-50/50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                        <Tag className="w-3.5 h-3.5 text-amber-600" />
-                        Have a Referral / Partner Promo Code?
+                {/* Active Sessions & Connected Devices */}
+                <div className="rounded-2xl border border-gray-200 p-4 bg-gray-50/50 space-y-2.5">
+                  <span className="text-xs font-black uppercase tracking-wider text-gray-900 block">
+                    Connected Terminals & Active Hardware
+                  </span>
+
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-gray-200">
+                      <div className="flex items-center gap-2.5">
+                        <Monitor className="w-4 h-4 text-teal-600" />
+                        <div>
+                          <span className="font-bold text-gray-900 block">Admin Master Console (Current Session)</span>
+                          <span className="text-[10px] text-gray-400 font-mono">Chrome on Windows 11 • IP: 103.211.54.10</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Active Now
                       </span>
-                      <span className="text-[11px] text-gray-500 block">
-                        Get instant discounts on annual Pro and Pro Max plans. (Try: <span className="font-mono font-bold text-teal-700">MYBILL500</span>)
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-gray-200">
+                      <div className="flex items-center gap-2.5">
+                        <Printer className="w-4 h-4 text-indigo-600" />
+                        <div>
+                          <span className="font-bold text-gray-900 block">Counter POS 1 - Thermal Printer 80mm</span>
+                          <span className="text-[10px] text-gray-400 font-mono">USB Hardware Link • Garhwa Showroom</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                        Ready
                       </span>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 max-w-md">
-                    <input
-                      type="text"
-                      placeholder="ENTER REFERRAL CODE"
-                      value={referralInput}
-                      onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
-                      className="flex-1 h-9 px-3 text-xs bg-white border border-gray-200 rounded-xl font-mono uppercase focus:outline-none focus:border-teal-600"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleApplyReferral}
-                      className="px-4 h-9 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      Apply
-                    </button>
-                  </div>
-
-                  {appliedReferral && (
-                    <div className="text-[11px] font-bold text-emerald-700 flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 w-fit">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      Promo Code "{appliedReferral}" is active! Flat 15% discount will be applied during subscription.
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex justify-end pt-2">
                   <button
                     type="button"
-                    onClick={() => showToast('Account profile settings saved successfully!')}
+                    onClick={() => showToast('Account & security settings saved successfully!')}
                     className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    <span>Save Account Profile</span>
+                    <span>Save Account & Security</span>
                   </button>
                 </div>
               </div>
@@ -1108,8 +958,8 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                       <div className="flex items-center gap-2">
                         <span className="size-2 rounded-full bg-teal-600 animate-ping" />
                         <div>
-                          <span className="text-xs font-bold text-gray-900">Enable e-Invoicing [New - NIC IRP]</span>
-                          <p className="text-[11px] text-gray-500">Auto generate IRN (Invoice Reference Number) & QR Code on B2B invoices &gt; ₹5 Cr</p>
+                          <span className="text-xs font-bold text-gray-900">Enable e-Invoicing [NIC IRP]</span>
+                          <p className="text-[11px] text-gray-500">Auto generate IRN (Invoice Reference Number) & QR Code on B2B invoices</p>
                         </div>
                       </div>
                       <input
@@ -2301,201 +2151,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
           )}
 
           {/* =============================================================== */}
-          {/* 8. PLANS & PRICING SECTION                                      */}
-          {/* =============================================================== */}
-          {activeTab === 'pricing' && (
-            <div className="space-y-6">
-              
-              {/* Special Trial Banner */}
-              <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-slate-950 rounded-2xl p-4 sm:p-5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <span className="text-xs font-black uppercase tracking-wider bg-slate-950/20 px-2 py-0.5 rounded text-white inline-block">
-                    🔥 Limited Special Deal
-                  </span>
-                  <h3 className="text-lg font-black mt-1">7-Day All-Access Commercial Trial for just ₹2</h3>
-                  <p className="text-xs font-medium text-slate-900">
-                    Experience Pro Max: multi-godown stock transfers, automated WhatsApp तगादा & e-invoicing without restrictions.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleStartTrial}
-                  className="px-5 py-2.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-white text-xs font-black transition-colors cursor-pointer shadow-md whitespace-nowrap self-start sm:self-auto"
-                >
-                  Activate ₹2 Trial →
-                </button>
-              </div>
-
-              {/* Billing Cycle Switch */}
-              <div className="flex justify-center">
-                <div className="inline-flex rounded-xl border border-gray-200 bg-white p-1 shadow-2xs">
-                  <button
-                    type="button"
-                    onClick={() => setPricingCycle('annual')}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                      pricingCycle === 'annual' ? 'bg-teal-600 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Annual Billing (Save 35%)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPricingCycle('monthly')}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                      pricingCycle === 'monthly' ? 'bg-teal-600 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Monthly Billing
-                  </button>
-                </div>
-              </div>
-
-              {/* Plan Comparison Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {plansList.map((plan) => (
-                  <div
-                    key={plan.id}
-                    className={`bg-white rounded-2xl p-5 border flex flex-col justify-between transition-all relative ${
-                      plan.popular
-                        ? 'border-teal-600 shadow-md ring-2 ring-teal-600/20'
-                        : 'border-gray-200 shadow-2xs hover:shadow-xs'
-                    }`}
-                  >
-                    {plan.badge && (
-                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-600 text-white shadow-xs">
-                        {plan.badge}
-                      </span>
-                    )}
-
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-base font-black text-gray-900">{plan.name}</h4>
-                        <div className="mt-2 flex items-baseline gap-1">
-                          <span className="text-2xl font-black text-gray-900">
-                            {pricingCycle === 'annual' ? plan.annualPrice : plan.monthlyPrice}
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-gray-500 block">{plan.period}</span>
-                      </div>
-
-                      <div className="space-y-2 pt-3 border-t border-gray-100 text-xs">
-                        {plan.features.map((feat, idx) => (
-                          <div key={idx} className="flex items-start gap-2 text-gray-700">
-                            <Check className="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5" />
-                            <span className="text-[11px] leading-tight">{feat}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="pt-5 mt-4 border-t border-gray-100">
-                      {plan.isCurrent ? (
-                        <div className="py-2 text-center text-xs font-bold text-gray-500 bg-gray-100 rounded-xl">
-                          Current Free Plan
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedPlanForCheckout(plan.name);
-                            setSelectedPlanAmount(pricingCycle === 'annual' ? plan.annualPrice : plan.monthlyPrice);
-                            setIsCheckoutModalOpen(true);
-                          }}
-                          className={`w-full py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5 ${
-                            plan.popular
-                              ? 'bg-teal-600 hover:bg-teal-700 text-white'
-                              : 'bg-slate-900 hover:bg-slate-800 text-white'
-                          }`}
-                        >
-                          <Crown className="w-3.5 h-3.5 text-amber-300" />
-                          <span>Choose {plan.name}</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* =============================================================== */}
-          {/* 9. REFER & EARN SECTION                                         */}
-          {/* =============================================================== */}
-          {activeTab === 'refer_earn' && (
-            <div className="space-y-6">
-              
-              {/* Hero Referral Card */}
-              <div className="bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 text-white rounded-2xl p-5 sm:p-6 shadow-md">
-                <div className="max-w-xl space-y-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-rose-100 border border-white/30 inline-block">
-                    🎁 Trader Referral Program
-                  </span>
-                  <h3 className="text-xl sm:text-2xl font-black">Refer Business Friends & Earn ₹501 Every Time!</h3>
-                  <p className="text-xs text-rose-100">
-                    Share your unique referral link with retailer and wholesaler friends. When they subscribe to an annual plan, you get ₹501 directly in your bank account, and they get Flat 15% OFF!
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-white/20">
-                  <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl border border-white/20 font-mono text-xs">
-                    <span className="text-rose-200">Your Link:</span>
-                    <span className="font-bold text-white truncate max-w-xs">{referralLink}</span>
-                  </div>
-
-                  <button
-                    onClick={copyReferralLink}
-                    className="px-4 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Link</span>
-                  </button>
-
-                  <button
-                    onClick={shareReferralWhatsApp}
-                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Share on WhatsApp</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Referral Wallet Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-2xs">
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Total Friends Invited</span>
-                  <div className="text-2xl font-black text-gray-900 mt-1">18 Traders</div>
-                  <span className="text-[10px] text-teal-600 font-bold block mt-0.5">Across Garhwa & Palamu</span>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-2xs">
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Plans Purchased</span>
-                  <div className="text-2xl font-black text-emerald-600 mt-1">7 Subscriptions</div>
-                  <span className="text-[10px] text-gray-500 font-medium block mt-0.5">₹501 per referral</span>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-2xs">
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Total Reward Earned</span>
-                  <div className="text-2xl font-black text-rose-600 mt-1">₹3,507</div>
-                  <span className="text-[10px] text-gray-500 font-medium block mt-0.5">Lifetime earnings</span>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-2xs">
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Available to Withdraw</span>
-                  <div className="text-2xl font-black text-teal-700 mt-1">₹1,503</div>
-                  <button
-                    onClick={() => setIsWithdrawModalOpen(true)}
-                    className="text-[10px] text-teal-700 font-bold hover:underline block mt-0.5 cursor-pointer"
-                  >
-                    Withdraw to UPI →
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* =============================================================== */}
-          {/* 10. HELP & SUPPORT SECTION                                      */}
+          {/* 8. HELP & SUPPORT SECTION                                       */}
           {/* =============================================================== */}
           {activeTab === 'help_support' && (
             <div className="space-y-6">
@@ -2504,8 +2160,8 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
               <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 shadow-2xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-base font-black text-gray-900">myBillBook Help Center & Live Desk</h3>
-                    <p className="text-xs text-gray-500">Quick video tutorials, WhatsApp customer hotline, and instant FAQs.</p>
+                    <h3 className="text-base font-black text-gray-900">Enterprise Help Desk & Priority Support</h3>
+                    <p className="text-xs text-gray-500">Quick video tutorials, WhatsApp support hotline, and instant FAQs.</p>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -2804,63 +2460,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
         </div>
       )}
 
-      {/* 5. Checkout / Trial Modal */}
-      {isCheckoutModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-gray-200 max-w-md w-full p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <Crown className="w-5 h-5 text-amber-500" />
-                <h3 className="text-base font-black text-gray-900">Subscription Checkout</h3>
-              </div>
-              <button onClick={() => setIsCheckoutModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-4 rounded-xl bg-teal-50 border border-teal-200 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-teal-900">{selectedPlanForCheckout}</span>
-                <span className="text-lg font-black text-teal-900 font-mono">{selectedPlanAmount}</span>
-              </div>
-              <p className="text-[11px] text-teal-700 leading-tight">
-                Unlock instant thermal printing, staff roles, and automated WhatsApp payment recovery.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-700">Choose Payment Method</label>
-              <div className="space-y-1.5">
-                {['UPI / QR (Instant)', 'Net Banking (All Indian Banks)', 'Debit / Credit Card'].map((pm, idx) => (
-                  <label key={idx} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 cursor-pointer text-xs">
-                    <input type="radio" name="payMethod" defaultChecked={idx === 0} className="accent-teal-600" />
-                    <span className="font-semibold text-gray-800">{pm}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={() => setIsCheckoutModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmCheckout}
-                className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-black transition-colors cursor-pointer shadow-xs"
-              >
-                Pay {selectedPlanAmount} & Activate
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. Share Suggestion Modal */}
+      {/* 5. Share Suggestion Modal */}
       {isSuggestionModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-gray-200 max-w-md w-full p-5 shadow-2xl space-y-4">
@@ -2906,7 +2506,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                 <label className="text-xs font-bold text-gray-700">Your Feedback</label>
                 <textarea
                   rows={4}
-                  placeholder="Tell us what feature you would like to see in myBillBook..."
+                  placeholder="Tell us what feature you would like to see in your billing engine..."
                   value={suggestionText}
                   onChange={(e) => setSuggestionText(e.target.value)}
                   className="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-teal-600"
