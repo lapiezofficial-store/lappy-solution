@@ -25,6 +25,7 @@ import { optimizeImageForUpload } from '../../lib/imageOptimizer';
 import RidersManager from '../../components/admin/RidersManager';
 import OrderRiderAssignModal from '../../components/admin/OrderRiderAssignModal';
 import WarrantyManager from '../../components/admin/WarrantyManager';
+import MyBillBookCockpit from '../../components/admin/MyBillBookCockpit';
 
 export default function AdminPage() {
   const { 
@@ -118,6 +119,7 @@ export default function AdminPage() {
     | 'brands' 
     | 'scraper' 
     | 'billing' 
+    | 'mybillbook'
     | 'bank' 
     | 'coupons' 
     | 'banners' 
@@ -137,7 +139,7 @@ export default function AdminPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AdminTab | null;
-      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads', 'riders', 'warranty'].includes(tabParam)) {
+      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'mybillbook', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads', 'riders', 'warranty'].includes(tabParam)) {
         return tabParam;
       }
     }
@@ -257,7 +259,7 @@ export default function AdminPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads', 'riders', 'warranty'].includes(tabParam)) {
+      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'mybillbook', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads', 'riders', 'warranty'].includes(tabParam)) {
         setActiveTab(tabParam as any);
       }
     }
@@ -599,7 +601,7 @@ export default function AdminPage() {
   };
 
   // Invoicing & Billing Sub-Tab States
-  const [billingSubTab, setBillingSubTab] = useState<'invoices' | 'create' | 'settings'>('invoices');
+  const [billingSubTab, setBillingSubTab] = useState<'invoices' | 'create' | 'settings' | 'mybillbook'>('invoices');
   const [billingSearch, setBillingSearch] = useState('');
   const [billingFilter, setBillingFilter] = useState<'all' | 'paid' | 'pending'>('all');
 
@@ -3165,6 +3167,21 @@ export default function AdminPage() {
                   </button>
 
                   <button
+                    onClick={() => { setActiveTab('mybillbook'); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${
+                      activeTab === 'mybillbook' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-teal-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="w-4 h-4 text-teal-400" />
+                      <span>⚡ myBillBook Cockpit</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                      1:1 FloBiz
+                    </span>
+                  </button>
+
+                  <button
                     onClick={() => { setActiveTab('inventory'); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${
                       activeTab === 'inventory' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
@@ -3461,6 +3478,26 @@ export default function AdminPage() {
                 {!isWpSidebarCollapsed && invoices.length > 0 && (
                   <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#3c434a] text-white">
                     {invoices.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setActiveTab('mybillbook')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'mybillbook'
+                    ? 'bg-teal-600 text-white shadow-xs'
+                    : 'text-teal-300 hover:bg-[#135e96] hover:text-white'
+                }`}
+                title="myBillBook 1:1 FloBiz Enterprise Cockpit"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Sparkles className="w-4 h-4 flex-shrink-0 text-teal-400" />
+                  {!isWpSidebarCollapsed && <span>myBillBook 1:1</span>}
+                </div>
+                {!isWpSidebarCollapsed && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                    FloBiz
                   </span>
                 )}
               </button>
@@ -3797,6 +3834,7 @@ export default function AdminPage() {
                   {activeTab === 'scraper' && 'Live Web Scraper & Crawler Engine'}
                   {activeTab === 'orders' && `Orders & UTR Verification (${orders.length})`}
                   {activeTab === 'billing' && `GST Invoices & Billing (${invoices.length})`}
+                  {activeTab === 'mybillbook' && '⚡ myBillBook Enterprise Cockpit (1:1 FloBiz Commercial Engine)'}
                   {activeTab === 'bank' && 'Official Bank Details & Settlement'}
                   {activeTab === 'coupons' && `Coupons & Discounts (${coupons.length})`}
                   {activeTab === 'leads' && `Customer Quotes & Inquiries (${leads.length})`}
@@ -4393,6 +4431,7 @@ export default function AdminPage() {
                 {[
                   { id: 'invoices', label: `All Invoices (${invoices.length})`, icon: FileText },
                   { id: 'create', label: '+ Counter Billing / New Invoice', icon: Plus },
+                  { id: 'mybillbook', label: '⚡ myBillBook Cockpit (1:1 FloBiz)', icon: Sparkles },
                   { id: 'settings', label: '⚙️ GST & Invoice Configuration', icon: Sliders }
                 ].map((st) => {
                   const Icon = st.icon;
@@ -5170,6 +5209,13 @@ export default function AdminPage() {
                     <span>Save Invoice Settings</span>
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* 5. SUBTAB: MYBILLBOOK 1:1 ENTERPRISE COCKPIT */}
+            {billingSubTab === 'mybillbook' && (
+              <div className="pt-2">
+                <MyBillBookCockpit />
               </div>
             )}
 
@@ -10128,6 +10174,13 @@ export default function AdminPage() {
         {activeTab === 'warranty' && (
           <div className="space-y-6">
             <WarrantyManager />
+          </div>
+        )}
+
+        {/* myBillBook Commercial Cockpit (1:1 FloBiz) Tab */}
+        {activeTab === 'mybillbook' && (
+          <div className="space-y-6">
+            <MyBillBookCockpit />
           </div>
         )}
 
