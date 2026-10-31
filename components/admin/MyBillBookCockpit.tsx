@@ -328,6 +328,407 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   const [barcodePriceTag, setBarcodePriceTag] = useState(products[0]?.price || '52,990');
 
   // =========================================================================
+  // ISOLATED PRINT ENGINE (Bypasses Admin Dashboard Chrome)
+  // =========================================================================
+  const printIsolatedDocument = (title: string, bodyHtml: string, styles: string) => {
+    try {
+      const existing = document.getElementById('nirq-isolated-print-frame');
+      if (existing) existing.remove();
+
+      const iframe = document.createElement('iframe');
+      iframe.id = 'nirq-isolated-print-frame';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.style.visibility = 'hidden';
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow?.document;
+      if (!doc) {
+        showToast('Printing initialized');
+        return;
+      }
+
+      doc.open();
+      doc.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${title}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #ffffff !important; color: #000000 !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    ${styles}
+  </style>
+</head>
+<body>
+  ${bodyHtml}
+</body>
+</html>`);
+      doc.close();
+
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        setTimeout(() => {
+          iframe.remove();
+        }, 4000);
+      }, 400);
+    } catch {
+      window.print();
+    }
+  };
+
+  // 1. Barcode Labels Sheet Printer
+  const handlePrintBarcodeLabels = () => {
+    const isThermal = barcodeLabelFormat === 'thermal_roll';
+    const is40 = barcodeLabelFormat === 'a4_40';
+    const count = isThermal ? 16 : (is40 ? 40 : 24);
+
+    const generateBarsSvg = (idx: number) => {
+      const barPattern = [2, 1, 1, 2, 3, 1, 1, 3, 2, 1, 2, 1, 1, 1, 3, 2, 1, 2, 1, 3, 1, 1, 2, 2, 1, 1, 3, 1, 2, 1, 2, 1, 1, 3, 1, 2, 2, 1, 1, 2, 1, 3, 1, 1, 2, 3, 1, 1, 1, 2, 1, 3, 2, 1];
+      let x = 4;
+      const rects = barPattern.map((w, i) => {
+        const rect = (i + idx) % 2 === 0 ? `<rect x="${x}" y="0" width="${w}" height="28" fill="#000" />` : '';
+        x += w;
+        return rect;
+      }).join('');
+      return `<svg viewBox="0 0 ${x + 4} 28" preserveAspectRatio="none" style="width: 100%; height: 22px; display: block;">${rects}</svg>`;
+    };
+
+    let labelsHtml = '';
+    for (let i = 0; i < count; i++) {
+      const skuCode = `LPZ-${1000 + i}`;
+      labelsHtml += `
+        <div class="barcode-card">
+          <div class="store-name">LAPIEZ IT SHOWROOM</div>
+          <div class="item-title">${barcodeSelectedProduct}</div>
+          <div class="svg-wrap">${generateBarsSvg(i)}</div>
+          <div class="sku-code">${skuCode}</div>
+          <div class="mrp-row">
+            <span class="mrp-val">MRP: ₹${barcodePriceTag}</span>
+            <span class="mrp-tax">(Incl. All Taxes)</span>
+          </div>
+        </div>
+      `;
+    }
+
+    let pageStyles = '';
+    if (isThermal) {
+      pageStyles = `
+        @page { size: 50mm 25mm; margin: 1mm; }
+        body { padding: 0; }
+        .barcode-card {
+          width: 48mm;
+          height: 23mm;
+          padding: 1.5mm;
+          border: 1px dashed #94a3b8;
+          border-radius: 3px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: space-between;
+          text-align: center;
+          page-break-after: always;
+          break-after: page;
+        }
+        .store-name { font-size: 6pt; font-weight: 800; letter-spacing: 0.5px; color: #0f172a; text-transform: uppercase; }
+        .item-title { font-size: 6.5pt; font-weight: 700; max-height: 1.8em; overflow: hidden; color: #1e293b; line-height: 1; }
+        .svg-wrap { width: 85%; height: 16px; margin: 0.5mm 0; }
+        .sku-code { font-family: monospace; font-size: 5.5pt; letter-spacing: 1.5px; color: #334155; }
+        .mrp-row { font-size: 7.5pt; font-weight: 900; color: #047857; display: flex; align-items: center; justify-content: center; gap: 3px; }
+        .mrp-tax { font-size: 4.5pt; font-weight: 500; color: #64748b; }
+      `;
+    } else if (is40) {
+      pageStyles = `
+        @page { size: A4 portrait; margin: 8mm 6mm; }
+        body { padding: 0; }
+        .grid-container {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          grid-auto-rows: 26.5mm;
+          gap: 1.5mm 2mm;
+          width: 100%;
+        }
+        .barcode-card {
+          border: 1px dashed #cbd5e1;
+          border-radius: 3px;
+          padding: 1.5mm;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: space-between;
+          text-align: center;
+          page-break-inside: avoid;
+          break-inside: avoid;
+          overflow: hidden;
+        }
+        .store-name { font-size: 5.5pt; font-weight: 800; letter-spacing: 0.5px; color: #0f172a; text-transform: uppercase; }
+        .item-title { font-size: 6pt; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: #1e293b; }
+        .svg-wrap { width: 85%; height: 16px; }
+        .sku-code { font-family: monospace; font-size: 5pt; letter-spacing: 1.5px; color: #334155; }
+        .mrp-row { font-size: 7pt; font-weight: 900; color: #047857; display: flex; align-items: center; justify-content: center; gap: 3px; }
+        .mrp-tax { font-size: 4.5pt; font-weight: 500; color: #64748b; }
+      `;
+    } else {
+      // Standard 24-up A4 sheet (3 x 8)
+      pageStyles = `
+        @page { size: A4 portrait; margin: 9mm 7mm; }
+        body { padding: 0; }
+        .grid-container {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          grid-auto-rows: 34mm;
+          gap: 2mm 3mm;
+          width: 100%;
+        }
+        .barcode-card {
+          border: 1px dashed #cbd5e1;
+          border-radius: 4px;
+          padding: 2.5mm 2mm;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: space-between;
+          text-align: center;
+          page-break-inside: avoid;
+          break-inside: avoid;
+          overflow: hidden;
+        }
+        .store-name { font-size: 7pt; font-weight: 800; letter-spacing: 0.8px; color: #0f172a; text-transform: uppercase; }
+        .item-title { font-size: 7.5pt; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: #1e293b; margin: 0.5mm 0; }
+        .svg-wrap { width: 80%; height: 20px; }
+        .sku-code { font-family: monospace; font-size: 6pt; letter-spacing: 2px; color: #334155; }
+        .mrp-row { font-size: 8.5pt; font-weight: 900; color: #047857; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .mrp-tax { font-size: 5pt; font-weight: 600; color: #64748b; }
+      `;
+    }
+
+    const containerHtml = isThermal
+      ? labelsHtml
+      : `<div class="grid-container">${labelsHtml}</div>`;
+
+    printIsolatedDocument(`Barcode Labels - ${barcodeSelectedProduct}`, containerHtml, pageStyles);
+  };
+
+  // 2. Invoice Sample A4 Tax Invoice Printer
+  const handlePrintInvoiceSample = () => {
+    const thm = themePresets[selectedTheme];
+    const itemsRows = sampleItems.map((it, idx) => `
+      <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+        <td style="padding: 7px 8px; border-bottom: 1px solid #e2e8f0; font-family: monospace; color: #64748b;">${idx + 1}</td>
+        <td style="padding: 7px 8px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #0f172a;">${it.name}</td>
+        ${invShowHsn ? `<td style="padding: 7px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-family: monospace; color: #475569;">${it.hsn}</td>` : ''}
+        <td style="padding: 7px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold; color: #1e293b;">${it.qty} Nos</td>
+        <td style="padding: 7px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-family: monospace;">₹${it.rate.toLocaleString('en-IN')}</td>
+        <td style="padding: 7px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-family: monospace; font-weight: bold; color: #0f172a;">₹${(it.qty * (it.rate - it.discount)).toLocaleString('en-IN')}</td>
+      </tr>
+    `).join('');
+
+    const invoiceHtml = `
+      <div style="max-width: 800px; margin: 0 auto; padding: 20px; color: #1e293b; background: #ffffff;">
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 14px; border-bottom: 2.5px solid ${thm.primary};">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            ${invShowLogo ? `<div style="width: 52px; height: 52px; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: ${thm.primary}; background: #f8fafc;">LPZ</div>` : ''}
+            <div>
+              <h1 style="font-size: 17px; font-weight: 900; color: ${thm.primary}; margin: 0;">${activeCompany.legalName}</h1>
+              <p style="font-size: 10px; color: #475569; margin: 2px 0 0 0; line-height: 1.3;">${activeCompany.addressLine1}, ${activeCompany.city} - ${activeCompany.pincode} (${activeCompany.state})</p>
+              <p style="font-size: 10px; color: #334155; margin: 2px 0 0 0;"><strong>GSTIN:</strong> ${activeCompany.gstin} • <strong>Phone:</strong> ${activeCompany.phone}</p>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span style="background: ${thm.primary}; color: #ffffff; padding: 4px 12px; border-radius: 5px; font-size: 11px; font-weight: 900; letter-spacing: 1px; display: inline-block;">TAX INVOICE</span>
+            <div style="font-family: monospace; font-size: 10px; margin-top: 6px; line-height: 1.4; color: #334155;">
+              <div><strong>Invoice No:</strong> INV-2026-0042</div>
+              <div><strong>Date:</strong> ${new Date().toISOString().slice(0, 10)}</div>
+              <div><strong>Place of Supply:</strong> ${activeCompany.state} (${activeCompany.stateCode})</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Billed To -->
+        <div style="display: flex; justify-content: space-between; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 12px; font-size: 10px;">
+          <div>
+            <div style="font-weight: 800; font-size: 9px; text-transform: uppercase; color: #64748b;">Billed To (Customer):</div>
+            <div style="font-weight: bold; font-size: 11px; color: #0f172a; margin-top: 2px;">Shree Ganesh Enterprises</div>
+            <div style="color: #475569;">Station Road, Daltonganj, Palamu - 822101</div>
+            <div style="font-family: monospace; margin-top: 2px;">GSTIN: 20BCDEF5678G1Z3 • Ph: +91 98351 99887</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: 800; font-size: 9px; text-transform: uppercase; color: #64748b;">Payment Status:</div>
+            <div style="font-weight: bold; color: #0f172a; margin-top: 2px;">Due on Delivery (Net 7 Days)</div>
+            <div style="color: #047857; font-weight: bold; margin-top: 2px;">Original for Recipient</div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 10px;">
+          <thead>
+            <tr style="background: ${thm.primary}; color: #ffffff;">
+              <th style="padding: 7px 8px; text-align: left;">#</th>
+              <th style="padding: 7px 8px; text-align: left;">Item Description</th>
+              ${invShowHsn ? `<th style="padding: 7px 8px; text-align: center;">HSN</th>` : ''}
+              <th style="padding: 7px 8px; text-align: center;">Qty</th>
+              <th style="padding: 7px 8px; text-align: right;">Rate</th>
+              <th style="padding: 7px 8px; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsRows}
+          </tbody>
+        </table>
+
+        <!-- Summary & Bank/QR -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-top: 12px; padding-top: 10px; border-top: 2px solid ${thm.border}; font-size: 10px;">
+          <div style="flex: 1;">
+            ${invShowBank ? `
+              <div style="padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; font-size: 9.5px;">
+                <div style="font-weight: bold; color: #1e293b; margin-bottom: 2px;">Bank Settlement Details:</div>
+                <div style="font-family: monospace; color: #475569; line-height: 1.4;">
+                  <div>Bank: ${activeCompany.bankName} • Branch: ${activeCompany.bankBranch}</div>
+                  <div>A/C No: <strong>${activeCompany.bankAccountNo}</strong></div>
+                  <div>IFSC: <strong>${activeCompany.bankIfsc}</strong></div>
+                </div>
+              </div>
+            ` : ''}
+            ${invShowQr ? `
+              <div style="display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 1px solid #ccfbf1; border-radius: 6px; background: #f0fdfa; margin-top: 8px;">
+                <div style="font-weight: bold; font-size: 9px; color: #0f766e;">Scan UPI QR to Pay: ${activeCompany.upiId}</div>
+              </div>
+            ` : ''}
+          </div>
+
+          <div style="width: 250px; font-size: 10px;">
+            <div style="display: flex; justify-content: space-between; padding: 3px 0; color: #475569;">
+              <span>Taxable Amount:</span>
+              <span style="font-family: monospace;">₹${sampleTaxable.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 3px 0; color: #475569;">
+              <span>CGST (9%):</span>
+              <span style="font-family: monospace;">₹${sampleCgst.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 3px 0; color: #475569;">
+              <span>SGST (9%):</span>
+              <span style="font-family: monospace;">₹${sampleSgst.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 12px; font-weight: 900; color: #0f172a; border-top: 1.5px solid ${thm.border}; margin-top: 4px;">
+              <span>GRAND TOTAL:</span>
+              <span style="font-family: monospace; color: ${thm.primary};">₹${sampleGrandTotal.toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 18px; padding-top: 10px; border-top: 1px dashed #cbd5e1; font-size: 9.5px;">
+          <div style="max-width: 60%; color: #64748b;">
+            <div style="font-weight: bold; color: #334155; margin-bottom: 2px;">Terms & Conditions:</div>
+            <div style="line-height: 1.3;">1. Goods once sold will be replaced under warranty policy.<br/>2. Subject to Garhwa jurisdiction only.<br/>3. Computer generated legal invoice under Rule 46 of CGST Rules 2017.</div>
+          </div>
+          ${invShowSignatory ? `
+            <div style="text-align: right;">
+              <div style="font-family: serif; font-style: italic; font-size: 13px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; min-width: 140px; text-align: center;">Anand Kumar</div>
+              <div style="font-weight: bold; color: #1e293b; margin-top: 3px;">Authorized Signatory</div>
+              <div style="font-size: 8.5pt; color: #64748b;">For ${activeCompany.legalName}</div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+
+    const invoiceStyles = `
+      @page { size: A4 portrait; margin: 6mm 8mm; }
+      body { background: #ffffff !important; }
+    `;
+
+    printIsolatedDocument(`Tax Invoice - INV-2026-0042`, invoiceHtml, invoiceStyles);
+  };
+
+  // 3. Thermal Receipt Printer
+  const handlePrintThermalReceipt = () => {
+    const is2Inch = thermalPaperSize === '2inch';
+    const widthMm = is2Inch ? '48mm' : '72mm';
+
+    const thermalHtml = `
+      <div style="width: ${widthMm}; margin: 0 auto; font-family: 'Courier New', Courier, monospace; font-size: 10px; line-height: 1.25; color: #000; text-align: left; padding: 2mm 0;">
+        <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
+          <div style="font-size: 12px; font-weight: bold;">${activeCompany.tradeName}</div>
+          <div>${activeCompany.city}, ${activeCompany.state}</div>
+          <div>Phone: ${activeCompany.phone}</div>
+          <div>GSTIN: ${activeCompany.gstin}</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 4px;">
+          <span>Bill No: INV-0042</span>
+          <span>${new Date().toISOString().slice(0, 10)}</span>
+        </div>
+
+        <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 4px 0; margin: 4px 0;">
+          <div style="display: flex; justify-content: space-between; font-weight: bold;">
+            <span>ITEM</span>
+            <span>QTY  TOTAL</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+            <span>HP Pav Core i5</span>
+            <span>1x  52,990</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2px;">
+            <span>Logitech MK270</span>
+            <span>2x   2,900</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2px;">
+            <span>ProDot Patch Cb</span>
+            <span>4x     720</span>
+          </div>
+        </div>
+
+        <div style="margin: 6px 0; font-size: 9.5px;">
+          <div style="display: flex; justify-content: space-between;">
+            <span>Subtotal:</span>
+            <span>₹56,610.00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>GST Included (18%):</span>
+            <span>₹8,635.00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; border-top: 1px dashed #000; padding-top: 4px; margin-top: 4px;">
+            <span>NET PAYABLE:</span>
+            <span>₹56,610.00</span>
+          </div>
+        </div>
+
+        ${thermalPrintBalance ? `
+          <div style="text-align: center; font-size: 9px; border-top: 1px dotted #000; padding-top: 4px; margin-top: 4px;">
+            Customer Balance: ₹0.00 (PAID)
+          </div>
+        ` : ''}
+
+        ${thermalPrintQr ? `
+          <div style="text-align: center; margin: 8px 0;">
+            <div style="font-weight: bold; font-size: 9px; margin-bottom: 2px;">UPI: ${activeCompany.upiId}</div>
+            <div style="font-size: 8px; color: #555;">Scan to verify and pay</div>
+          </div>
+        ` : ''}
+
+        <div style="text-align: center; border-top: 1px dashed #000; padding-top: 6px; margin-top: 6px; font-size: 8.5px;">
+          Thank you for shopping with us!
+          <br />*** VISIT AGAIN ***
+        </div>
+      </div>
+    `;
+
+    const thermalStyles = `
+      @page { size: ${is2Inch ? '58mm' : '80mm'} auto; margin: 0; }
+      body { margin: 0; padding: 0; background: #fff !important; }
+    `;
+
+    printIsolatedDocument(`Thermal Receipt - INV-0042`, thermalHtml, thermalStyles);
+  };
+
+  // =========================================================================
   // SECTION 5: MANAGE USERS & RBAC
   // =========================================================================
   type StaffRole = 'admin' | 'salesman' | 'stock_manager' | 'delivery_boy' | 'ca';
@@ -1203,8 +1604,9 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                   </div>
 
                   <button
-                    onClick={() => window.print()}
+                    onClick={handlePrintInvoiceSample}
                     className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    title="Print isolated A4 Tax Invoice document"
                   >
                     <Printer className="w-3.5 h-3.5" />
                     <span>Print Sample PDF</span>
@@ -1590,8 +1992,9 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                     <div className="flex gap-2 pt-2">
                       <button
                         type="button"
-                        onClick={() => window.print()}
+                        onClick={handlePrintThermalReceipt}
                         className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        title="Print isolated 58mm / 80mm thermal receipt"
                       >
                         <Printer className="w-3.5 h-3.5" />
                         <span>Test Thermal Print</span>
@@ -1737,13 +2140,37 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {Array.from({ length: 6 }).map((_, idx) => (
                         <div key={idx} className="bg-white rounded-lg border border-gray-300 p-2.5 text-center shadow-xs space-y-1">
-                          <span className="text-[9px] font-bold text-gray-700 block truncate">LAPIEZ IT SHOWROOM</span>
+                          <span className="text-[9px] font-bold text-gray-700 block truncate uppercase tracking-wider">LAPIEZ IT SHOWROOM</span>
                           <span className="text-[10px] font-bold text-gray-900 block truncate">{barcodeSelectedProduct}</span>
-                          <div className="h-7 bg-slate-900/10 rounded flex items-center justify-center font-mono text-[9px] font-black tracking-widest text-slate-800">
-                            ||| | || |||| | ||| ||
+                          <div className="h-6 w-full flex items-center justify-center my-0.5">
+                            <svg viewBox="0 0 100 24" preserveAspectRatio="none" className="w-4/5 h-5">
+                              <rect x="2" y="0" width="2" height="24" fill="#0f172a" />
+                              <rect x="6" y="0" width="3" height="24" fill="#0f172a" />
+                              <rect x="11" y="0" width="1" height="24" fill="#0f172a" />
+                              <rect x="14" y="0" width="3" height="24" fill="#0f172a" />
+                              <rect x="19" y="0" width="2" height="24" fill="#0f172a" />
+                              <rect x="23" y="0" width="1" height="24" fill="#0f172a" />
+                              <rect x="26" y="0" width="4" height="24" fill="#0f172a" />
+                              <rect x="32" y="0" width="2" height="24" fill="#0f172a" />
+                              <rect x="36" y="0" width="1" height="24" fill="#0f172a" />
+                              <rect x="39" y="0" width="3" height="24" fill="#0f172a" />
+                              <rect x="44" y="0" width="2" height="24" fill="#0f172a" />
+                              <rect x="48" y="0" width="4" height="24" fill="#0f172a" />
+                              <rect x="54" y="0" width="1" height="24" fill="#0f172a" />
+                              <rect x="57" y="0" width="2" height="24" fill="#0f172a" />
+                              <rect x="61" y="0" width="3" height="24" fill="#0f172a" />
+                              <rect x="66" y="0" width="1" height="24" fill="#0f172a" />
+                              <rect x="69" y="0" width="3" height="24" fill="#0f172a" />
+                              <rect x="74" y="0" width="2" height="24" fill="#0f172a" />
+                              <rect x="78" y="0" width="1" height="24" fill="#0f172a" />
+                              <rect x="81" y="0" width="4" height="24" fill="#0f172a" />
+                              <rect x="87" y="0" width="2" height="24" fill="#0f172a" />
+                              <rect x="91" y="0" width="1" height="24" fill="#0f172a" />
+                              <rect x="94" y="0" width="3" height="24" fill="#0f172a" />
+                            </svg>
                           </div>
                           <span className="text-[8px] font-mono text-gray-500 block">LPZ-8471-{1000 + idx}</span>
-                          <span className="text-xs font-black text-teal-800 block">MRP: ₹{barcodePriceTag}</span>
+                          <span className="text-xs font-black text-emerald-700 block">MRP: ₹${barcodePriceTag}</span>
                         </div>
                       ))}
                     </div>
@@ -1752,8 +2179,9 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                   <div className="flex justify-end pt-2">
                     <button
                       type="button"
-                      onClick={() => window.print()}
+                      onClick={handlePrintBarcodeLabels}
                       className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      title="Print isolated A4 barcode sticker sheet"
                     >
                       <Printer className="w-3.5 h-3.5" />
                       <span>Print Barcode Label Sheet</span>

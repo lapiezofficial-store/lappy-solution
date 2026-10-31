@@ -226,17 +226,27 @@ nextjs-portal,
 
   /* Completely hide all site navigation, headers, footers, and chrome */
   header, 
-  footer, 
+  footer:not(.invoice-footer-section), 
   nav, 
   aside, 
   [role="navigation"], 
   .no-print, 
   .print\:hidden,
   #sq-panel-top,
-  .sq-ext {
+  .sq-ext,
+  button:not(.allow-print),
+  input:not(.allow-print),
+  select:not(.allow-print),
+  textarea:not(.allow-print) {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
+  }
+
+  .invoice-footer-section {
+    display: grid !important;
+    visibility: visible !important;
+    height: auto !important;
   }
 
   /* Standalone A4 Invoice Container */

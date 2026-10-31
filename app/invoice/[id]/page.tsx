@@ -836,7 +836,7 @@ export default function InvoicePage() {
         </div>
 
         {/* TERMS & SIGNATURE FOOTER (Compact, Fits on 1 Page) */}
-        <footer className="pt-2 border-t border-gray-300 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end text-[10.5px]">
+        <div className="invoice-footer-section pt-2 border-t border-gray-300 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end text-[10.5px]">
           
           <div className="sm:col-span-8 space-y-1 text-gray-600">
             <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-gray-500 block">
@@ -873,7 +873,7 @@ export default function InvoicePage() {
             </div>
           </div>
 
-        </footer>
+        </div>
 
       </main>
 
@@ -891,7 +891,7 @@ export default function InvoicePage() {
             padding: 0 !important;
             width: 100% !important;
           }
-          header, footer, nav, aside, [role="navigation"], .no-print, .print\\:hidden, #sq-panel-top, .sq-ext {
+          header.print\\:hidden, nav, aside, [role="navigation"], .no-print, .print\\:hidden, #sq-panel-top, .sq-ext {
             display: none !important;
             visibility: hidden !important;
             height: 0 !important;
