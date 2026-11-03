@@ -134,7 +134,7 @@ export default function OrderRiderAssignModal({
   const formatLastActive = (dateStr?: string) => {
     if (!dateStr) return 'Inactive';
     const diffMin = Math.round((Date.now() - new Date(dateStr).getTime()) / 60000);
-    if (diffMin <= 1) return 'Just now (Live 🟢)';
+    if (diffMin <= 1) return 'Just now (Live)';
     if (diffMin < 60) return `${diffMin}m ago`;
     const diffHours = Math.round(diffMin / 60);
     if (diffHours < 24) return `${diffHours}h ago`;
@@ -297,7 +297,7 @@ export default function OrderRiderAssignModal({
                         </div>
 
                         <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                          <span>🏍️ {rider.vehicleType} ({rider.vehicleNumber || 'No plate'})</span>
+                          <span className="flex items-center gap-1"><Bike className="w-3.5 h-3.5 text-gray-400 shrink-0" />{rider.vehicleType} ({rider.vehicleNumber || 'No plate'})</span>
                           <span className="flex items-center gap-1 text-gray-700 font-medium">
                             <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
                             <strong className="truncate max-w-[190px]">{rider.lastLocationText || rider.city || 'Garhwa Area'}</strong>
@@ -395,7 +395,7 @@ export default function OrderRiderAssignModal({
               className="px-5 py-2.5 rounded-xl bg-[#2271b1] hover:bg-[#135e96] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>{isAssigning ? 'Sending...' : 'Send Order to Rider 🚀'}</span>
+              <span>{isAssigning ? 'Sending...' : 'Send Order to Rider'}</span>
             </button>
           </div>
         </div>

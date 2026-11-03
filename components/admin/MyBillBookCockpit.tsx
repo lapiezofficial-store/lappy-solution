@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   UserCircle,
   Building2,
@@ -72,13 +72,13 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
     tradeName: 'Lapiez Computer Hub & Solutions',
     gstin: '20AAACL1234F1Z8',
     pan: 'AAACL1234F',
-    addressLine1: 'Main Road, Opp. Sadar Hospital',
-    addressLine2: 'Near Overbridge Market',
+    addressLine1: 'In front of G P Plaza, Chiniya Road',
+    addressLine2: 'Garhwa, Jharkhand - 822114',
     city: 'Garhwa',
     state: 'Jharkhand',
     stateCode: '20',
     pincode: '822114',
-    phone: STORE_INFO.phone || '+91 74001 74001',
+    phone: STORE_INFO.phone || '+91 9608828288',
     email: STORE_INFO.email || 'care@lapiez.com',
     bankName: 'Union Bank of India',
     bankAccountNo: '638301010050261',
@@ -100,10 +100,21 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   // =========================================================================
   // SECTION 1: ACCOUNT & STORE ACCESS STATE
   // =========================================================================
-  const [profileName, setProfileName] = useState('Anand Kumar (Store Admin)');
-  const [profilePhone, setProfilePhone] = useState('+91 94709 90000');
+  const [profileName, setProfileName] = useState('Lapiez Store Admin');
+  const [profilePhone, setProfilePhone] = useState('+91 96088 28288');
   const [profileEmail, setProfileEmail] = useState('admin@lapiez.com');
   const [adminPin, setAdminPin] = useState('8221');
+
+  const adminInitials = useMemo(() => {
+    const trimmed = (profileName || '').trim();
+    if (!trimmed) return 'LZ';
+    const parts = trimmed.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      if (parts[0].toLowerCase() === 'lapiez') return 'LZ';
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return (trimmed.slice(0, 2) || 'LZ').toUpperCase();
+  }, [profileName]);
   const [autoPrintOnSave, setAutoPrintOnSave] = useState(true);
   const [autoLogoutTimer, setAutoLogoutTimer] = useState('30_mins');
   const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
@@ -332,11 +343,11 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   // =========================================================================
   const printIsolatedDocument = (title: string, bodyHtml: string, styles: string) => {
     try {
-      const existing = document.getElementById('nirq-isolated-print-frame');
+      const existing = document.getElementById('lapiez-isolated-print-frame');
       if (existing) existing.remove();
 
       const iframe = document.createElement('iframe');
-      iframe.id = 'nirq-isolated-print-frame';
+      iframe.id = 'lapiez-isolated-print-frame';
       iframe.style.position = 'fixed';
       iframe.style.right = '0';
       iframe.style.bottom = '0';
@@ -630,7 +641,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
           </div>
           ${invShowSignatory ? `
             <div style="text-align: right;">
-              <div style="font-family: serif; font-style: italic; font-size: 13px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; min-width: 140px; text-align: center;">Anand Kumar</div>
+              <div style="font-family: serif; font-style: italic; font-size: 13px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; min-width: 140px; text-align: center;">${profileName || 'Lapiez Store Admin'}</div>
               <div style="font-weight: bold; color: #1e293b; margin-top: 3px;">Authorized Signatory</div>
               <div style="font-size: 8.5pt; color: #64748b;">For ${activeCompany.legalName}</div>
             </div>
@@ -743,7 +754,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   }
 
   const [staffList, setStaffList] = useState<StaffUser[]>([
-    { id: '1', name: 'Anand Kumar', phone: '+91 94709 90000', role: 'admin', status: 'active', lastActive: 'Just now', salesInvoicesCreated: 142 },
+    { id: '1', name: 'Lapiez Store Admin', phone: '+91 96088 28288', role: 'admin', status: 'active', lastActive: 'Just now', salesInvoicesCreated: 142 },
     { id: '2', name: 'Ramesh Sharma', phone: '+91 98351 12345', role: 'salesman', status: 'active', lastActive: '12 mins ago', salesInvoicesCreated: 89 },
     { id: '3', name: 'Vikas Singh', phone: '+91 91234 56789', role: 'stock_manager', status: 'active', lastActive: '1 hour ago', salesInvoicesCreated: 14 },
     { id: '4', name: 'Suraj Rider', phone: '+91 82103 44556', role: 'delivery_boy', status: 'active', lastActive: '34 mins ago', salesInvoicesCreated: 0 },
@@ -783,7 +794,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   const activityLogs = [
     { time: '10:45 AM Today', user: 'Ramesh Sharma (Salesman)', action: 'Created Cash Invoice INV-0042', amount: '₹14,500', ip: '103.211.54.12 (Counter 1)' },
     { time: '09:30 AM Today', user: 'Vikas Singh (Stock)', action: 'Stock Inward GRN: 20x Lapcare Keyboards', amount: '₹8,200', ip: '103.211.54.14 (Godown)' },
-    { time: 'Yesterday 06:15 PM', user: 'Anand Kumar (Admin)', action: 'Updated Store Pricing & Margin Rules', amount: '-', ip: '103.211.54.10 (Master)' },
+    { time: 'Yesterday 06:15 PM', user: 'Lapiez Admin', action: 'Updated Store Pricing & Margin Rules', amount: '-', ip: '103.211.54.10 (Master)' },
     { time: 'Yesterday 03:20 PM', user: 'Suraj Rider (Delivery)', action: 'Marked Order #ORD-8921 as Delivered & Paid', amount: '₹2,499', ip: 'Mobile App 4G' },
     { time: '29 Oct 11:00 AM', user: 'CA R.K. Agarwal', action: 'Downloaded GSTR-1 & Balance Sheet JSON', amount: '-', ip: 'Audit Portal' },
   ];
@@ -903,7 +914,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">
-                  NirQ Billing System
+                  Lapiez Billing & POS
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3 text-emerald-400" /> CBIC Rule 46 Compliant
@@ -988,7 +999,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
             <div className="p-3.5 border-b border-gray-100 bg-gray-50/70 flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-gray-900 block">System Workflows</span>
-                <span className="text-[10px] text-gray-500 block">NirQ Operational Modules</span>
+                <span className="text-[10px] text-gray-500 block">Lapiez Operational Modules</span>
               </div>
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200">
                 8 Active
@@ -1062,8 +1073,8 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
                   <div className="flex items-center gap-4">
-                    <div className="size-16 rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-700 text-white font-black text-2xl flex items-center justify-center shadow-md">
-                      AK
+                    <div className="size-16 rounded-2xl bg-gradient-to-br from-slate-900 via-teal-900 to-emerald-900 text-teal-300 border border-teal-500/30 font-black text-2xl flex items-center justify-center shadow-md select-none tracking-wider">
+                      {adminInitials}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -1760,7 +1771,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
                         {invShowSignatory && (
                           <div className="pt-6 text-center">
                             <div className="font-script text-xs text-slate-800 font-bold italic">
-                              Anand Kumar
+                              {profileName || 'Lapiez Store Admin'}
                             </div>
                             <div className="border-t border-gray-400 pt-1 text-[9px] text-gray-500">
                               For {activeCompany.legalName} (Authorized Signatory)
@@ -2647,7 +2658,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => window.open('https://wa.me/917400174001?text=Hello%20Lapiez%20NirQ%20Billing%20Support', '_blank')}
+                      onClick={() => window.open('https://wa.me/919608828288?text=Hello%20Lapiez%20Billing%20Support', '_blank')}
                       className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />

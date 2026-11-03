@@ -13,11 +13,12 @@ import {
   BookOpen, Star, Crown, Laptop, Box, Award, AlertTriangle, MoreVertical,
   SlidersHorizontal, ArrowUpDown, Pencil, ChevronDown, ChevronRight, ChevronLeft, Download, Upload, Tag,
   Share2, Globe, ArrowLeft, LayoutDashboard, Menu, Wrench, Terminal, Database, Radio, HardDrive, FolderTree, CheckSquare, FileCode,
-  Banknote, Loader2, Bike
+  Banknote, Loader2, Bike, Smartphone, Monitor
 } from 'lucide-react';
 import { useStore, CMSBanner, CMSSection, CMSCustomPage, CMSBlogPost, CMSBrand, CMSCategory, CMSSubcategory, DEFAULT_SHOP_BY_CATEGORIES } from '../../context/StoreContext';
 import { BrandLogoRenderer, PRESET_BRANDS_CONFIG } from '../../components/BrandLogoRenderer';
 import { STORE_INFO } from '../../data/storeData';
+import { encodeBannerConfig, decodeBannerConfig } from '../../data/banners';
 import { Product } from '../../data/products';
 import scrapedBrandProductsData from '../../data/scrapedBrandProducts.json';
 import { adminFetch, setAdminToken, removeAdminToken } from '../../lib/adminApi';
@@ -387,8 +388,11 @@ export default function AdminPage() {
   const [newBannerHighlight, setNewBannerHighlight] = useState('');
   const [newBannerSubtitle, setNewBannerSubtitle] = useState('');
   const [newBannerBadge, setNewBannerBadge] = useState('FESTIVAL SPECIAL • GARHWA SHOWROOM');
-  const [newBannerImage, setNewBannerImage] = useState('https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&auto=format&fit=crop&q=80');
-  const [newBannerBtnText, setNewBannerBtnText] = useState('Shop Now');
+  const [newBannerDesktopImage, setNewBannerDesktopImage] = useState('/images/banners/refurbished-laptops-printers.png');
+  const [newBannerMobileImage, setNewBannerMobileImage] = useState('/images/banners/refurbished-laptops-printers.png');
+  const [newBannerTargetDevice, setNewBannerTargetDevice] = useState<'all' | 'desktop' | 'mobile'>('all');
+  const [newBannerType, setNewBannerType] = useState<'full_image' | 'custom_layout'>('full_image');
+  const [newBannerBtnText, setNewBannerBtnText] = useState('Shop Deals');
   const [newBannerBtnUrl, setNewBannerBtnUrl] = useState('/shop?cat=Laptops');
   const [newBannerGradient, setNewBannerGradient] = useState('from-[#0A1633] via-[#0F2960] to-[#1A56DB]');
 
@@ -462,11 +466,15 @@ export default function AdminPage() {
       setSiteLogo(siteSettings.logo || '');
       setSiteFavicon(siteSettings.favicon || '/favicon.ico');
       setStorePhone(siteSettings.phone);
+      setHeaderHelplinePhone(siteSettings.phone);
       setStoreWhatsapp(siteSettings.whatsapp);
+      setHeaderHelplineWhatsapp(siteSettings.whatsapp);
       setStoreEmail(siteSettings.email);
       setStoreAddress(siteSettings.address);
+      setFooterAddress(siteSettings.address);
       setGoogleMapsUrl(siteSettings.googleMapsUrl || siteSettings.twitterUrl || STORE_INFO.mapsUrl);
       setStoreTimings(siteSettings.timings);
+      setFooterTimings(siteSettings.timings);
       setFacebookUrl(siteSettings.facebookUrl || '');
       setInstagramUrl(siteSettings.instagramUrl || '');
       setYoutubeUrl(siteSettings.youtubeUrl || '');
@@ -1200,33 +1208,50 @@ export default function AdminPage() {
     }
   };
 
-  const handleBannerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBannerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'desktop' | 'mobile' = 'desktop') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const file = files[0];
-    const optimized = await optimizeImageForUpload(file, 1920, 1080, 0.85);
+    const maxW = target === 'desktop' ? 1920 : 1080;
+    const maxH = target === 'desktop' ? 1080 : 1080;
+    const optimized = await optimizeImageForUpload(file, maxW, maxH, 0.85);
     if (optimized.previewUrl) {
-      setNewBannerImage(optimized.previewUrl);
+      if (target === 'desktop') setNewBannerDesktopImage(optimized.previewUrl);
+      else setNewBannerMobileImage(optimized.previewUrl);
     }
     const url = await uploadFileToCloudinary(optimized.file, 'banners');
     if (url) {
-      setNewBannerImage(url);
+      if (target === 'desktop') setNewBannerDesktopImage(url);
+      else setNewBannerMobileImage(url);
+      showToast(`${target === 'desktop' ? 'PC' : 'Phone'} banner uploaded!`);
     }
     e.target.value = '';
   };
 
-  const handleEditBannerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEditBannerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'desktop' | 'mobile' = 'desktop') => {
     const files = e.target.files;
     if (!files || files.length === 0 || !editingBanner) return;
     const file = files[0];
-    const optimized = await optimizeImageForUpload(file, 1920, 1080, 0.85);
+    const maxW = target === 'desktop' ? 1920 : 1080;
+    const maxH = target === 'desktop' ? 1080 : 1080;
+    const optimized = await optimizeImageForUpload(file, maxW, maxH, 0.85);
     if (optimized.previewUrl) {
-      setEditingBanner((prev) => prev ? ({ ...prev, desktopImage: optimized.previewUrl, mobileImage: optimized.previewUrl }) : null);
+      setEditingBanner((prev) => {
+        if (!prev) return null;
+        return target === 'desktop'
+          ? { ...prev, desktopImage: optimized.previewUrl }
+          : { ...prev, mobileImage: optimized.previewUrl };
+      });
     }
     const url = await uploadFileToCloudinary(optimized.file, 'banners');
     if (url) {
-      setEditingBanner((prev) => prev ? ({ ...prev, desktopImage: url, mobileImage: url }) : null);
-      showToast('Banner photo uploaded to Cloudinary!');
+      setEditingBanner((prev) => {
+        if (!prev) return null;
+        return target === 'desktop'
+          ? { ...prev, desktopImage: url }
+          : { ...prev, mobileImage: url };
+      });
+      showToast(`${target === 'desktop' ? 'PC' : 'Phone'} banner uploaded to Cloudinary!`);
     }
     e.target.value = '';
   };
@@ -1392,6 +1417,19 @@ export default function AdminPage() {
     e.target.value = '';
   };
 
+  // Open Edit Banner with decoded device & bannerType config
+  const handleOpenEditBanner = (b: CMSBanner) => {
+    const decoded = decodeBannerConfig(b.bgGradient, (b as any).fullBleedImage);
+    setEditingBanner({
+      ...b,
+      bgGradient: decoded.bgGradient,
+      targetDevice: decoded.targetDevice,
+      bannerType: decoded.bannerType,
+      desktopImage: b.desktopImage || '',
+      mobileImage: b.mobileImage || b.desktopImage || '',
+    });
+  };
+
   // Add Banner Submit
   const handleAddBannerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1399,18 +1437,28 @@ export default function AdminPage() {
       showToast('Please enter banner title');
       return;
     }
+    const pcImg = newBannerDesktopImage.trim() || newBannerMobileImage.trim();
+    const phoneImg = newBannerMobileImage.trim() || newBannerDesktopImage.trim();
+    if (!pcImg) {
+      showToast('Please upload or enter banner image');
+      return;
+    }
+    const gradient = encodeBannerConfig(newBannerGradient, newBannerTargetDevice, newBannerType);
     await addBanner({
       title: newBannerTitle.trim(),
       titleHighlight: newBannerHighlight.trim(),
       subtitle: newBannerSubtitle.trim() || 'Authorized sales & repair center on Chiniya Road, Garhwa.',
       badge: newBannerBadge.trim(),
-      desktopImage: newBannerImage.trim(),
-      buttonText: newBannerBtnText.trim() || 'Shop Now',
+      desktopImage: pcImg,
+      mobileImage: phoneImg,
+      buttonText: newBannerBtnText.trim() || 'Shop Deals',
       buttonUrl: newBannerBtnUrl.trim() || '/shop',
       whatsappMsg: `Hello Lapiez Garhwa, I want to inquire about: ${newBannerTitle}`,
-      bgGradient: newBannerGradient,
+      bgGradient: gradient,
       position: banners.length + 1,
       status: 'active',
+      targetDevice: newBannerTargetDevice,
+      bannerType: newBannerType,
     });
     setIsAddBannerOpen(false);
     setNewBannerTitle('');
@@ -1426,7 +1474,15 @@ export default function AdminPage() {
       showToast('Please enter banner title');
       return;
     }
-    await editBanner(editingBanner);
+    const targetDevice = (editingBanner as any).targetDevice || 'all';
+    const bannerType = (editingBanner as any).bannerType || 'full_image';
+    const gradient = encodeBannerConfig(editingBanner.bgGradient, targetDevice, bannerType);
+    await editBanner({
+      ...editingBanner,
+      desktopImage: editingBanner.desktopImage || editingBanner.mobileImage || '',
+      mobileImage: editingBanner.mobileImage || editingBanner.desktopImage || '',
+      bgGradient: gradient,
+    });
     showToast('Banner updated in database!');
     setEditingBanner(null);
   };
@@ -2200,6 +2256,10 @@ export default function AdminPage() {
           enableCOD,
         }
       );
+      setHeaderHelplinePhone(storePhone);
+      setHeaderHelplineWhatsapp(storeWhatsapp);
+      setFooterAddress(storeAddress);
+      setFooterTimings(storeTimings);
     } catch (err: any) {
       console.error('Error saving settings:', err);
     } finally {
@@ -2351,6 +2411,10 @@ export default function AdminPage() {
   // Save Header & Footer Control Handler
   const handleSaveHeaderFooter = async (e: React.FormEvent) => {
     e.preventDefault();
+    setStorePhone(headerHelplinePhone);
+    setStoreWhatsapp(headerHelplineWhatsapp);
+    setStoreAddress(footerAddress);
+    setStoreTimings(footerTimings);
     await updateSiteSettings({
       announcementText: announcementText,
       phone: headerHelplinePhone,
@@ -3173,8 +3237,8 @@ export default function AdminPage() {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Sparkles className="w-4 h-4 text-teal-400" />
-                      <span>NirQ Billing System</span>
+                      <Receipt className="w-4 h-4 text-teal-400" />
+                      <span>Lapiez Billing & POS</span>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
                       POS & Tax
@@ -3489,11 +3553,11 @@ export default function AdminPage() {
                     ? 'bg-teal-600 text-white shadow-xs'
                     : 'text-teal-300 hover:bg-[#135e96] hover:text-white'
                 }`}
-                title="NirQ Billing System - POS & GST Invoicing Engine"
+                title="Lapiez Billing System - POS & GST Invoicing Engine"
               >
                 <div className="flex items-center gap-2.5">
-                  <Sparkles className="w-4 h-4 flex-shrink-0 text-teal-400" />
-                  {!isWpSidebarCollapsed && <span>NirQ Billing</span>}
+                  <Receipt className="w-4 h-4 flex-shrink-0 text-teal-400" />
+                  {!isWpSidebarCollapsed && <span>Lapiez Billing</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
                   <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
@@ -3834,7 +3898,7 @@ export default function AdminPage() {
                   {activeTab === 'scraper' && 'Live Web Scraper & Crawler Engine'}
                   {activeTab === 'orders' && `Orders & UTR Verification (${orders.length})`}
                   {activeTab === 'billing' && `GST Invoices & Billing (${invoices.length})`}
-                  {activeTab === 'mybillbook' && 'NirQ Billing System • POS & Tax Invoicing'}
+                  {activeTab === 'mybillbook' && 'Lapiez Billing System • POS & Tax Invoicing'}
                   {activeTab === 'bank' && 'Official Bank Details & Settlement'}
                   {activeTab === 'coupons' && `Coupons & Discounts (${coupons.length})`}
                   {activeTab === 'leads' && `Customer Quotes & Inquiries (${leads.length})`}
@@ -4287,9 +4351,9 @@ export default function AdminPage() {
                                           </span>
                                         </div>
                                         <div className="flex items-center justify-between text-[11px] text-gray-500 mt-1">
-                                          <span>📞 {order.rider.phone}</span>
-                                          <span className="text-[10px] text-gray-600 font-medium truncate max-w-[120px]">
-                                            📍 {order.rider.lastLocationText || order.rider.city || 'Garhwa'}
+                                          <span className="flex items-center gap-1"><Phone className="w-3 h-3 text-gray-400" />{order.rider.phone}</span>
+                                          <span className="text-[10px] text-gray-600 font-medium truncate max-w-[120px] flex items-center gap-1">
+                                            <MapPin className="w-3 h-3 text-gray-400" />{order.rider.lastLocationText || order.rider.city || 'Garhwa'}
                                           </span>
                                         </div>
                                       </div>
@@ -4308,7 +4372,7 @@ export default function AdminPage() {
                                       className="w-full h-8.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
                                     >
                                       <Bike className="w-3.5 h-3.5" />
-                                      <span>{order.riderId ? 'Change / Re-assign Rider 🔄' : 'Send to Delivery Rider 🚀'}</span>
+                                      <span>{order.riderId ? 'Change / Re-assign Rider' : 'Send to Delivery Rider'}</span>
                                     </button>
                                   </div>
                                 )}
@@ -4431,8 +4495,8 @@ export default function AdminPage() {
                 {[
                   { id: 'invoices', label: `All Invoices (${invoices.length})`, icon: FileText },
                   { id: 'create', label: '+ Counter Billing / New Invoice', icon: Plus },
-                  { id: 'mybillbook', label: 'NirQ Billing System', icon: Sparkles },
-                  { id: 'settings', label: '⚙️ GST & Invoice Configuration', icon: Sliders }
+                  { id: 'mybillbook', label: 'Lapiez Bill Book (POS & GST)', icon: Receipt },
+                  { id: 'settings', label: 'GST & Invoice Configuration', icon: Sliders }
                 ].map((st) => {
                   const Icon = st.icon;
                   return (
@@ -6175,17 +6239,22 @@ export default function AdminPage() {
         )}
 
         {/* ========================================================= */}
-        {/* TAB: HERO CAROUSEL BANNERS (Database Driven)             */}
+        {/* TAB: HERO CAROUSEL BANNERS (Full Page & Multi-Device)     */}
         {/* ========================================================= */}
         {activeTab === 'banners' && (
           <div className="space-y-4">
+            
+            {/* Header Card */}
             <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="font-extrabold text-base text-[#111827]">
-                  Hero Carousel Banners ({banners.length})
+                <h3 className="font-extrabold text-base text-[#111827] flex items-center gap-2">
+                  <span>Hero Carousel Banners</span>
+                  <span className="text-xs bg-blue-100 text-[#1A56DB] font-extrabold px-2.5 py-0.5 rounded-full">
+                    {banners.length} Banners
+                  </span>
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Manage the high-impact banners displayed on the storefront top slider. Stored in SQLite database.
+                  Full-page edge-to-edge promotional banners with device targeting (PC / Desktop & Phone / Mobile).
                 </p>
               </div>
 
@@ -6203,22 +6272,17 @@ export default function AdminPage() {
                   <span>Restore Official Banners</span>
                 </button>
 
-                <label className="cursor-pointer h-9 px-3.5 rounded-lg bg-blue-50 border border-blue-200 text-[#1A56DB] hover:bg-blue-100 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs">
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Upload Banner Photo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      handleBannerFileUpload(e);
-                      setIsAddBannerOpen(true);
-                    }}
-                    className="hidden"
-                  />
-                </label>
-
                 <button
-                  onClick={() => setIsAddBannerOpen(true)}
+                  onClick={() => {
+                    setNewBannerTitle('');
+                    setNewBannerHighlight('');
+                    setNewBannerSubtitle('');
+                    setNewBannerDesktopImage('/images/banners/refurbished-laptops-printers.png');
+                    setNewBannerMobileImage('/images/banners/refurbished-laptops-printers.png');
+                    setNewBannerTargetDevice('all');
+                    setNewBannerType('full_image');
+                    setIsAddBannerOpen(true);
+                  }}
                   className="h-9 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -6227,58 +6291,150 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* Banner Size & Device Placement Guidelines Box */}
+            <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-blue-800">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-4 h-4 text-yellow-300" />
+                <h4 className="font-extrabold text-sm text-yellow-200">
+                  Banner Size & Device Guidelines (Canva / Photoshop Settings)
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                {/* PC Guideline */}
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-blue-200">
+                    <Laptop className="w-4 h-4 text-blue-300" />
+                    <span>💻 PC / Desktop Banner Size</span>
+                  </div>
+                  <p className="font-black text-sm text-white">1920 × 600 px</p>
+                  <p className="text-[11px] text-white/70">
+                    Aspect Ratio ~3.2:1 (or 1600 × 500 px). Wide landscape graphic tailored for widescreen monitors and laptops.
+                  </p>
+                </div>
+
+                {/* Mobile Guideline */}
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-purple-200">
+                    <Smartphone className="w-4 h-4 text-purple-300" />
+                    <span>📱 Phone / Mobile Banner Size</span>
+                  </div>
+                  <p className="font-black text-sm text-white">800 × 600 px (or 1080 × 1080)</p>
+                  <p className="text-[11px] text-white/70">
+                    Aspect Ratio 4:3 or 1:1 square. Sharp and vertical-friendly for smartphone screens so text stays readable.
+                  </p>
+                </div>
+
+                {/* Full Page Tip */}
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-200">
+                    <ImageIcon className="w-4 h-4 text-amber-300" />
+                    <span>🖼️ Full Page Mode (Recommended)</span>
+                  </div>
+                  <p className="font-black text-sm text-white">Edge-to-Edge Display</p>
+                  <p className="text-[11px] text-white/70">
+                    Select &quot;Full Graphic Banner&quot; when you already designed your banner graphics. Shows edge-to-edge with zero text clutter.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Banners Grid List */}
             {banners.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {banners.map((b, idx) => (
-                  <div
-                    key={b.id || idx}
-                    className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-2xs flex flex-col justify-between"
-                  >
-                    <div className="p-4 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">
-                          Position #{b.position || idx + 1}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => setEditingBanner(b)}
-                            className="px-2.5 py-1 rounded text-[11px] font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center gap-1 cursor-pointer"
-                            title="Edit banner details"
-                          >
-                            <Pencil className="w-3 h-3" />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            onClick={() => editBanner({ ...b, status: b.status === 'active' ? 'inactive' : 'active' })}
-                            className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors cursor-pointer ${
-                              b.status === 'active'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-gray-100 text-gray-500 border-gray-200'
-                            }`}
-                          >
-                            {b.status === 'active' ? 'Active' : 'Inactive'}
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`Delete banner "${b.title}"?`)) {
-                                deleteBanner(b.id);
-                              }
-                            }}
-                            className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                            title="Delete banner"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
+                {banners.map((b, idx) => {
+                  const { targetDevice, bannerType } = decodeBannerConfig(b.bgGradient, (b as any).fullBleedImage);
+                  const isFullGraphic = bannerType === 'full_image' || (b as any).fullBleedImage;
 
-                      <div className="flex gap-3">
-                        {b.desktopImage && (
-                          <div className="w-20 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200">
-                            <img src={b.desktopImage} alt={b.title} className="w-full h-full object-cover" />
+                  return (
+                    <div
+                      key={b.id || idx}
+                      className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-2xs flex flex-col justify-between"
+                    >
+                      <div className="p-4 space-y-3">
+                        {/* Header Pills */}
+                        <div className="flex items-center justify-between flex-wrap gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">
+                              Pos #{b.position || idx + 1}
+                            </span>
+
+                            {/* Device Badge */}
+                            {targetDevice === 'desktop' ? (
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                                <Laptop className="w-3 h-3" />
+                                <span>PC Only</span>
+                              </span>
+                            ) : targetDevice === 'mobile' ? (
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                                <Smartphone className="w-3 h-3" />
+                                <span>Phone Only</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                                <Globe className="w-3 h-3" />
+                                <span>PC &amp; Phone</span>
+                              </span>
+                            )}
+
+                            {/* Banner Mode Badge */}
+                            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded flex items-center gap-1 border ${
+                              isFullGraphic 
+                                ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            }`}>
+                              {isFullGraphic ? <ImageIcon className="w-3 h-3" /> : <Sliders className="w-3 h-3" />}
+                              <span>{isFullGraphic ? 'Full Graphic' : 'Text Overlay'}</span>
+                            </span>
                           </div>
-                        )}
-                        <div className="min-w-0">
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleOpenEditBanner(b)}
+                              className="px-2.5 py-1 rounded text-[11px] font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Edit banner details"
+                            >
+                              <Pencil className="w-3 h-3" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              onClick={() => editBanner({ ...b, status: b.status === 'active' ? 'inactive' : 'active' })}
+                              className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors cursor-pointer ${
+                                b.status === 'active'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : 'bg-gray-100 text-gray-500 border-gray-200'
+                              }`}
+                            >
+                              {b.status === 'active' ? 'Active' : 'Inactive'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Delete banner "${b.title}"?`)) {
+                                  deleteBanner(b.id);
+                                }
+                              }}
+                              className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                              title="Delete banner"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Banner Image Preview Strip */}
+                        <div className="relative w-full aspect-[22/7] rounded-lg bg-gray-900 overflow-hidden border border-gray-200 flex items-center justify-center">
+                          <img 
+                            src={b.desktopImage || b.mobileImage || '/images/banners/refurbished-laptops-printers.png'} 
+                            alt={b.title} 
+                            className="w-full h-full object-cover" 
+                          />
+                          <div className="absolute top-1.5 right-1.5 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9.5px] font-bold text-white">
+                            {isFullGraphic ? 'Full Page Banner' : 'Layout Banner'}
+                          </div>
+                        </div>
+
+                        {/* Copy details */}
+                        <div className="min-w-0 space-y-0.5">
                           {b.badge && (
                             <span className="text-[9.5px] font-bold text-amber-600 uppercase block truncate">
                               {b.badge}
@@ -6292,32 +6448,34 @@ export default function AdminPage() {
                               {b.titleHighlight}
                             </span>
                           )}
-                          <p className="text-[11px] text-gray-500 line-clamp-2 mt-0.5">
-                            {b.subtitle}
-                          </p>
+                          {b.subtitle && (
+                            <p className="text-[11px] text-gray-500 line-clamp-1 mt-0.5">
+                              {b.subtitle}
+                            </p>
+                          )}
                         </div>
                       </div>
-                    </div>
 
-                    <div className="bg-gray-50 px-4 py-2.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span className="font-bold text-gray-700">CTA:</span>
-                        <span>{b.buttonText}</span>
-                        <span className="text-gray-400 font-mono text-[10px]">({b.buttonUrl})</span>
+                      {/* Footer Info */}
+                      <div className="bg-gray-50 px-4 py-2.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="font-bold text-gray-700">Link:</span>
+                          <span className="text-[#1A56DB] font-mono text-[10.5px] truncate max-w-[160px]">{b.buttonUrl}</span>
+                        </div>
+                        <span className="text-[10.5px] text-gray-400 font-bold">
+                          {b.buttonText || 'Shop Deals'}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-gray-400 font-mono truncate max-w-[120px]">
-                        {b.bgGradient}
-                      </span>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center">
                 <ImageIcon className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                 <h4 className="font-bold text-gray-900 text-sm">No custom banners yet</h4>
                 <p className="text-xs text-gray-500 mt-1">
-                  Default showcase banners are running. Click "+ Add New Banner" to create a custom offer!
+                  Default showcase banners are running. Click &quot;+ Add New Banner&quot; to create a custom offer!
                 </p>
               </div>
             )}
@@ -11516,68 +11674,280 @@ export default function AdminPage() {
       )}
 
       {/* ========================================================= */}
-      {/* MODAL: ADD HERO BANNER                                   */}
+      {/* MODAL: ADD HERO BANNER (Full Page & Multi-Device)         */}
       {/* ========================================================= */}
       {isAddBannerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <h3 className="font-extrabold text-base text-[#111827]">
-                Create New Hero Carousel Banner
-              </h3>
+              <div>
+                <h3 className="font-extrabold text-base text-[#111827]">
+                  Create New Hero Carousel Banner
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Select device target (PC / Phone) and upload tailored banner images.
+                </p>
+              </div>
               <button
                 onClick={() => setIsAddBannerOpen(false)}
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-900"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-900 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAddBannerSubmit} className="space-y-3.5 text-xs">
+            <form onSubmit={handleAddBannerSubmit} className="space-y-4 text-xs">
               
+              {/* 1. Device Placement Selection */}
               <div>
-                <label className="font-bold text-gray-700 block mb-1">Banner Title *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Upgrade to 12th & 13th Gen Laptops"
-                  value={newBannerTitle}
-                  onChange={(e) => setNewBannerTitle(e.target.value)}
-                  className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
-                  required
-                />
+                <label className="font-bold text-gray-800 block mb-1.5">
+                  Where should this banner be displayed? (Device Targeting) *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewBannerTargetDevice('all')}
+                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                      newBannerTargetDevice === 'all'
+                        ? 'bg-blue-50 border-[#1A56DB] text-[#1A56DB] font-extrabold ring-2 ring-blue-500/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Globe className="w-4 h-4" />
+                    <span className="text-[11px] font-bold">PC &amp; Phone (All)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewBannerTargetDevice('desktop')}
+                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                      newBannerTargetDevice === 'desktop'
+                        ? 'bg-blue-50 border-[#1A56DB] text-[#1A56DB] font-extrabold ring-2 ring-blue-500/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Laptop className="w-4 h-4" />
+                    <span className="text-[11px] font-bold">💻 PC / Desktop Only</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewBannerTargetDevice('mobile')}
+                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                      newBannerTargetDevice === 'mobile'
+                        ? 'bg-blue-50 border-[#1A56DB] text-[#1A56DB] font-extrabold ring-2 ring-blue-500/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Smartphone className="w-4 h-4" />
+                    <span className="text-[11px] font-bold">📱 Phone / Mobile Only</span>
+                  </button>
+                </div>
               </div>
 
+              {/* 2. Banner Display Style */}
               <div>
-                <label className="font-bold text-gray-700 block mb-1">Highlight Offer Tag</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Save Up to 45% + 18% GST Bill"
-                  value={newBannerHighlight}
-                  onChange={(e) => setNewBannerHighlight(e.target.value)}
-                  className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
-                />
+                <label className="font-bold text-gray-800 block mb-1.5">
+                  Banner Display Style *
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setNewBannerType('full_image')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      newBannerType === 'full_image'
+                        ? 'bg-amber-50 border-amber-500 text-amber-950 font-bold ring-2 ring-amber-500/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs font-black text-amber-800">
+                      <ImageIcon className="w-4 h-4 text-amber-600" />
+                      <span>🖼️ Full Graphic Banner</span>
+                    </div>
+                    <p className="text-[10px] text-gray-600 font-normal mt-1 leading-relaxed">
+                      Edge-to-edge promotional banner (Amazon/Flipkart style). Displays your designed graphic fully without text overlays.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewBannerType('custom_layout')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      newBannerType === 'custom_layout'
+                        ? 'bg-indigo-50 border-indigo-500 text-indigo-950 font-bold ring-2 ring-indigo-500/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs font-black text-indigo-800">
+                      <Sliders className="w-4 h-4 text-indigo-600" />
+                      <span>🎨 Text + Product Layout</span>
+                    </div>
+                    <p className="text-[10px] text-gray-600 font-normal mt-1 leading-relaxed">
+                      Gradient theme with Headline, Offer Tag, Subtitle, WhatsApp &amp; Shop buttons, and a product cutout.
+                    </p>
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label className="font-bold text-gray-700 block mb-1">Subtitle / Details</label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. HP 15s, Dell Inspiron, Lenovo in stock with 16GB RAM..."
-                  value={newBannerSubtitle}
-                  onChange={(e) => setNewBannerSubtitle(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
+              {/* 3. Basic Information */}
+              <div className="space-y-3 pt-1">
                 <div>
-                  <label className="font-bold text-gray-700 block mb-1">Badge Text</label>
+                  <label className="font-bold text-gray-700 block mb-1">Banner Title *</label>
                   <input
                     type="text"
-                    value={newBannerBadge}
-                    onChange={(e) => setNewBannerBadge(e.target.value)}
+                    placeholder="e.g. Festival Laptop Fest / Mega Refurbished Sale"
+                    value={newBannerTitle}
+                    onChange={(e) => setNewBannerTitle(e.target.value)}
                     className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="font-bold text-gray-700 block mb-1">Highlight Offer Tag</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Save Up to 45% + 18% GST Bill"
+                      value={newBannerHighlight}
+                      onChange={(e) => setNewBannerHighlight(e.target.value)}
+                      className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-gray-700 block mb-1">Badge Text</label>
+                    <input
+                      type="text"
+                      value={newBannerBadge}
+                      onChange={(e) => setNewBannerBadge(e.target.value)}
+                      className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    />
+                  </div>
+                </div>
+
+                {newBannerType === 'custom_layout' && (
+                  <div>
+                    <label className="font-bold text-gray-700 block mb-1">Subtitle / Description</label>
+                    <textarea
+                      rows={2}
+                      placeholder="e.g. HP 15s, Dell Inspiron, Lenovo in stock with 16GB RAM..."
+                      value={newBannerSubtitle}
+                      onChange={(e) => setNewBannerSubtitle(e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Images & Recommended Sizes */}
+              <div className="space-y-3 pt-1 border-t border-gray-100">
+                <div className="flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-blue-600" />
+                  <span className="font-extrabold text-gray-800 text-xs">Banner Image Uploads &amp; Sizes</span>
+                </div>
+
+                {/* PC / Desktop Banner Image */}
+                {(newBannerTargetDevice === 'all' || newBannerTargetDevice === 'desktop') && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <label className="font-bold text-gray-800 block text-xs">
+                          💻 PC / Desktop Banner Image
+                        </label>
+                        <span className="text-[10px] text-blue-700 font-extrabold">
+                          📐 Recommended Size: 1920 × 600 px (or 1600 × 500 px, ~3.2:1)
+                        </span>
+                      </div>
+
+                      <label className="cursor-pointer text-xs font-bold text-[#1A56DB] hover:text-[#1E40AF] bg-white border border-blue-200 px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-2xs">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload PC Banner</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleBannerFileUpload(e, 'desktop')}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="Enter PC banner URL or upload from device above..."
+                      value={newBannerDesktopImage}
+                      onChange={(e) => setNewBannerDesktopImage(e.target.value)}
+                      className="w-full h-8 bg-white border border-gray-200 rounded-lg px-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    />
+
+                    {newBannerDesktopImage && (
+                      <div className="relative w-full aspect-[22/7] rounded-lg border border-gray-200 overflow-hidden bg-slate-900 flex items-center justify-center">
+                        <img src={newBannerDesktopImage} alt="PC Banner Preview" className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-[9.5px] font-bold text-white px-2 py-0.5 rounded">
+                          PC Preview (1920×600)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Phone / Mobile Banner Image */}
+                {(newBannerTargetDevice === 'all' || newBannerTargetDevice === 'mobile') && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <label className="font-bold text-gray-800 block text-xs">
+                          📱 Phone / Mobile Banner Image
+                        </label>
+                        <span className="text-[10px] text-purple-700 font-extrabold">
+                          📐 Recommended Size: 800 × 600 px or 1080 × 1080 px (4:3 or 1:1)
+                        </span>
+                      </div>
+
+                      <label className="cursor-pointer text-xs font-bold text-purple-700 hover:text-purple-800 bg-white border border-purple-200 px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-2xs">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload Phone Banner</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleBannerFileUpload(e, 'mobile')}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="Enter Phone banner URL or upload from device above..."
+                      value={newBannerMobileImage}
+                      onChange={(e) => setNewBannerMobileImage(e.target.value)}
+                      className="w-full h-8 bg-white border border-gray-200 rounded-lg px-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    />
+
+                    {newBannerMobileImage && (
+                      <div className="relative w-full aspect-[16/9] max-w-[320px] mx-auto rounded-lg border border-gray-200 overflow-hidden bg-slate-900 flex items-center justify-center">
+                        <img src={newBannerMobileImage} alt="Phone Banner Preview" className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-[9.5px] font-bold text-white px-2 py-0.5 rounded">
+                          Phone Preview (800×600)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 5. Link & Action Button */}
+              <div className="grid grid-cols-2 gap-2.5 pt-1 border-t border-gray-100">
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Target Link / URL *</label>
+                  <input
+                    type="text"
+                    value={newBannerBtnUrl}
+                    onChange={(e) => setNewBannerBtnUrl(e.target.value)}
+                    placeholder="/shop?cat=Laptops"
+                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    required
                   />
                 </div>
 
@@ -11587,22 +11957,14 @@ export default function AdminPage() {
                     type="text"
                     value={newBannerBtnText}
                     onChange={(e) => setNewBannerBtnText(e.target.value)}
+                    placeholder="Shop Now"
                     className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="font-bold text-gray-700 block mb-1">Button Target Link</label>
-                  <input
-                    type="text"
-                    value={newBannerBtnUrl}
-                    onChange={(e) => setNewBannerBtnUrl(e.target.value)}
-                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
-                  />
-                </div>
-
+              {/* 6. Theme Gradient (For text layout) */}
+              {newBannerType === 'custom_layout' && (
                 <div>
                   <label className="font-bold text-gray-700 block mb-1">Gradient Theme</label>
                   <select
@@ -11616,49 +11978,19 @@ export default function AdminPage() {
                     <option value="from-[#381504] via-[#78350F] to-[#EA580C]">Sunset Amber</option>
                   </select>
                 </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-bold text-gray-700 block">Banner Image</label>
-                  <label className="cursor-pointer text-[#1A56DB] hover:text-[#1E40AF] font-bold text-xs flex items-center gap-1">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload from Gallery / Device</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleBannerFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    placeholder="Enter image URL or upload from gallery above..."
-                    value={newBannerImage}
-                    onChange={(e) => setNewBannerImage(e.target.value)}
-                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
-                  />
-                  {newBannerImage && (
-                    <div className="h-24 w-full rounded-xl border border-gray-200 overflow-hidden bg-slate-900/5 p-1 flex items-center justify-center">
-                      <img src={newBannerImage} alt="Banner Preview" className="h-full w-full object-contain" />
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
 
               <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsAddBannerOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200"
+                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-xs"
+                  className="px-5 py-2 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-xs cursor-pointer"
                 >
                   Save Banner to Database
                 </button>
@@ -11671,11 +12003,11 @@ export default function AdminPage() {
       )}
 
       {/* ========================================================= */}
-      {/* MODAL: EDIT HERO BANNER                                   */}
+      {/* MODAL: EDIT HERO BANNER (Full Page & Multi-Device)        */}
       {/* ========================================================= */}
       {editingBanner && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div>
@@ -11694,50 +12026,253 @@ export default function AdminPage() {
               </button>
             </div>
 
-            <form onSubmit={handleEditBannerSubmit} className="space-y-3.5 text-xs">
+            <form onSubmit={handleEditBannerSubmit} className="space-y-4 text-xs">
               
+              {/* 1. Device Placement Selection */}
               <div>
-                <label className="font-bold text-gray-700 block mb-1">Banner Title *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Upgrade to 12th & 13th Gen Laptops"
-                  value={editingBanner.title}
-                  onChange={(e) => setEditingBanner({ ...editingBanner, title: e.target.value })}
-                  className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
-                  required
-                />
+                <label className="font-bold text-gray-800 block mb-1.5">
+                  Where should this banner be displayed? (Device Targeting) *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingBanner({ ...editingBanner, targetDevice: 'all' })}
+                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                      editingBanner.targetDevice === 'all' || !editingBanner.targetDevice
+                        ? 'bg-blue-50 border-[#1A56DB] text-[#1A56DB] font-extrabold ring-2 ring-blue-500/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Globe className="w-4 h-4" />
+                    <span className="text-[11px] font-bold">PC &amp; Phone (All)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingBanner({ ...editingBanner, targetDevice: 'desktop' })}
+                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                      editingBanner.targetDevice === 'desktop'
+                        ? 'bg-blue-50 border-[#1A56DB] text-[#1A56DB] font-extrabold ring-2 ring-blue-500/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Laptop className="w-4 h-4" />
+                    <span className="text-[11px] font-bold">💻 PC / Desktop Only</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingBanner({ ...editingBanner, targetDevice: 'mobile' })}
+                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                      editingBanner.targetDevice === 'mobile'
+                        ? 'bg-blue-50 border-[#1A56DB] text-[#1A56DB] font-extrabold ring-2 ring-blue-500/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Smartphone className="w-4 h-4" />
+                    <span className="text-[11px] font-bold">📱 Phone / Mobile Only</span>
+                  </button>
+                </div>
               </div>
 
+              {/* 2. Banner Display Style */}
               <div>
-                <label className="font-bold text-gray-700 block mb-1">Highlight Offer Tag</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Save Up to 45% + 18% GST Bill"
-                  value={editingBanner.titleHighlight || ''}
-                  onChange={(e) => setEditingBanner({ ...editingBanner, titleHighlight: e.target.value })}
-                  className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
-                />
+                <label className="font-bold text-gray-800 block mb-1.5">
+                  Banner Display Style *
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditingBanner({ ...editingBanner, bannerType: 'full_image' })}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      editingBanner.bannerType === 'full_image' || (!editingBanner.bannerType && (editingBanner as any).fullBleedImage)
+                        ? 'bg-amber-50 border-amber-500 text-amber-950 font-bold ring-2 ring-amber-500/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs font-black text-amber-800">
+                      <ImageIcon className="w-4 h-4 text-amber-600" />
+                      <span>🖼️ Full Graphic Banner</span>
+                    </div>
+                    <p className="text-[10px] text-gray-600 font-normal mt-1 leading-relaxed">
+                      Edge-to-edge promotional banner (Amazon/Flipkart style). Displays your designed graphic fully without text overlays.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingBanner({ ...editingBanner, bannerType: 'custom_layout' })}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      editingBanner.bannerType === 'custom_layout'
+                        ? 'bg-indigo-50 border-indigo-500 text-indigo-950 font-bold ring-2 ring-indigo-500/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs font-black text-indigo-800">
+                      <Sliders className="w-4 h-4 text-indigo-600" />
+                      <span>🎨 Text + Product Layout</span>
+                    </div>
+                    <p className="text-[10px] text-gray-600 font-normal mt-1 leading-relaxed">
+                      Gradient theme with Headline, Offer Tag, Subtitle, WhatsApp &amp; Shop buttons, and a product cutout.
+                    </p>
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label className="font-bold text-gray-700 block mb-1">Subtitle / Details</label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. HP 15s, Dell Inspiron, Lenovo in stock with 16GB RAM..."
-                  value={editingBanner.subtitle || ''}
-                  onChange={(e) => setEditingBanner({ ...editingBanner, subtitle: e.target.value })}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
+              {/* 3. Basic Information */}
+              <div className="space-y-3 pt-1">
                 <div>
-                  <label className="font-bold text-gray-700 block mb-1">Badge Text</label>
+                  <label className="font-bold text-gray-700 block mb-1">Banner Title *</label>
                   <input
                     type="text"
-                    value={editingBanner.badge || ''}
-                    onChange={(e) => setEditingBanner({ ...editingBanner, badge: e.target.value })}
+                    value={editingBanner.title}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, title: e.target.value })}
                     className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="font-bold text-gray-700 block mb-1">Highlight Offer Tag</label>
+                    <input
+                      type="text"
+                      value={editingBanner.titleHighlight || ''}
+                      onChange={(e) => setEditingBanner({ ...editingBanner, titleHighlight: e.target.value })}
+                      className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-gray-700 block mb-1">Badge Text</label>
+                    <input
+                      type="text"
+                      value={editingBanner.badge || ''}
+                      onChange={(e) => setEditingBanner({ ...editingBanner, badge: e.target.value })}
+                      className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    />
+                  </div>
+                </div>
+
+                {editingBanner.bannerType === 'custom_layout' && (
+                  <div>
+                    <label className="font-bold text-gray-700 block mb-1">Subtitle / Description</label>
+                    <textarea
+                      rows={2}
+                      value={editingBanner.subtitle || ''}
+                      onChange={(e) => setEditingBanner({ ...editingBanner, subtitle: e.target.value })}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Images & Sizing */}
+              <div className="space-y-3 pt-1 border-t border-gray-100">
+                <div className="flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-blue-600" />
+                  <span className="font-extrabold text-gray-800 text-xs">Banner Image Uploads &amp; Sizes</span>
+                </div>
+
+                {/* PC / Desktop Banner Image */}
+                {(editingBanner.targetDevice === 'all' || editingBanner.targetDevice === 'desktop' || !editingBanner.targetDevice) && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <label className="font-bold text-gray-800 block text-xs">
+                          💻 PC / Desktop Banner Image
+                        </label>
+                        <span className="text-[10px] text-blue-700 font-extrabold">
+                          📐 Recommended Size: 1920 × 600 px (or 1600 × 500 px, ~3.2:1)
+                        </span>
+                      </div>
+
+                      <label className="cursor-pointer text-xs font-bold text-[#1A56DB] hover:text-[#1E40AF] bg-white border border-blue-200 px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-2xs">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload PC Banner</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleEditBannerFileUpload(e, 'desktop')}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={editingBanner.desktopImage || ''}
+                      onChange={(e) => setEditingBanner({ ...editingBanner, desktopImage: e.target.value })}
+                      placeholder="Enter PC banner URL or upload from device above..."
+                      className="w-full h-8 bg-white border border-gray-200 rounded-lg px-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    />
+
+                    {editingBanner.desktopImage && (
+                      <div className="relative w-full aspect-[22/7] rounded-lg border border-gray-200 overflow-hidden bg-slate-900 flex items-center justify-center">
+                        <img src={editingBanner.desktopImage} alt="PC Banner Preview" className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-[9.5px] font-bold text-white px-2 py-0.5 rounded">
+                          PC Preview (1920×600)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Phone / Mobile Banner Image */}
+                {(editingBanner.targetDevice === 'all' || editingBanner.targetDevice === 'mobile') && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <label className="font-bold text-gray-800 block text-xs">
+                          📱 Phone / Mobile Banner Image
+                        </label>
+                        <span className="text-[10px] text-purple-700 font-extrabold">
+                          📐 Recommended Size: 800 × 600 px or 1080 × 1080 px (4:3 or 1:1)
+                        </span>
+                      </div>
+
+                      <label className="cursor-pointer text-xs font-bold text-purple-700 hover:text-purple-800 bg-white border border-purple-200 px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-2xs">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload Phone Banner</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleEditBannerFileUpload(e, 'mobile')}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={editingBanner.mobileImage || ''}
+                      onChange={(e) => setEditingBanner({ ...editingBanner, mobileImage: e.target.value })}
+                      placeholder="Enter Phone banner URL or upload from device above..."
+                      className="w-full h-8 bg-white border border-gray-200 rounded-lg px-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    />
+
+                    {editingBanner.mobileImage && (
+                      <div className="relative w-full aspect-[16/9] max-w-[320px] mx-auto rounded-lg border border-gray-200 overflow-hidden bg-slate-900 flex items-center justify-center">
+                        <img src={editingBanner.mobileImage} alt="Phone Banner Preview" className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-[9.5px] font-bold text-white px-2 py-0.5 rounded">
+                          Phone Preview (800×600)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 5. Link, Button, Position, Status */}
+              <div className="grid grid-cols-2 gap-2.5 pt-1 border-t border-gray-100">
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Target Link / URL *</label>
+                  <input
+                    type="text"
+                    value={editingBanner.buttonUrl || ''}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, buttonUrl: e.target.value })}
+                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
+                    required
                   />
                 </div>
 
@@ -11754,16 +12289,6 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="font-bold text-gray-700 block mb-1">Button Target Link</label>
-                  <input
-                    type="text"
-                    value={editingBanner.buttonUrl || ''}
-                    onChange={(e) => setEditingBanner({ ...editingBanner, buttonUrl: e.target.value })}
-                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
-                  />
-                </div>
-
-                <div>
                   <label className="font-bold text-gray-700 block mb-1">Display Position</label>
                   <input
                     type="number"
@@ -11774,9 +12299,7 @@ export default function AdminPage() {
                     className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="font-bold text-gray-700 block mb-1">Status</label>
                   <select
@@ -11788,7 +12311,10 @@ export default function AdminPage() {
                     <option value="inactive">Inactive (Hidden)</option>
                   </select>
                 </div>
+              </div>
 
+              {/* 6. Theme Gradient (For text layout) */}
+              {editingBanner.bannerType === 'custom_layout' && (
                 <div>
                   <label className="font-bold text-gray-700 block mb-1">Gradient Theme</label>
                   <select
@@ -11804,37 +12330,7 @@ export default function AdminPage() {
                     <option value="from-[#381504] via-[#78350F] to-[#EA580C]">Sunset Amber</option>
                   </select>
                 </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-bold text-gray-700 block">Banner Image</label>
-                  <label className="cursor-pointer text-[#1A56DB] hover:text-[#1E40AF] font-bold text-xs flex items-center gap-1">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload New Photo</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleEditBannerFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    placeholder="Enter image URL or upload from device..."
-                    value={editingBanner.desktopImage}
-                    onChange={(e) => setEditingBanner({ ...editingBanner, desktopImage: e.target.value, mobileImage: e.target.value })}
-                    className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
-                  />
-                  {editingBanner.desktopImage && (
-                    <div className="h-24 w-full rounded-xl border border-gray-200 overflow-hidden bg-slate-900/5 p-1 flex items-center justify-center">
-                      <img src={editingBanner.desktopImage} alt="Banner Preview" className="h-full w-full object-contain" />
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
 
               <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
                 <button

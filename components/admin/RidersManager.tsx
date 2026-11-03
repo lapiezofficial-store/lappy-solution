@@ -131,7 +131,7 @@ export default function RidersManager() {
     if (!dateStr) return 'No activity yet';
     const diffMs = Date.now() - new Date(dateStr).getTime();
     const diffMin = Math.round(diffMs / 60000);
-    if (diffMin <= 1) return 'Just now (Live 🟢)';
+    if (diffMin <= 1) return 'Just now (Live)';
     if (diffMin < 60) return `${diffMin}m ago`;
     const diffHours = Math.round(diffMin / 60);
     if (diffHours < 24) return `${diffHours}h ago`;
@@ -156,7 +156,7 @@ export default function RidersManager() {
 
       const data = await res.json();
       if (res.ok) {
-        alert(`Rider safalta se create ho gaya! 🎉\nRider ID: ${data.rider.riderCode || data.rider.id}`);
+        alert(`Rider safalta se create ho gaya!\nRider ID: ${data.rider.riderCode || data.rider.id}`);
         setShowAddModal(false);
         setAddForm({
           name: '',
@@ -286,7 +286,7 @@ export default function RidersManager() {
 
       const data = await res.json();
       if (res.ok) {
-        alert('Rider details safalta se update ho gayi! 🎉');
+        alert('Rider details safalta se update ho gayi!');
         setShowEditModal(false);
         fetchRiders();
       } else {
@@ -301,7 +301,7 @@ export default function RidersManager() {
 
   // 6. DELETE / REMOVE RIDER
   const handleDeleteRider = async (rider: Rider) => {
-    const confirmName = prompt(`⚠️ WARNING: Kya aap pakka "${rider.name}" ko permanently delete karna chahte hain?\nConfirm karne ke liye rider ka naam likhein:`);
+    const confirmName = prompt(`WARNING: Kya aap pakka "${rider.name}" ko permanently delete karna chahte hain?\nConfirm karne ke liye rider ka naam likhein:`);
     if (confirmName !== rider.name) {
       if (confirmName !== null) alert('Naam match nahi kiya. Deletion cancel ho gaya.');
       return;
@@ -587,7 +587,7 @@ export default function RidersManager() {
                         </span>
                       </div>
                       <h4 className="font-black text-white text-base mt-1.5">{rider.name}</h4>
-                      <p className="text-xs text-gray-400">📞 {rider.phone}</p>
+                      <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3 text-gray-500" />{rider.phone}</p>
                     </div>
 
                     <div className="text-right">
@@ -1348,7 +1348,7 @@ export default function RidersManager() {
                 </div>
                 <div>
                   <h3 className="font-extrabold text-lg text-gray-900">Settle Rider Payout</h3>
-                  <p className="text-xs text-gray-500">{selectedRider.name} (📞 {selectedRider.phone})</p>
+                  <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">{selectedRider.name} (<Phone className="w-3 h-3 text-gray-400 inline" />{selectedRider.phone})</p>
                 </div>
               </div>
               <button

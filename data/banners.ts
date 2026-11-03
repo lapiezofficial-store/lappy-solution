@@ -12,6 +12,60 @@ export interface DefaultBannerItem {
   bgGradient: string;
   position: number;
   status: 'active' | 'inactive';
+  targetDevice?: 'all' | 'desktop' | 'mobile';
+  bannerType?: 'full_image' | 'custom_layout';
+  fullBleedImage?: boolean;
+}
+
+/**
+ * Encode targetDevice and bannerType cleanly into bgGradient without breaking DB schema
+ */
+export function encodeBannerConfig(
+  gradient: string,
+  targetDevice: 'all' | 'desktop' | 'mobile' = 'all',
+  bannerType: 'full_image' | 'custom_layout' = 'full_image'
+): string {
+  const cleanGradient = (gradient || 'from-[#0A1633] via-[#0F2960] to-[#1A56DB]').split('__CONFIG__')[0].trim();
+  const config = JSON.stringify({ targetDevice, bannerType });
+  return `${cleanGradient}__CONFIG__${config}`;
+}
+
+/**
+ * Decode targetDevice and bannerType from bgGradient
+ */
+export function decodeBannerConfig(rawGradient?: string, fallbackFullBleed: boolean = true) {
+  if (!rawGradient) {
+    return {
+      bgGradient: 'from-[#0A1633] via-[#0F2960] to-[#1A56DB]',
+      targetDevice: 'all' as const,
+      bannerType: (fallbackFullBleed ? 'full_image' : 'custom_layout') as 'full_image' | 'custom_layout',
+    };
+  }
+
+  if (rawGradient.includes('__CONFIG__')) {
+    const parts = rawGradient.split('__CONFIG__');
+    const gradient = parts[0]?.trim() || 'from-[#0A1633] via-[#0F2960] to-[#1A56DB]';
+    try {
+      const parsed = JSON.parse(parts[1]);
+      return {
+        bgGradient: gradient,
+        targetDevice: (parsed.targetDevice || 'all') as 'all' | 'desktop' | 'mobile',
+        bannerType: (parsed.bannerType || (fallbackFullBleed ? 'full_image' : 'custom_layout')) as 'full_image' | 'custom_layout',
+      };
+    } catch {
+      return {
+        bgGradient: gradient,
+        targetDevice: 'all' as const,
+        bannerType: (fallbackFullBleed ? 'full_image' : 'custom_layout') as 'full_image' | 'custom_layout',
+      };
+    }
+  }
+
+  return {
+    bgGradient: rawGradient,
+    targetDevice: 'all' as const,
+    bannerType: (fallbackFullBleed ? 'full_image' : 'custom_layout') as 'full_image' | 'custom_layout',
+  };
 }
 
 export const INITIAL_BANNERS: DefaultBannerItem[] = [
@@ -26,9 +80,12 @@ export const INITIAL_BANNERS: DefaultBannerItem[] = [
     buttonText: 'Shop Refurbished Now',
     buttonUrl: '/shop?cat=Laptops',
     whatsappMsg: 'Hello Lapiez Garhwa, I want to inquire about certified refurbished laptops and printers.',
-    bgGradient: 'from-[#0A1633] via-[#0E2A68] to-[#1E3A8A]',
+    bgGradient: encodeBannerConfig('from-[#0A1633] via-[#0E2A68] to-[#1E3A8A]', 'all', 'full_image'),
     position: 1,
     status: 'active',
+    targetDevice: 'all',
+    bannerType: 'full_image',
+    fullBleedImage: true,
   },
   {
     id: 'banner-frontech-monitors',
@@ -41,9 +98,11 @@ export const INITIAL_BANNERS: DefaultBannerItem[] = [
     buttonText: 'Shop Frontech Monitors',
     buttonUrl: '/shop?brand=Frontech&cat=Computers',
     whatsappMsg: 'Hello Lapiez Garhwa, I want to inquire about Frontech curved gaming monitors.',
-    bgGradient: 'from-[#0A1633] via-[#0D224E] to-[#1E3A8A]',
+    bgGradient: encodeBannerConfig('from-[#0A1633] via-[#0D224E] to-[#1E3A8A]', 'all', 'custom_layout'),
     position: 2,
     status: 'active',
+    targetDevice: 'all',
+    bannerType: 'custom_layout',
   },
   {
     id: 'banner-laptop-fest',
@@ -56,9 +115,11 @@ export const INITIAL_BANNERS: DefaultBannerItem[] = [
     buttonText: 'Shop Laptop Deals',
     buttonUrl: '/shop?cat=Laptops',
     whatsappMsg: 'Hello Lapiez Garhwa, I want to inquire about festival laptop offers and pricing.',
-    bgGradient: 'from-[#0A1633] via-[#0F2960] to-[#1A56DB]',
+    bgGradient: encodeBannerConfig('from-[#0A1633] via-[#0F2960] to-[#1A56DB]', 'all', 'custom_layout'),
     position: 3,
     status: 'active',
+    targetDevice: 'all',
+    bannerType: 'custom_layout',
   },
   {
     id: 'banner-cctv-security',
@@ -71,9 +132,11 @@ export const INITIAL_BANNERS: DefaultBannerItem[] = [
     buttonText: 'View CCTV Packages',
     buttonUrl: '/shop?cat=CCTV%20%26%20Security',
     whatsappMsg: 'Hello Lapiez Garhwa, I want a quote for 4-camera CP-PLUS CCTV security kit.',
-    bgGradient: 'from-[#03241C] via-[#064E3B] to-[#047857]',
+    bgGradient: encodeBannerConfig('from-[#03241C] via-[#064E3B] to-[#047857]', 'all', 'custom_layout'),
     position: 4,
     status: 'active',
+    targetDevice: 'all',
+    bannerType: 'custom_layout',
   },
   {
     id: 'banner-custom-pc',
@@ -86,9 +149,11 @@ export const INITIAL_BANNERS: DefaultBannerItem[] = [
     buttonText: 'Explore Custom PCs',
     buttonUrl: '/shop?cat=Computers',
     whatsappMsg: 'Hello Lapiez Garhwa, I want to configure a custom PC for video editing / gaming.',
-    bgGradient: 'from-[#171033] via-[#2E1065] to-[#4338CA]',
+    bgGradient: encodeBannerConfig('from-[#171033] via-[#2E1065] to-[#4338CA]', 'all', 'custom_layout'),
     position: 5,
     status: 'active',
+    targetDevice: 'all',
+    bannerType: 'custom_layout',
   },
   {
     id: 'banner-spares-upgrade',
@@ -101,8 +166,10 @@ export const INITIAL_BANNERS: DefaultBannerItem[] = [
     buttonText: 'Explore Spares & SSDs',
     buttonUrl: '/shop?search=SSD',
     whatsappMsg: 'Hello Lapiez Garhwa, I want to upgrade my laptop SSD / buy original adapter.',
-    bgGradient: 'from-[#381504] via-[#78350F] to-[#EA580C]',
+    bgGradient: encodeBannerConfig('from-[#381504] via-[#78350F] to-[#EA580C]', 'all', 'custom_layout'),
     position: 6,
     status: 'active',
+    targetDevice: 'all',
+    bannerType: 'custom_layout',
   },
 ];

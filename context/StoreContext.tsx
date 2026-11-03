@@ -15,7 +15,7 @@ import { supabase, signInWithGoogle, signOutCustomer, User } from '../lib/supaba
 import { Coupon, INITIAL_COUPONS, calculateCouponDiscount } from '../data/coupons';
 import { CMSBrand, DEFAULT_BRANDS } from '../data/brands';
 import { CATEGORIES } from '../data/categories';
-import { INITIAL_BANNERS } from '../data/banners';
+import { INITIAL_BANNERS, encodeBannerConfig, decodeBannerConfig } from '../data/banners';
 import { adminFetch, broadcastCmsUpdate, subscribeToCmsUpdates } from '../lib/adminApi';
 
 export interface CMSSubcategory {
@@ -146,6 +146,9 @@ export interface CMSBanner {
   bgGradient: string;
   position: number;
   status: string;
+  targetDevice?: 'all' | 'desktop' | 'mobile';
+  bannerType?: 'full_image' | 'custom_layout';
+  fullBleedImage?: boolean;
 }
 
 export interface CMSSection {
@@ -802,8 +805,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
           // 1. Settings
           if (initData.siteSettings) {
+            const rawPhone = initData.siteSettings.phone;
+            const cleanPhone = (rawPhone === '9128282845' || !rawPhone || rawPhone.trim() === '')
+              ? STORE_INFO.phone
+              : rawPhone;
             const site = {
               ...initData.siteSettings,
+              phone: cleanPhone,
               siteName: initData.siteSettings.siteName || 'Lapiez',
               googleMapsUrl: initData.siteSettings.googleMapsUrl || initData.siteSettings.twitterUrl || STORE_INFO.mapsUrl,
               twitterUrl: initData.siteSettings.twitterUrl || STORE_INFO.mapsUrl,
@@ -1168,7 +1176,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (savedSiteSettings) {
         try {
           const parsed = JSON.parse(savedSiteSettings);
-          if (parsed && typeof parsed === 'object') setSiteSettings(parsed);
+          if (parsed && typeof parsed === 'object') {
+            if (parsed.phone === '9128282845' || !parsed.phone) {
+              parsed.phone = STORE_INFO.phone;
+            }
+            setSiteSettings(parsed);
+          }
         } catch (e) {}
       }
 
@@ -1873,9 +1886,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const addBanner = async (bannerData: Partial<CMSBanner>) => {
     try {
+      const gradient = encodeBannerConfig(
+        bannerData.bgGradient || 'from-[#0A1633] via-[#0F2960] to-[#1A56DB]',
+        bannerData.targetDevice || 'all',
+        bannerData.bannerType || 'full_image'
+      );
+      const payload = {
+        title: bannerData.title || '',
+        titleHighlight: bannerData.titleHighlight || '',
+        subtitle: bannerData.subtitle || '',
+        badge: bannerData.badge || '',
+        desktopImage: bannerData.desktopImage || '',
+        mobileImage: bannerData.mobileImage || bannerData.desktopImage || '',
+        buttonText: bannerData.buttonText || 'Shop Deals',
+        buttonUrl: bannerData.buttonUrl || '/shop',
+        whatsappMsg: bannerData.whatsappMsg || `Hello Lapiez Garhwa, I want to inquire about: ${bannerData.title || 'offers'}`,
+        bgGradient: gradient,
+        position: bannerData.position || (banners.length + 1),
+        status: bannerData.status || 'active',
+      };
       const res = await adminFetch('/api/cms/banners', {
         method: 'POST',
-        body: JSON.stringify(bannerData),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         const data = await res.json();
@@ -1895,10 +1927,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const editBanner = async (bannerData: CMSBanner) => {
     const prevBanners = banners;
     try {
-      setBanners((prev) => prev.map((b) => (b.id === bannerData.id ? bannerData : b)));
+      const gradient = encodeBannerConfig(
+        bannerData.bgGradient || 'from-[#0A1633] via-[#0F2960] to-[#1A56DB]',
+        bannerData.targetDevice || 'all',
+        bannerData.bannerType || 'full_image'
+      );
+      const payload = {
+        id: bannerData.id,
+        title: bannerData.title || '',
+        titleHighlight: bannerData.titleHighlight || '',
+        subtitle: bannerData.subtitle || '',
+        badge: bannerData.badge || '',
+        desktopImage: bannerData.desktopImage || '',
+        mobileImage: bannerData.mobileImage || bannerData.desktopImage || '',
+        buttonText: bannerData.buttonText || 'Shop Deals',
+        buttonUrl: bannerData.buttonUrl || '/shop',
+        whatsappMsg: bannerData.whatsappMsg || `Hello Lapiez Garhwa, I want to inquire about: ${bannerData.title || 'offers'}`,
+        bgGradient: gradient,
+        position: bannerData.position ?? 1,
+        status: bannerData.status || 'active',
+      };
+      setBanners((prev) => prev.map((b) => (b.id === bannerData.id ? { ...b, ...bannerData, bgGradient: gradient } : b)));
       const res = await adminFetch('/api/cms/banners', {
         method: 'PUT',
-        body: JSON.stringify(bannerData),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         broadcastCmsUpdate('banners');

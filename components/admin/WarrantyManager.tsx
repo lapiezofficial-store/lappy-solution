@@ -7,7 +7,8 @@ import {
   ArrowRight, X, ExternalLink, Calendar, User, FileText,
   Laptop, Check, Eye, ChevronDown, Filter, Trash2, Send,
   Cpu, Camera, HardDrive, HelpCircle, Building, Upload,
-  Image as ImageIcon, FileCheck, AlertTriangle, Store, Globe, History
+  Image as ImageIcon, FileCheck, AlertTriangle, Store, Globe, History,
+  MapPin, Package, Zap
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
@@ -611,9 +612,9 @@ export default function WarrantyManager() {
         <div className="flex items-center gap-1.5 flex-wrap w-full md:w-auto">
           {[
             { id: 'ALL', label: 'All Channels' },
-            { id: 'OFFLINE_STORE', label: '🏪 Shop Bills' },
-            { id: 'ONLINE_WEBSITE', label: '🌐 Online' },
-            { id: 'PAST_LEGACY', label: '📜 Past Customers' },
+            { id: 'OFFLINE_STORE', label: 'Shop Bills' },
+            { id: 'ONLINE_WEBSITE', label: 'Online Orders' },
+            { id: 'PAST_LEGACY', label: 'Past Customers' },
           ].map((pill) => (
             <button
               key={pill.id}
@@ -734,8 +735,9 @@ export default function WarrantyManager() {
                           <span>{claim.customerPhone}</span>
                         </div>
                         {claim.customerAddress && (
-                          <div className="text-[10px] text-slate-400 truncate max-w-[140px] mt-0.5" title={claim.customerAddress}>
-                            📍 {claim.customerAddress}
+                          <div className="text-[10px] text-slate-400 truncate max-w-[140px] mt-0.5 flex items-center gap-1" title={claim.customerAddress}>
+                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>{claim.customerAddress}</span>
                           </div>
                         )}
                       </td>
@@ -753,8 +755,9 @@ export default function WarrantyManager() {
                             SN: {claim.serialNumber}
                           </div>
                         ) : (
-                          <div className="text-[10px] text-amber-700 mt-1 font-semibold">
-                            ⚠️ No Serial entered
+                          <div className="text-[10px] text-amber-700 mt-1 font-semibold flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
+                            <span>No Serial entered</span>
                           </div>
                         )}
                       </td>
@@ -817,8 +820,9 @@ export default function WarrantyManager() {
                           {claim.issueDescription}
                         </div>
                         {claim.accessoriesReceived && (
-                          <div className="text-[10px] text-slate-500 mt-1 truncate" title={claim.accessoriesReceived}>
-                            📦 {claim.accessoriesReceived}
+                          <div className="text-[10px] text-slate-500 mt-1 truncate flex items-center gap-1" title={claim.accessoriesReceived}>
+                            <Package className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>{claim.accessoriesReceived}</span>
                           </div>
                         )}
                         {claim.brandRmaNumber && (
@@ -954,8 +958,9 @@ export default function WarrantyManager() {
             {/* Autofill for Online Channel */}
             {purchaseChannel === 'ONLINE_WEBSITE' && orders && orders.length > 0 && (
               <div className="mb-6 p-3.5 bg-blue-50 border border-blue-200 rounded-2xl space-y-1.5">
-                <label className="block text-[11px] font-bold text-blue-900 uppercase tracking-wider">
-                  ⚡ Autofill from Past Online Orders
+                <label className="block text-[11px] font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Autofill from Past Online Orders</span>
                 </label>
                 <select
                   onChange={(e) => {
@@ -1399,9 +1404,9 @@ export default function WarrantyManager() {
                     onChange={(e) => setUpdateVerification(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-bold focus:outline-none"
                   >
-                    <option value="VERIFIED">✓ Bill Verified (बिल जाँचा गया)</option>
-                    <option value="PENDING_VERIFICATION">⏳ Verification Pending</option>
-                    <option value="REJECTED_INVALID_BILL">✕ Invalid / Fake Bill</option>
+                    <option value="VERIFIED">Bill Verified (बिल जाँचा गया)</option>
+                    <option value="PENDING_VERIFICATION">Verification Pending</option>
+                    <option value="REJECTED_INVALID_BILL">Invalid / Fake Bill</option>
                   </select>
                 </div>
               </div>
