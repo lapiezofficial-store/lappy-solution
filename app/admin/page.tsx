@@ -1212,17 +1212,25 @@ export default function AdminPage() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const file = files[0];
-    const maxW = target === 'desktop' ? 1920 : 1080;
-    const maxH = target === 'desktop' ? 1080 : 1080;
+    const maxW = 1920;
+    const maxH = 1080;
     const optimized = await optimizeImageForUpload(file, maxW, maxH, 0.85);
     if (optimized.previewUrl) {
-      if (target === 'desktop') setNewBannerDesktopImage(optimized.previewUrl);
-      else setNewBannerMobileImage(optimized.previewUrl);
+      if (target === 'desktop') {
+        setNewBannerDesktopImage(optimized.previewUrl);
+        if (!newBannerMobileImage) setNewBannerMobileImage(optimized.previewUrl);
+      } else {
+        setNewBannerMobileImage(optimized.previewUrl);
+      }
     }
     const url = await uploadFileToCloudinary(optimized.file, 'banners');
     if (url) {
-      if (target === 'desktop') setNewBannerDesktopImage(url);
-      else setNewBannerMobileImage(url);
+      if (target === 'desktop') {
+        setNewBannerDesktopImage(url);
+        if (!newBannerMobileImage) setNewBannerMobileImage(url);
+      } else {
+        setNewBannerMobileImage(url);
+      }
       showToast(`${target === 'desktop' ? 'PC' : 'Phone'} banner uploaded!`);
     }
     e.target.value = '';
@@ -1232,14 +1240,14 @@ export default function AdminPage() {
     const files = e.target.files;
     if (!files || files.length === 0 || !editingBanner) return;
     const file = files[0];
-    const maxW = target === 'desktop' ? 1920 : 1080;
-    const maxH = target === 'desktop' ? 1080 : 1080;
+    const maxW = 1920;
+    const maxH = 1080;
     const optimized = await optimizeImageForUpload(file, maxW, maxH, 0.85);
     if (optimized.previewUrl) {
       setEditingBanner((prev) => {
         if (!prev) return null;
         return target === 'desktop'
-          ? { ...prev, desktopImage: optimized.previewUrl }
+          ? { ...prev, desktopImage: optimized.previewUrl, mobileImage: prev.mobileImage || optimized.previewUrl }
           : { ...prev, mobileImage: optimized.previewUrl };
       });
     }
@@ -1248,7 +1256,7 @@ export default function AdminPage() {
       setEditingBanner((prev) => {
         if (!prev) return null;
         return target === 'desktop'
-          ? { ...prev, desktopImage: url }
+          ? { ...prev, desktopImage: url, mobileImage: prev.mobileImage || url }
           : { ...prev, mobileImage: url };
       });
       showToast(`${target === 'desktop' ? 'PC' : 'Phone'} banner uploaded to Cloudinary!`);
@@ -6301,39 +6309,39 @@ export default function AdminPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                {/* PC Guideline */}
+                {/* Standard Banner Guideline */}
                 <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-blue-200">
                     <Laptop className="w-4 h-4 text-blue-300" />
-                    <span>💻 PC / Desktop Banner Size</span>
+                    <span>💻 Standard Banner Size</span>
                   </div>
-                  <p className="font-black text-sm text-white">1920 × 600 px</p>
+                  <p className="font-black text-sm text-white">1920 × 1080 px (16:9)</p>
                   <p className="text-[11px] text-white/70">
-                    Aspect Ratio ~3.2:1 (or 1600 × 500 px). Wide landscape graphic tailored for widescreen monitors and laptops.
+                    Full HD 16:9 standard Canva/Photoshop template. PC aur Phone dono me 100% full fit hota hai bina kate.
                   </p>
                 </div>
 
-                {/* Mobile Guideline */}
+                {/* Mobile Auto-Set Tip */}
                 <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-purple-200">
                     <Smartphone className="w-4 h-4 text-purple-300" />
-                    <span>📱 Phone / Mobile Banner Size</span>
+                    <span>📱 Phone Me Automatic Set</span>
                   </div>
-                  <p className="font-black text-sm text-white">800 × 600 px (or 1080 × 1080)</p>
+                  <p className="font-black text-sm text-white">Auto Responsive</p>
                   <p className="text-[11px] text-white/70">
-                    Aspect Ratio 4:3 or 1:1 square. Sharp and vertical-friendly for smartphone screens so text stays readable.
+                    1920 × 1080 image phone screen par automatically perfect 16:9 ratio me auto-set ho jaati hai.
                   </p>
                 </div>
 
-                {/* Full Page Tip */}
+                {/* Full Graphic Tip */}
                 <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-amber-200">
                     <ImageIcon className="w-4 h-4 text-amber-300" />
-                    <span>🖼️ Full Page Mode (Recommended)</span>
+                    <span>🖼️ Pure Image Banner</span>
                   </div>
-                  <p className="font-black text-sm text-white">Edge-to-Edge Display</p>
+                  <p className="font-black text-sm text-white">Zero Text Clutter</p>
                   <p className="text-[11px] text-white/70">
-                    Select &quot;Full Graphic Banner&quot; when you already designed your banner graphics. Shows edge-to-edge with zero text clutter.
+                    Sirf aapka uploaded image hi banner me dikhta hai bina kisi extra title/buttons ke.
                   </p>
                 </div>
               </div>
@@ -11857,13 +11865,13 @@ export default function AdminPage() {
                           💻 PC / Desktop Banner Image
                         </label>
                         <span className="text-[10px] text-blue-700 font-extrabold">
-                          📐 Recommended Size: 1920 × 600 px (or 1600 × 500 px, ~3.2:1)
+                          📐 Recommended Size: 1920 × 1080 px (16:9 Full HD)
                         </span>
                       </div>
 
                       <label className="cursor-pointer text-xs font-bold text-[#1A56DB] hover:text-[#1E40AF] bg-white border border-blue-200 px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-2xs">
                         <Upload className="w-3.5 h-3.5" />
-                        <span>Upload PC Banner</span>
+                        <span>Upload Banner</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -11875,17 +11883,17 @@ export default function AdminPage() {
 
                     <input
                       type="text"
-                      placeholder="Enter PC banner URL or upload from device above..."
+                      placeholder="Enter banner URL or upload from device above..."
                       value={newBannerDesktopImage}
                       onChange={(e) => setNewBannerDesktopImage(e.target.value)}
                       className="w-full h-8 bg-white border border-gray-200 rounded-lg px-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
                     />
 
                     {newBannerDesktopImage && (
-                      <div className="relative w-full aspect-[22/7] rounded-lg border border-gray-200 overflow-hidden bg-slate-900 flex items-center justify-center">
-                        <img src={newBannerDesktopImage} alt="PC Banner Preview" className="w-full h-full object-cover" />
+                      <div className="relative w-full aspect-[16/9] rounded-lg border border-gray-200 overflow-hidden bg-slate-900 flex items-center justify-center">
+                        <img src={newBannerDesktopImage} alt="Banner Preview" className="w-full h-full object-cover" />
                         <span className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-[9.5px] font-bold text-white px-2 py-0.5 rounded">
-                          PC Preview (1920×600)
+                          Preview (1920×1080 - 16:9)
                         </span>
                       </div>
                     )}
@@ -12183,13 +12191,13 @@ export default function AdminPage() {
                           💻 PC / Desktop Banner Image
                         </label>
                         <span className="text-[10px] text-blue-700 font-extrabold">
-                          📐 Recommended Size: 1920 × 600 px (or 1600 × 500 px, ~3.2:1)
+                          📐 Recommended Size: 1920 × 1080 px (16:9 Full HD)
                         </span>
                       </div>
 
                       <label className="cursor-pointer text-xs font-bold text-[#1A56DB] hover:text-[#1E40AF] bg-white border border-blue-200 px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-2xs">
                         <Upload className="w-3.5 h-3.5" />
-                        <span>Upload PC Banner</span>
+                        <span>Upload Banner</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -12203,15 +12211,15 @@ export default function AdminPage() {
                       type="text"
                       value={editingBanner.desktopImage || ''}
                       onChange={(e) => setEditingBanner({ ...editingBanner, desktopImage: e.target.value })}
-                      placeholder="Enter PC banner URL or upload from device above..."
+                      placeholder="Enter banner URL or upload from device above..."
                       className="w-full h-8 bg-white border border-gray-200 rounded-lg px-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
                     />
 
                     {editingBanner.desktopImage && (
-                      <div className="relative w-full aspect-[22/7] rounded-lg border border-gray-200 overflow-hidden bg-slate-900 flex items-center justify-center">
-                        <img src={editingBanner.desktopImage} alt="PC Banner Preview" className="w-full h-full object-cover" />
+                      <div className="relative w-full aspect-[16/9] rounded-lg border border-gray-200 overflow-hidden bg-slate-900 flex items-center justify-center">
+                        <img src={editingBanner.desktopImage} alt="Banner Preview" className="w-full h-full object-cover" />
                         <span className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-[9.5px] font-bold text-white px-2 py-0.5 rounded">
-                          PC Preview (1920×600)
+                          Preview (1920×1080 - 16:9)
                         </span>
                       </div>
                     )}

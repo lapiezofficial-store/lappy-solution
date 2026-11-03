@@ -140,13 +140,9 @@ export const TopBannerSlider: React.FC = () => {
       {/* Full Page Width Container (Edge-to-edge on phone, sleek widescreen on desktop) */}
       <div className="w-full max-w-[1920px] mx-auto px-0 sm:px-4 md:px-6">
         
-        {/* Banner Frame Container with Standard E-Commerce Real Dimensions:
-            - Mobile: h-[160px] to h-[180px] (~2.2:1 aspect ratio, exact Flipkart/Amazon mobile banner)
-            - Tablet: h-[220px] to h-[260px]
-            - Desktop: h-[300px] to h-[360px] (~3.5:1 widescreen proportion, no empty vertical waste)
-        */}
+        {/* Banner Frame Container: 1920 × 1080 px (16:9 Full HD Resolution) */}
         <div className="relative overflow-hidden w-full rounded-none sm:rounded-2xl border-0 sm:border border-[#E5E7EB] bg-slate-900 shadow-xs">
-          <div className="relative w-full h-[160px] sm:h-[220px] md:h-[290px] lg:h-[340px] xl:h-[360px] overflow-hidden">
+          <div className="relative w-full aspect-[16/9] overflow-hidden">
             
             {/* Slides Track with Hardware-Accelerated 3D Transforms */}
             <div 
