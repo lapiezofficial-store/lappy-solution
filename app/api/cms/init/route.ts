@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { CATEGORIES } from '@/data/categories';
 import { PRODUCTS } from '@/data/products';
 import { INITIAL_COUPONS } from '@/data/coupons';
-import { INITIAL_BANNERS } from '@/data/banners';
+import { INITIAL_BANNERS, decodeBannerConfig } from '@/data/banners';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -215,7 +215,16 @@ export async function GET(request: Request) {
         }))
       : INITIAL_COUPONS;
 
-    const effectiveBanners = (banners && banners.length > 0) ? banners : INITIAL_BANNERS;
+    const effectiveBanners = (banners && banners.length > 0)
+      ? banners.map((b) => {
+          const cfg = decodeBannerConfig(b.bgGradient);
+          return {
+            ...b,
+            targetDevice: cfg.targetDevice,
+            bannerType: cfg.bannerType,
+          };
+        })
+      : INITIAL_BANNERS;
 
     const payload = {
       siteSettings: cleanSiteSettings,

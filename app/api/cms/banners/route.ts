@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hasAdminSession } from '@/lib/adminAuth';
 import { invalidateInitCache } from '@/app/api/cms/init/route';
-import { INITIAL_BANNERS } from '@/data/banners';
+import { INITIAL_BANNERS, decodeBannerConfig } from '@/data/banners';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -42,8 +42,19 @@ export async function GET() {
       }
     }
 
+    const decodedBanners = (banners && banners.length > 0)
+      ? banners.map((b) => {
+          const cfg = decodeBannerConfig(b.bgGradient);
+          return {
+            ...b,
+            targetDevice: cfg.targetDevice,
+            bannerType: cfg.bannerType,
+          };
+        })
+      : INITIAL_BANNERS;
+
     return NextResponse.json({
-      banners: (banners && banners.length > 0) ? banners : INITIAL_BANNERS,
+      banners: decodedBanners,
     });
   } catch (error) {
     console.error('Error fetching banners:', error);
