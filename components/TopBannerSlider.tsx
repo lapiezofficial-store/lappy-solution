@@ -95,7 +95,7 @@ export const TopBannerSlider: React.FC = () => {
     setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
   }, [totalSlides]);
 
-  // Autoplay timer (5 seconds) - STRICTLY DISABLED IF ONLY 1 SLIDE TO PREVENT FLICKER
+  // Autoplay timer (5 seconds) - strictly disabled if only 1 slide
   useEffect(() => {
     if (isPaused || totalSlides <= 1) return;
     const interval = setInterval(() => {
@@ -137,44 +137,48 @@ export const TopBannerSlider: React.FC = () => {
       onTouchEnd={handleTouchEnd}
       aria-label="Promotional Banners Carousel"
     >
-      {/* Full Page Width Container (Edge-to-edge on phone, sleek widescreen on desktop) */}
-      <div className="w-full max-w-[1920px] mx-auto px-0 sm:px-4 md:px-6">
+      {/* Container: Aligned with standard 7xl site grid on desktop, edge-to-edge on mobile */}
+      <div className="w-full max-w-7xl mx-auto px-0 sm:px-4 md:px-6">
         
-        {/* Banner Frame Container: 1920 × 1080 px (16:9 Full HD Resolution) */}
+        {/* Banner Frame Container:
+            - Phone (<640px): aspect-[16/9] max-h-[230px] -> 1920x1080 images fit 100% edge-to-edge without crop
+            - Tablet/Desktop: Sleek widescreen proportion capped at max-h-[420px], preventing giant 1080px tall viewports
+        */}
         <div className="relative overflow-hidden w-full rounded-none sm:rounded-2xl border-0 sm:border border-[#E5E7EB] bg-slate-900 shadow-xs">
-          <div className="relative w-full aspect-[16/9] overflow-hidden">
+          <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] md:aspect-[24/9] max-h-[230px] sm:max-h-[320px] md:max-h-[380px] lg:max-h-[420px] overflow-hidden">
             
-            {/* Slides Track with Hardware-Accelerated 3D Transforms */}
-            <div 
-              className="flex h-full w-full transition-transform duration-500 ease-out"
-              style={{ 
-                transform: `translate3d(-${currentSlide * 100}%, 0, 0)`,
-                WebkitTransform: `translate3d(-${currentSlide * 100}%, 0, 0)`,
-                willChange: 'transform',
-                backfaceVisibility: 'hidden',
-                WebkitBackfaceVisibility: 'hidden'
-              }}
-            >
-              {slides.map((slide, index) => (
-                <div 
-                  key={slide.id} 
-                  className="min-w-full h-full relative flex-shrink-0 bg-slate-950 overflow-hidden"
-                >
-                  <Link
-                    href={slide.ctaLink}
-                    aria-label={slide.title}
-                    className="block w-full h-full relative group cursor-pointer"
+            {/* Absolute Slide Deck: Each slide is strictly 100% container width, eliminating 200% flexbox track offsets and half-slide cutoffs */}
+            <div className="relative w-full h-full overflow-hidden">
+              {slides.map((slide, index) => {
+                const offset = index - currentSlide;
+                return (
+                  <div 
+                    key={slide.id} 
+                    className="absolute inset-0 w-full h-full transition-transform duration-500 ease-out overflow-hidden"
+                    style={{ 
+                      transform: `translate3d(${offset * 100}%, 0, 0)`,
+                      WebkitTransform: `translate3d(${offset * 100}%, 0, 0)`,
+                      willChange: 'transform',
+                      backfaceVisibility: 'hidden',
+                      WebkitBackfaceVisibility: 'hidden'
+                    }}
                   >
-                    <img
-                      src={slide.image}
-                      alt={slide.title}
-                      className="w-full h-full object-cover object-center transform transition-transform duration-500 group-hover:scale-[1.008]"
-                      loading={index === 0 ? 'eager' : 'lazy'}
-                      decoding="async"
-                    />
-                  </Link>
-                </div>
-              ))}
+                    <Link
+                      href={slide.ctaLink}
+                      aria-label={slide.title}
+                      className="block w-full h-full relative group cursor-pointer"
+                    >
+                      <img
+                        src={slide.image}
+                        alt={slide.title}
+                        className="w-full h-full object-cover object-center"
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                        decoding="async"
+                      />
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Left Arrow Navigation Button (Only if multiple slides) */}
@@ -201,7 +205,7 @@ export const TopBannerSlider: React.FC = () => {
 
             {/* Bottom Dots Indicator Bar (Only if multiple slides) */}
             {totalSlides > 1 && (
-              <div className="absolute bottom-2 left-0 right-0 z-20 flex items-center justify-center gap-1.5 pointer-events-none">
+              <div className="absolute bottom-2.5 left-0 right-0 z-20 flex items-center justify-center gap-1.5 pointer-events-none">
                 {slides.map((_, i) => (
                   <button
                     key={i}
