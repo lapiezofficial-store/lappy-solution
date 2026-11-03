@@ -405,11 +405,53 @@ export const Navbar: React.FC<NavbarProps> = () => {
       </div>
 
       {/* 2. Main E-Commerce Header Bar */}
-      <div className="border-b border-[#E5E7EB] bg-white px-4 sm:px-8 py-3 relative">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 relative">
+      <div className="border-b border-[#E5E7EB] bg-white px-4 sm:px-8 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 xl:gap-8">
           
-          {/* LEFT: Nav Links (Home, Categories ^, Refurbished v, Support, More v) */}
-          <nav className="hidden lg:flex items-center gap-5 xl:gap-7 text-[14.5px] font-semibold text-[#1E3A8A] flex-1 justify-start">
+          {/* LEFT: Dynamic Site Logo */}
+          <div className="flex items-center flex-shrink-0">
+            <Link href="/" className="flex items-center gap-2 group">
+              {!logoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
+                <div className="flex items-center gap-2 py-0.5">
+                  <img 
+                    src={siteSettings.logo} 
+                    alt={siteSettings?.siteName || "Lapiez"} 
+                    onError={() => setLogoError(true)}
+                    className="h-8 sm:h-9 w-auto max-w-[150px] sm:max-w-[200px] object-contain group-hover:scale-[1.02] transition-transform"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="relative flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1A56DB] to-[#0A2560] text-white flex items-center justify-center shadow-xs transform group-hover:scale-105 transition-transform">
+                      <ShoppingCart className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                  </div>
+
+                  <div className="flex flex-col">
+                    <span className="text-[20px] sm:text-[22px] font-black tracking-tight text-[#111827] leading-none">
+                      {siteSettings?.siteName ? (
+                        siteSettings.siteName.toLowerCase().includes('lapiez') ? (
+                          <>LAP<span className="text-[#1A56DB]">IEZ</span></>
+                        ) : (
+                          <span className="text-[#111827]">{siteSettings.siteName}</span>
+                        )
+                      ) : (
+                        <>LAP<span className="text-[#1A56DB]">IEZ</span></>
+                      )}
+                    </span>
+                    <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold leading-none mt-0.5">
+                      {siteSettings?.tagline || 'Garhwa Hardware Store'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </Link>
+          </div>
+
+          {/* MIDDLE: Primary Nav Links (Home, Categories, Refurbished, Support, More) */}
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-[14.5px] font-semibold text-[#1E3A8A]">
             
             {/* Home Link */}
             <Link 
@@ -517,17 +559,6 @@ export const Navbar: React.FC<NavbarProps> = () => {
               Support
             </Link>
 
-            {/* Warranty Claim Link */}
-            <Link 
-              href="/warranty" 
-              className="hover:text-[#2563EB] transition-colors flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 text-xs"
-              title="Claim Warranty for Online, Showroom & Past Purchases"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Warranty Claim</span>
-            </Link>
-
-
             {/* More with dropdown */}
             <div className="relative">
               <button
@@ -566,6 +597,12 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     18% GST Invoicing & ITC
                   </Link>
                   <Link 
+                    href="/warranty" 
+                    className="block px-4 py-2 hover:bg-emerald-50 text-emerald-800 hover:text-emerald-900 font-semibold"
+                  >
+                    Warranty Claim & Testing
+                  </Link>
+                  <Link 
                     href="/pages/terms-and-conditions" 
                     className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
                   >
@@ -583,50 +620,8 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
           </nav>
 
-          {/* CENTER: Dynamic Site Logo - Guaranteed Dead Center on Desktop */}
-          <div className="flex items-center justify-center lg:absolute lg:left-1/2 lg:-translate-x-1/2 z-10 flex-shrink-0">
-            <Link href="/" className="flex flex-col items-center justify-center group">
-              {!logoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
-                <div className="flex items-center gap-2 py-0.5">
-                  <img 
-                    src={siteSettings.logo} 
-                    alt={siteSettings?.siteName || "Lapiez"} 
-                    onError={() => setLogoError(true)}
-                    className="h-8 sm:h-9 w-auto max-w-[150px] sm:max-w-[200px] object-contain group-hover:scale-[1.02] transition-transform"
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="relative flex items-center justify-center">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1A56DB] to-[#0A2560] text-white flex items-center justify-center shadow-sm transform group-hover:scale-105 transition-transform">
-                      <ShoppingCart className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
-                  </div>
-
-                  <div className="flex flex-col">
-                    <span className="text-[20px] sm:text-[22px] font-black tracking-tight text-[#111827] leading-none">
-                      {siteSettings?.siteName ? (
-                        siteSettings.siteName.toLowerCase().includes('lapiez') ? (
-                          <>LAP<span className="text-[#1A56DB]">IEZ</span></>
-                        ) : (
-                          <span className="text-[#111827]">{siteSettings.siteName}</span>
-                        )
-                      ) : (
-                        <>LAP<span className="text-[#1A56DB]">IEZ</span></>
-                      )}
-                    </span>
-                    <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold leading-none mt-0.5">
-                      {siteSettings?.tagline || 'Garhwa Hardware Store'}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </Link>
-          </div>
-
           {/* RIGHT: Action Icons (Search, User, WhatsApp, Cart) */}
-          <div className="flex items-center gap-2 sm:gap-3.5 flex-1 justify-end">
+          <div className="flex items-center gap-2 sm:gap-3.5 flex-shrink-0">
             
             {/* Search Toggle Button */}
             <button
