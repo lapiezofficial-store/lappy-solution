@@ -9,7 +9,7 @@ import {
   ShieldCheck, MessageSquare, ChevronDown, ChevronUp, ChevronRight,
   ShoppingBag, ExternalLink, Laptop, Printer,
   HelpCircle, Layers, CheckCircle2, Award,
-  Bell, Smartphone, Download
+  Bell, Smartphone, Download, Package, Truck, Sparkles, CreditCard
 } from 'lucide-react';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore, DEFAULT_SHOP_BY_CATEGORIES, CMSCategory } from '../context/StoreContext';
@@ -113,12 +113,17 @@ export const Navbar: React.FC<NavbarProps> = () => {
     categories,
     setIsAppModalOpen,
     signInWithGoogle,
-    isApp
+    isApp,
+    customerNotifications,
+    unreadCustomerNotifCount,
+    markCustomerNotificationAsRead,
+    markAllCustomerNotificationsAsRead,
   } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileShopOpen, setMobileShopOpen] = useState(false);
   const [mobileRefurbishedOpen, setMobileRefurbishedOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   
   type ActiveNavMenu = 'shop' | 'refurbished' | 'more' | null;
   const [activeNavMenu, setActiveNavMenu] = useState<ActiveNavMenu>(null);
@@ -143,6 +148,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
     const handleClickOutside = (e: MouseEvent) => {
       if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
         setActiveNavMenu(null);
+        setIsNotificationOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -153,6 +159,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
   useEffect(() => {
     setActiveNavMenu(null);
     setIsSearchOpen(false);
+    setIsNotificationOpen(false);
     setMobileMenuOpen(false);
     setMobileShopOpen(false);
     setMobileRefurbishedOpen(false);
@@ -250,33 +257,150 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
           {/* Right: Bell Icon / WhatsApp + Hamburger Menu */}
           <div className="flex items-center gap-1.5">
-            {/* Notification Bell (Web only) */}
-            {!isApp ? (
+            {/* Customer Notification Bell (Mobile) */}
+            <div className="relative">
               <button
                 type="button"
-                onClick={() => setIsAppModalOpen(true)}
+                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
                 className="relative p-2 rounded-full text-gray-700 hover:text-[#1A56DB] hover:bg-gray-100 transition-colors cursor-pointer"
-                aria-label="App & Notifications"
-                title="Lapiez Android App & Offers"
+                aria-label="Order Notifications"
+                title="Order Notifications & Updates"
               >
                 <Bell className="w-5 h-5 text-gray-700 stroke-[1.8]" />
-                <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 ring-2 ring-white"></span>
-                </span>
+                {unreadCustomerNotifCount > 0 ? (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-4.5 w-4.5 bg-rose-600 text-white text-[9px] font-black items-center justify-center ring-2 ring-white shadow-xs">
+                      {unreadCustomerNotifCount > 9 ? '9+' : unreadCustomerNotifCount}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 ring-2 ring-white"></span>
+                  </span>
+                )}
               </button>
-            ) : (
-              <a
-                href={`https://wa.me/${getCleanWhatsAppNumber(siteSettings?.whatsapp)}?text=${encodeURIComponent(`Hello ${siteSettings?.siteName || 'Lapiez'}, I need direct support from the mobile app.`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 rounded-full text-[#16A34A] hover:bg-emerald-50 transition-colors"
-                title="Direct WhatsApp Support"
-                aria-label="Direct WhatsApp Support"
-              >
-                <MessageSquare className="w-5 h-5" />
-              </a>
-            )}
+
+              {/* Mobile Notification Popover */}
+              {isNotificationOpen && (
+                <div className="fixed inset-x-2 top-16 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 text-gray-900 animate-in fade-in slide-in-from-top-2 duration-150 max-w-sm mx-auto">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-[#1A56DB] to-[#0A2560] text-white px-3.5 py-2.5 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Bell className="w-4 h-4 text-yellow-300" />
+                      <span className="font-bold text-xs">Order Notifications</span>
+                      {unreadCustomerNotifCount > 0 && (
+                        <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full">
+                          {unreadCustomerNotifCount} New
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {customerNotifications.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => markAllCustomerNotificationsAsRead()}
+                          className="text-[10.5px] text-blue-200 hover:text-white underline cursor-pointer"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setIsNotificationOpen(false)}
+                        className="text-white/80 hover:text-white p-0.5 rounded cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Body: Notifications List */}
+                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+                    {customerNotifications.length === 0 ? (
+                      <div className="p-5 text-center text-gray-500">
+                        <div className="w-10 h-10 rounded-full bg-blue-50 text-[#1A56DB] flex items-center justify-center mx-auto mb-1.5">
+                          <Bell className="w-5 h-5 stroke-[1.5]" />
+                        </div>
+                        <p className="text-xs font-bold text-gray-700">Koi naya notification nahi hai</p>
+                        <p className="text-[10.5px] text-gray-400 mt-0.5">
+                          Order accept, confirm ya dispatch hone par yahan turant update aayega.
+                        </p>
+                      </div>
+                    ) : (
+                      customerNotifications.map((notif: any) => {
+                        const isUnread = !notif.read;
+                        return (
+                          <div
+                            key={notif.id}
+                            onClick={() => {
+                              markCustomerNotificationAsRead(notif.id);
+                              if (notif.link) {
+                                router.push(notif.link);
+                                setIsNotificationOpen(false);
+                              }
+                            }}
+                            className={`p-3 hover:bg-blue-50/70 transition-colors cursor-pointer flex items-start gap-2.5 ${
+                              isUnread ? 'bg-blue-50/40' : ''
+                            }`}
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
+                              {notif.title.includes('Deliver') ? <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> :
+                               notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-3.5 h-3.5 text-indigo-600" /> :
+                               notif.title.includes('Pack') ? <Package className="w-3.5 h-3.5 text-blue-600" /> :
+                               notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-3.5 h-3.5 text-amber-600" /> :
+                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className={`text-[11.5px] block truncate ${isUnread ? 'font-black text-gray-900' : 'font-semibold text-gray-700'}`}>
+                                  {notif.title}
+                                </span>
+                                {isUnread && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 flex-shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-[10.5px] text-gray-600 line-clamp-2 mt-0.5 leading-tight">
+                                {notif.message}
+                              </p>
+                              <div className="flex items-center justify-between mt-1 text-[9.5px] text-gray-400">
+                                <span>{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-[#1A56DB] font-bold">Track Order →</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-[11px]">
+                    <Link
+                      href="/account?tab=orders"
+                      onClick={() => setIsNotificationOpen(false)}
+                      className="text-[#1A56DB] font-bold hover:underline flex items-center gap-1"
+                    >
+                      <ShoppingBag className="w-3 h-3" />
+                      <span>Track Orders</span>
+                    </Link>
+                    {!isApp && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsNotificationOpen(false);
+                          setIsAppModalOpen(true);
+                        }}
+                        className="text-gray-500 hover:text-gray-900 flex items-center gap-1 font-medium"
+                      >
+                        <Smartphone className="w-3 h-3 text-emerald-600" />
+                        <span>Get App</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Hamburger Menu Button */}
             <button
@@ -663,24 +787,141 @@ export const Navbar: React.FC<NavbarProps> = () => {
               <MessageSquare className="w-5 h-5" />
             </a>
 
-            {/* App Download Notification-Style Icon Button (Web only) */}
-            {!isApp && (
+            {/* Customer Order Notification Center (Desktop) */}
+            <div className="relative">
               <button
                 type="button"
-                onClick={() => setIsAppModalOpen(true)}
+                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
                 className="relative p-2 rounded-full text-gray-700 hover:text-[#1A56DB] hover:bg-blue-50 transition-colors cursor-pointer group"
-                title="Download Lapiez Android App"
-                aria-label="Download Android App"
+                title="Customer Order Notifications & Updates"
+                aria-label="Order Notifications"
               >
                 <Bell className="w-5 h-5 text-gray-700 group-hover:text-[#1A56DB] transition-colors" />
-                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-600 text-white text-[8px] font-extrabold items-center justify-center shadow-xs">
-                    ↓
+                {unreadCustomerNotifCount > 0 ? (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-4.5 w-4.5 bg-rose-600 text-white text-[9px] font-black items-center justify-center ring-2 ring-white shadow-xs">
+                      {unreadCustomerNotifCount > 9 ? '9+' : unreadCustomerNotifCount}
+                    </span>
                   </span>
-                </span>
+                ) : (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+                )}
               </button>
-            )}
+
+              {/* Desktop Notification Dropdown */}
+              {isNotificationOpen && (
+                <div className="absolute right-0 top-full mt-2 w-88 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 text-gray-900 animate-in fade-in slide-in-from-top-2 duration-150">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-[#1A56DB] to-[#0A2560] text-white px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-yellow-300" />
+                      <span className="font-bold text-xs uppercase tracking-wider">Notifications & Updates</span>
+                      {unreadCustomerNotifCount > 0 && (
+                        <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+                          {unreadCustomerNotifCount} New
+                        </span>
+                      )}
+                    </div>
+                    {customerNotifications.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => markAllCustomerNotificationsAsRead()}
+                        className="text-[11px] text-blue-200 hover:text-white underline cursor-pointer"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Body: Notifications List */}
+                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                    {customerNotifications.length === 0 ? (
+                      <div className="p-6 text-center text-gray-500">
+                        <div className="w-12 h-12 rounded-full bg-blue-50 text-[#1A56DB] flex items-center justify-center mx-auto mb-2">
+                          <Bell className="w-6 h-6 stroke-[1.5]" />
+                        </div>
+                        <p className="text-xs font-bold text-gray-800">Koi naya notification nahi hai</p>
+                        <p className="text-[11px] text-gray-400 mt-1 max-w-[240px] mx-auto leading-relaxed">
+                          Jab bhi aapka order accept, confirm, pack ya dispatch hoga, live alert yahan dikhega.
+                        </p>
+                      </div>
+                    ) : (
+                      customerNotifications.map((notif: any) => {
+                        const isUnread = !notif.read;
+                        return (
+                          <div
+                            key={notif.id}
+                            onClick={() => {
+                              markCustomerNotificationAsRead(notif.id);
+                              if (notif.link) {
+                                router.push(notif.link);
+                                setIsNotificationOpen(false);
+                              }
+                            }}
+                            className={`p-3.5 hover:bg-blue-50/70 transition-colors cursor-pointer flex items-start gap-3 ${
+                              isUnread ? 'bg-blue-50/40' : ''
+                            }`}
+                          >
+                            <div className="w-8 h-8 rounded-xl bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
+                              {notif.title.includes('Deliver') ? <Sparkles className="w-4 h-4 text-emerald-600" /> :
+                               notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-4 h-4 text-indigo-600" /> :
+                               notif.title.includes('Pack') ? <Package className="w-4 h-4 text-blue-600" /> :
+                               notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-4 h-4 text-amber-600" /> :
+                               <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className={`text-xs block truncate ${isUnread ? 'font-black text-gray-900' : 'font-semibold text-gray-700'}`}>
+                                  {notif.title}
+                                </span>
+                                {isUnread && (
+                                  <span className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-[11px] text-gray-600 line-clamp-2 mt-0.5 leading-tight">
+                                {notif.message}
+                              </p>
+                              <div className="flex items-center justify-between mt-1 text-[10px] text-gray-400">
+                                <span>{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-[#1A56DB] font-bold hover:underline flex items-center gap-0.5">
+                                  Track Order →
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <Link
+                      href="/account?tab=orders"
+                      onClick={() => setIsNotificationOpen(false)}
+                      className="text-[#1A56DB] font-bold hover:underline flex items-center gap-1"
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      <span>Track Orders in Account</span>
+                    </Link>
+                    {!isApp && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsNotificationOpen(false);
+                          setIsAppModalOpen(true);
+                        }}
+                        className="text-gray-500 hover:text-gray-900 flex items-center gap-1 text-[11px] font-medium cursor-pointer"
+                      >
+                        <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Get Android App</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Wishlist Button */}
             <Link

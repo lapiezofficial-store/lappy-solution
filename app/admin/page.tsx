@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { 
   ShieldCheck, Check, X, Clock, CheckCircle2, XCircle, 
@@ -13,8 +13,10 @@ import {
   BookOpen, Star, Crown, Laptop, Box, Award, AlertTriangle, MoreVertical,
   SlidersHorizontal, ArrowUpDown, Pencil, ChevronDown, ChevronRight, ChevronLeft, Download, Upload, Tag,
   Share2, Globe, ArrowLeft, LayoutDashboard, Menu, Wrench, Terminal, Database, Radio, HardDrive, FolderTree, CheckSquare, FileCode,
-  Banknote, Loader2, Bike, Smartphone, Monitor
+  Banknote, Loader2, Bike, Smartphone, Monitor, Bell, Volume2, VolumeX, CheckCheck
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { playOrderAlertSound, triggerDesktopNotification } from '../../lib/soundAlert';
 import { useStore, CMSBanner, CMSSection, CMSCustomPage, CMSBlogPost, CMSBrand, CMSCategory, CMSSubcategory, DEFAULT_SHOP_BY_CATEGORIES } from '../../context/StoreContext';
 import { BrandLogoRenderer, PRESET_BRANDS_CONFIG } from '../../components/BrandLogoRenderer';
 import { STORE_INFO } from '../../data/storeData';
@@ -607,6 +609,126 @@ export default function AdminPage() {
       setIsAuthenticating(false);
     }
   };
+
+  // Admin Live Notification & Audio Alert States
+  const [adminNotifications, setAdminNotifications] = useState<any[]>([]);
+  const [unreadAdminNotifCount, setUnreadAdminNotifCount] = useState<number>(0);
+  const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState<boolean>(false);
+  const [isSoundAlertEnabled, setIsSoundAlertEnabled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ls_admin_sound_alert') !== 'false';
+    }
+    return true;
+  });
+  const [newOrderAlertBanner, setNewOrderAlertBanner] = useState<any | null>(null);
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+
+  const fetchAdminNotifications = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await adminFetch('/api/notifications?recipient=ADMIN');
+      if (res.ok) {
+        const data = await res.json();
+        setAdminNotifications(data.notifications || []);
+        setUnreadAdminNotifCount(data.unreadCount || 0);
+      }
+    } catch (e) {
+      console.warn('Error fetching admin notifications:', e);
+    }
+  }, [isAuthenticated]);
+
+  const markAdminNotificationAsRead = async (id?: string) => {
+    try {
+      if (id) {
+        setAdminNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        setUnreadAdminNotifCount(prev => Math.max(0, prev - 1));
+        await adminFetch('/api/notifications', {
+          method: 'PATCH',
+          body: JSON.stringify({ id }),
+        });
+      }
+    } catch {}
+  };
+
+  const markAllAdminNotificationsAsRead = async () => {
+    try {
+      setAdminNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadAdminNotifCount(0);
+      await adminFetch('/api/notifications', {
+        method: 'PATCH',
+        body: JSON.stringify({ markAllRead: true, recipient: 'ADMIN' }),
+      });
+    } catch {}
+  };
+
+  // Sync known orders on orders change and trigger audio on new orders
+  useEffect(() => {
+    if (orders && orders.length > 0) {
+      if (knownOrderIdsRef.current.size === 0) {
+        orders.forEach(o => knownOrderIdsRef.current.add(o.orderId));
+      } else {
+        const brandNewOrders = orders.filter(o => !knownOrderIdsRef.current.has(o.orderId));
+        if (brandNewOrders.length > 0) {
+          brandNewOrders.forEach(o => knownOrderIdsRef.current.add(o.orderId));
+          const latest = brandNewOrders[0];
+          if (isSoundAlertEnabled) {
+            playOrderAlertSound();
+          }
+          triggerDesktopNotification(`🔔 Naya Order #${latest.orderId}!`, {
+            body: `${latest.customerName} ne ₹${Number(latest.totalAmount).toLocaleString('en-IN')} ka order place kiya.`,
+          });
+          setNewOrderAlertBanner(latest);
+          setTimeout(() => setNewOrderAlertBanner(null), 12000);
+          fetchAdminNotifications();
+        }
+      }
+    }
+  }, [orders, isSoundAlertEnabled, fetchAdminNotifications]);
+
+  // Request browser desktop notification permission once logged in
+  useEffect(() => {
+    if (isAuthenticated && typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+    }
+  }, [isAuthenticated]);
+
+  // Realtime & Periodic Order Polling (every 12 seconds)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchAdminNotifications();
+    const pollInterval = setInterval(() => {
+      fetchOrders().catch(() => {});
+      fetchAdminNotifications().catch(() => {});
+    }, 12000);
+
+    let channel: any = null;
+    try {
+      channel = supabase.channel('lapiez_notifications');
+      channel.on('broadcast', { event: 'new_order' }, (msg: any) => {
+        const payload = msg?.payload;
+        if (!payload) return;
+        if (isSoundAlertEnabled) {
+          playOrderAlertSound();
+        }
+        triggerDesktopNotification(`🔔 Naya Order #${payload.orderId}!`, {
+          body: `${payload.customerName} ne ₹${Number(payload.totalAmount).toLocaleString('en-IN')} ka order place kiya.`,
+        });
+        setNewOrderAlertBanner(payload);
+        setTimeout(() => setNewOrderAlertBanner(null), 12000);
+        fetchOrders();
+        fetchAdminNotifications();
+      }).subscribe();
+    } catch (e) {}
+
+    return () => {
+      clearInterval(pollInterval);
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch {}
+      }
+    };
+  }, [isAuthenticated, isSoundAlertEnabled, fetchOrders, fetchAdminNotifications]);
 
   // Invoicing & Billing Sub-Tab States
   const [billingSubTab, setBillingSubTab] = useState<'invoices' | 'create' | 'settings' | 'mybillbook'>('invoices');
@@ -3057,6 +3179,120 @@ export default function AdminPage() {
 
         {/* Top Bar Right Side */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Audio Chime Mute/Unmute Toggle */}
+          <button
+            onClick={() => {
+              const next = !isSoundAlertEnabled;
+              setIsSoundAlertEnabled(next);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('ls_admin_sound_alert', String(next));
+              }
+              showToast(next ? 'Order alert chime ENABLED 🔔' : 'Order alert chime MUTED 🔇');
+            }}
+            className="p-1 rounded text-[#c3c4c7] hover:text-white hover:bg-[#2c3338] transition-colors cursor-pointer"
+            title={isSoundAlertEnabled ? 'Order sound alert ON (Click to Mute)' : 'Order sound alert MUTED (Click to Enable)'}
+          >
+            {isSoundAlertEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> : <VolumeX className="w-3.5 h-3.5 text-rose-400" />}
+          </button>
+
+          {/* Admin Order Notifications Bell */}
+          <div className="relative">
+            <button
+              onClick={() => setIsNotifDropdownOpen(!isNotifDropdownOpen)}
+              className="relative p-1 rounded text-[#c3c4c7] hover:text-white hover:bg-[#2c3338] transition-colors cursor-pointer"
+              title="Live Order Alerts & Notifications"
+            >
+              <Bell className="w-3.5 h-3.5" />
+              {unreadAdminNotifCount > 0 ? (
+                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-600 text-white text-[8px] font-black items-center justify-center">
+                    {unreadAdminNotifCount > 9 ? '9+' : unreadAdminNotifCount}
+                  </span>
+                </span>
+              ) : (
+                <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              )}
+            </button>
+
+            {/* Admin Notification Dropdown */}
+            {isNotifDropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-[#1d2327] border border-[#3c434a] rounded-xl shadow-2xl overflow-hidden z-50 text-[#c3c4c7] animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="bg-[#2c3338] px-3.5 py-2.5 flex items-center justify-between border-b border-[#3c434a]">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-[#72aee6]" />
+                    <span className="font-bold text-xs text-white uppercase tracking-wider">
+                      Live Order Alerts {unreadAdminNotifCount > 0 && `(${unreadAdminNotifCount})`}
+                    </span>
+                  </div>
+                  {adminNotifications.length > 0 && (
+                    <button
+                      onClick={() => markAllAdminNotificationsAsRead()}
+                      className="text-[10.5px] text-[#72aee6] hover:text-white underline cursor-pointer"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-72 overflow-y-auto divide-y divide-[#2c3338]">
+                  {adminNotifications.length === 0 ? (
+                    <div className="p-6 text-center text-[#8c8f94]">
+                      <Bell className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                      <p className="text-xs">No order notifications yet</p>
+                      <p className="text-[10px] mt-0.5">Customer orders will alert here instantly with audio sound chime.</p>
+                    </div>
+                  ) : (
+                    adminNotifications.map((notif: any) => {
+                      const isUnread = !notif.read;
+                      return (
+                        <div
+                          key={notif.id}
+                          onClick={() => {
+                            markAdminNotificationAsRead(notif.id);
+                            setActiveTab('orders');
+                            setIsNotifDropdownOpen(false);
+                          }}
+                          className={`p-3 hover:bg-[#2c3338] transition-colors cursor-pointer flex items-start gap-2.5 ${
+                            isUnread ? 'bg-[#2271b1]/15 text-white' : ''
+                          }`}
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-[#2271b1]/30 text-[#72aee6] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <ShoppingBag className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-xs font-bold truncate text-white">{notif.title}</span>
+                              {isUnread && <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0" />}
+                            </div>
+                            <p className="text-[11px] text-[#c3c4c7] mt-0.5 line-clamp-2 leading-tight">
+                              {notif.message}
+                            </p>
+                            <div className="flex items-center justify-between mt-1 text-[9.5px] text-[#8c8f94]">
+                              <span>{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              <span className="text-[#72aee6] font-bold">View Order →</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="p-2 bg-[#2c3338] border-t border-[#3c434a] text-center">
+                  <button
+                    onClick={() => {
+                      setActiveTab('orders');
+                      setIsNotifDropdownOpen(false);
+                    }}
+                    className="text-xs font-bold text-[#72aee6] hover:text-white"
+                  >
+                    Open Orders & UTR Tab →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           {/* SQLite DB Status */}
           <div className="hidden md:flex items-center gap-1.5 text-[11px] text-[#72aee6] bg-[#2c3338] px-2 py-0.5 rounded border border-[#3c434a]">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -3099,6 +3335,58 @@ export default function AdminPage() {
           </button>
         </div>
       </header>
+
+      {/* Floating High-Priority New Order Banner */}
+      {newOrderAlertBanner && (
+        <div className="fixed top-12 right-4 z-50 max-w-md w-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl shadow-2xl p-4 border border-emerald-400/50 animate-in slide-in-from-top-4 duration-300">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center flex-shrink-0 text-yellow-300 animate-bounce">
+                <Bell className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-black tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                  🔔 NAYA ORDER MILA!
+                </span>
+                <h4 className="text-sm font-black mt-1">
+                  Order #{newOrderAlertBanner.orderId}
+                </h4>
+              </div>
+            </div>
+            <button
+              onClick={() => setNewOrderAlertBanner(null)}
+              className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-xs text-emerald-50 mt-2 font-medium">
+            {newOrderAlertBanner.customerName} ({newOrderAlertBanner.phone}) ne ₹{Number(newOrderAlertBanner.totalAmount).toLocaleString('en-IN')} ka order place kiya.
+          </p>
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              onClick={() => {
+                setActiveTab('orders');
+                setNewOrderAlertBanner(null);
+              }}
+              className="flex-1 py-1.5 rounded-xl bg-white text-emerald-900 font-extrabold text-xs hover:bg-emerald-50 transition-colors shadow-sm text-center cursor-pointer"
+            >
+              View Order Details →
+            </button>
+            <a
+              href={`https://wa.me/91${(newOrderAlertBanner.phone || '').replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(
+                `Namaste ${newOrderAlertBanner.customerName} ji! 🙏\nLapiez Showroom se aapka order #${newOrderAlertBanner.orderId} receive ho gaya hai. Hum jald confirm karenge.\n- Lapiez Garhwa (9608828288)`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>WhatsApp</span>
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* 2. BODY SHELL: LEFT SIDEBAR + MAIN CONTENT */}
       <div className="pt-9 flex min-h-screen">
@@ -4424,6 +4712,50 @@ export default function AdminPage() {
                                 >
                                   <Lock className="w-3.5 h-3.5 text-amber-600" />
                                   <span>Approve Order to Generate Bill</span>
+                                </button>
+                              )}
+                            </div>
+
+                            {/* WhatsApp & Quick Customer Notification Toolbar */}
+                            <div className="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-1.5">
+                              <a
+                                href={`https://wa.me/91${(order.phone || '').replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(
+                                  `Namaste ${order.customerName} ji! 🙏\n` +
+                                  `Lapiez IT Showroom se aapka order #${order.orderId} update hua hai:\n` +
+                                  `📦 Status: ${order.orderStatus}\n` +
+                                  `💳 Payment: ${order.paymentStatus}\n` +
+                                  `💰 Total Amount: ₹${Number(order.totalAmount).toLocaleString('en-IN')}\n` +
+                                  `📍 Track Order: https://www.lapiez.com/account?tab=orders\n\n` +
+                                  `Lapiez IT Showroom, Garhwa (Ph: 9608828288)`
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 min-w-[130px] h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                title="Send 1-Click WhatsApp update to customer"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>WhatsApp Customer</span>
+                              </a>
+
+                              {order.orderStatus === 'Pending' && (
+                                <button
+                                  onClick={() => handleUpdateOrderStatus(order.orderId, 'Confirmed')}
+                                  className="px-2.5 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Accept & Confirm Order"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                                  <span>Accept</span>
+                                </button>
+                              )}
+
+                              {order.orderStatus === 'Confirmed' && (
+                                <button
+                                  onClick={() => handleUpdateOrderStatus(order.orderId, 'Packed')}
+                                  className="px-2.5 h-8 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Mark Order as Packed"
+                                >
+                                  <Package className="w-3.5 h-3.5 text-purple-600" />
+                                  <span>Pack</span>
                                 </button>
                               )}
                             </div>

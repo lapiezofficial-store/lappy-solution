@@ -1,0 +1,231 @@
+import { prisma } from './prisma';
+import { supabase } from './supabase';
+import { triggerPusherEvent } from './pusher';
+
+export interface NotificationPayload {
+  recipient: string; // 'ADMIN' | phone | customerId | email
+  type: 'NEW_ORDER' | 'ORDER_STATUS' | 'PAYMENT_STATUS' | 'SYSTEM';
+  title: string;
+  message: string;
+  orderId?: string;
+  link?: string;
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Creates and broadcasts an order notification to the Admin.
+ */
+export async function notifyAdminOnNewOrder(order: {
+  orderId: string;
+  customerName: string;
+  phone: string;
+  totalAmount: number;
+  paymentMethod: string;
+  itemsJson?: string;
+  address?: string;
+}) {
+  try {
+    let itemCount = 1;
+    try {
+      if (order.itemsJson) {
+        const parsed = JSON.parse(order.itemsJson);
+        if (Array.isArray(parsed)) itemCount = parsed.length;
+      }
+    } catch {}
+
+    const title = `🔔 Naya Order #${order.orderId}`;
+    const message = `${order.customerName} (${order.phone}) ne ₹${order.totalAmount.toLocaleString('en-IN')} ka order place kiya (${itemCount} item${itemCount > 1 ? 's' : ''}).`;
+
+    // 1. Persist notification in database
+    const notification = await prisma.notification.create({
+      data: {
+        recipient: 'ADMIN',
+        type: 'NEW_ORDER',
+        title,
+        message,
+        orderId: order.orderId,
+        link: '/admin',
+        metadataJson: JSON.stringify({
+          customerName: order.customerName,
+          phone: order.phone,
+          totalAmount: order.totalAmount,
+          paymentMethod: order.paymentMethod,
+          itemCount,
+        }),
+      },
+    });
+
+    const payload = {
+      id: notification.id,
+      orderId: order.orderId,
+      customerName: order.customerName,
+      phone: order.phone,
+      totalAmount: order.totalAmount,
+      paymentMethod: order.paymentMethod,
+      title,
+      message,
+      createdAt: notification.createdAt,
+    };
+
+    // 2. Broadcast via Supabase Realtime (best-effort)
+    try {
+      const channel = supabase.channel('lapiez_notifications');
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          channel.send({
+            type: 'broadcast',
+            event: 'new_order',
+            payload,
+          }).finally(() => {
+            supabase.removeChannel(channel).catch(() => {});
+          });
+        }
+      });
+    } catch (e) {
+      console.warn('Supabase realtime broadcast notice:', e);
+    }
+
+    // 3. Pusher trigger (if configured)
+    await triggerPusherEvent('admin-channel', 'new-order', payload).catch(() => {});
+
+    return notification;
+  } catch (error) {
+    console.error('Error in notifyAdminOnNewOrder:', error);
+    return null;
+  }
+}
+
+/**
+ * Creates and broadcasts an order status change notification to the Customer.
+ */
+export async function notifyCustomerOnOrderUpdate(order: {
+  orderId: string;
+  phone: string;
+  customerName?: string;
+  customerId?: string | null;
+  customerEmail?: string | null;
+  orderStatus: string;
+  paymentStatus?: string;
+  totalAmount?: number;
+  riderName?: string;
+}, updateType: 'STATUS' | 'PAYMENT' | 'RIDER' = 'STATUS') {
+  try {
+    const cleanPhone = (order.phone || '').replace(/\D/g, '').slice(-10);
+    if (!cleanPhone && !order.customerId && !order.customerEmail) {
+      return null;
+    }
+
+    let title = '';
+    let message = '';
+
+    if (updateType === 'PAYMENT') {
+      if (order.paymentStatus === 'Paid') {
+        title = `💳 Payment Verified #${order.orderId}`;
+        message = `Aapke order #${order.orderId} ki payment verify ho gayi hai. Official 18% GST Bill unlock ho chuka hai!`;
+      } else if (order.paymentStatus === 'Rejected') {
+        title = `⚠️ Payment Unverified #${order.orderId}`;
+        message = `Order #${order.orderId} ki payment verify nahi ho saki. Kripya showroom se sampark karein ya sahi UTR submit karein.`;
+      } else {
+        title = `💳 Payment Status Updated #${order.orderId}`;
+        message = `Aapke order #${order.orderId} ka payment status: ${order.paymentStatus}.`;
+      }
+    } else if (updateType === 'RIDER') {
+      title = `🚴 Delivery Rider Assigned #${order.orderId}`;
+      message = order.riderName
+        ? `Rider ${order.riderName} aapka order lekar aane ke liye assign ho chuke hain.`
+        : `Aapke order #${order.orderId} ke liye delivery rider assign kar diya gaya hai.`;
+    } else {
+      // Order status updates
+      switch (order.orderStatus) {
+        case 'Confirmed':
+          title = `✅ Order Confirmed #${order.orderId}`;
+          message = `Aapka order #${order.orderId} Lapiez Showroom dwara confirm ho gaya hai. Packing jald shuru hogi!`;
+          break;
+        case 'Packed':
+          title = `📦 Order Packed #${order.orderId}`;
+          message = `Order #${order.orderId} pack ho chuka hai aur dispatch / showroom counter pickup ke liye taiyar hai.`;
+          break;
+        case 'Ready':
+          title = `🏬 Ready for Pickup #${order.orderId}`;
+          message = `Order #${order.orderId} Lapiez Showroom counter par pickup ke liye ready hai!`;
+          break;
+        case 'Shipped':
+        case 'Out For Delivery':
+          title = `🚚 Out For Delivery #${order.orderId}`;
+          message = `Khushkhabari! Order #${order.orderId} delivery ke liye nikal chuka hai. Jald aap tak pahuchega.`;
+          break;
+        case 'Delivered':
+          title = `🎉 Order Delivered #${order.orderId}`;
+          message = `Order #${order.orderId} safalta-purvak deliver ho gaya hai. Lapiez Garhwa chunne ke liye dhanyawad!`;
+          break;
+        case 'Cancelled':
+          title = `❌ Order Cancelled #${order.orderId}`;
+          message = `Aapka order #${order.orderId} cancel kar diya gaya hai. Sahayata ke liye showroom par call karein.`;
+          break;
+        default:
+          title = `🔔 Order Update #${order.orderId}`;
+          message = `Order #${order.orderId} ka status update hua: ${order.orderStatus}.`;
+      }
+    }
+
+    const recipient = cleanPhone || order.customerId || order.customerEmail || 'CUSTOMER';
+
+    // 1. Persist notification in database
+    const notification = await prisma.notification.create({
+      data: {
+        recipient,
+        type: updateType === 'PAYMENT' ? 'PAYMENT_STATUS' : 'ORDER_STATUS',
+        title,
+        message,
+        orderId: order.orderId,
+        link: `/account?tab=orders`,
+        metadataJson: JSON.stringify({
+          orderStatus: order.orderStatus,
+          paymentStatus: order.paymentStatus,
+          totalAmount: order.totalAmount,
+          customerName: order.customerName,
+          phone: cleanPhone,
+        }),
+      },
+    });
+
+    const payload = {
+      id: notification.id,
+      orderId: order.orderId,
+      recipient,
+      phone: cleanPhone,
+      customerId: order.customerId,
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      title,
+      message,
+      createdAt: notification.createdAt,
+    };
+
+    // 2. Broadcast via Supabase Realtime (best-effort)
+    try {
+      const channel = supabase.channel('lapiez_notifications');
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          channel.send({
+            type: 'broadcast',
+            event: 'customer_order_update',
+            payload,
+          }).finally(() => {
+            supabase.removeChannel(channel).catch(() => {});
+          });
+        }
+      });
+    } catch (e) {
+      console.warn('Customer notification broadcast notice:', e);
+    }
+
+    // 3. Pusher trigger (if configured)
+    await triggerPusherEvent('customer-channel', 'order-update', payload).catch(() => {});
+
+    return notification;
+  } catch (error) {
+    console.error('Error in notifyCustomerOnOrderUpdate:', error);
+    return null;
+  }
+}

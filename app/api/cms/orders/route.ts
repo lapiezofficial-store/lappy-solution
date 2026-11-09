@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hasAdminSession } from '@/lib/adminAuth';
 import { INITIAL_COUPONS, Coupon, calculateCouponDiscount } from '@/data/coupons';
+import { notifyAdminOnNewOrder, notifyCustomerOnOrderUpdate } from '@/lib/notificationService';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -404,6 +405,16 @@ export async function POST(request: Request) {
     // Record successful order attempt in IP rate limiter
     recordOrderIpAttempt(clientIp);
 
+    // Send Realtime notifications to Admin & Customer
+    try {
+      await Promise.all([
+        notifyAdminOnNewOrder(order),
+        notifyCustomerOnOrderUpdate(order, 'STATUS'),
+      ]);
+    } catch (notifErr) {
+      console.warn('Order notification dispatch warning:', notifErr);
+    }
+
     return NextResponse.json({ success: true, order: toClientOrder(order) }, { status: 201 });
   } catch (error: unknown) {
     if (error instanceof Error && error.message.startsWith('STOCK_UNAVAILABLE:')) {
@@ -528,6 +539,18 @@ export async function PUT(request: Request) {
         },
       });
     });
+
+    // Notify Customer about status or payment changes
+    try {
+      if (orderStatus && orderStatuses.has(orderStatus)) {
+        await notifyCustomerOnOrderUpdate(updatedOrder, 'STATUS');
+      }
+      if (paymentStatus && paymentStatuses.has(paymentStatus)) {
+        await notifyCustomerOnOrderUpdate(updatedOrder, 'PAYMENT');
+      }
+    } catch (notifErr) {
+      console.warn('Customer update notification error:', notifErr);
+    }
 
     return NextResponse.json({ success: true, order: toClientOrder(updatedOrder) });
   } catch (error: unknown) {

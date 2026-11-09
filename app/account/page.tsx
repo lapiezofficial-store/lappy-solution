@@ -9,7 +9,7 @@ import {
   Store, ExternalLink, Search, Filter, ChevronRight, 
   FileText, CheckCircle2, AlertCircle, Sparkles, Star, 
   Tag, CreditCard, HelpCircle, Download, Check, X, 
-  Printer, ArrowLeft, RefreshCw, MessageSquare, QrCode, LogOut
+  Printer, ArrowLeft, RefreshCw, MessageSquare, QrCode, LogOut, Bell, Truck
 } from 'lucide-react';
 
 import { useStore } from '../../context/StoreContext';
@@ -18,6 +18,7 @@ import { Product } from '../../data/products';
 
 type AccountTab = 
   | 'orders' 
+  | 'notifications'
   | 'cart'
   | 'profile' 
   | 'addresses' 
@@ -87,6 +88,10 @@ function AccountContent() {
     openCustomerAuthModal,
     loginCustomerManually,
     signOutCustomer,
+    customerNotifications,
+    unreadCustomerNotifCount,
+    markCustomerNotificationAsRead,
+    markAllCustomerNotificationsAsRead,
   } = useStore();
 
 
@@ -95,7 +100,7 @@ function AccountContent() {
 
   useEffect(() => {
     const tabParam = searchParams.get('tab') as AccountTab;
-    if (tabParam && ['orders', 'cart', 'profile', 'addresses', 'wishlist', 'gst', 'payments', 'support'].includes(tabParam)) {
+    if (tabParam && ['orders', 'notifications', 'cart', 'profile', 'addresses', 'wishlist', 'gst', 'payments', 'support'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
@@ -488,6 +493,32 @@ function AccountContent() {
                     <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-100 text-[#1A56DB] font-extrabold">
                       {orders.length}
                     </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('notifications')}
+                  className={`w-full py-2.5 px-3 rounded-lg flex items-center justify-between font-bold transition-all ${
+                    activeTab === 'notifications'
+                      ? 'bg-[#EFF6FF] text-[#1A56DB]'
+                      : 'text-[#374151] hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Bell className={`w-4 h-4 ${activeTab === 'notifications' ? 'text-[#1A56DB]' : 'text-gray-400'}`} />
+                    <span>NOTIFICATIONS</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {unreadCustomerNotifCount > 0 ? (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-rose-600 text-white font-extrabold">
+                        {unreadCustomerNotifCount}
+                      </span>
+                    ) : customerNotifications.length > 0 ? (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-gray-100 text-gray-600 font-extrabold">
+                        {customerNotifications.length}
+                      </span>
+                    ) : null}
                     <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
                   </div>
                 </button>
@@ -995,6 +1026,126 @@ function AccountContent() {
                   </div>
                 )}
 
+              </div>
+            )}
+
+            {/* ======================================================= */}
+            {/* TAB: NOTIFICATIONS & LIVE ORDER ALERTS                  */}
+            {/* ======================================================= */}
+            {activeTab === 'notifications' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                {/* Header Card */}
+                <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="p-1.5 rounded-lg bg-blue-50 text-[#1A56DB]">
+                        <Bell className="w-4 h-4" />
+                      </span>
+                      <h3 className="text-base sm:text-lg font-black text-[#111827]">
+                        Notifications & Order Updates
+                      </h3>
+                      {unreadCustomerNotifCount > 0 && (
+                        <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                          {unreadCustomerNotifCount} Unread
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Real-time alerts for your Lapiez order acceptance, confirmation, packaging, and dispatch.
+                    </p>
+                  </div>
+                  {customerNotifications.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => markAllCustomerNotificationsAsRead()}
+                      className="px-3.5 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-bold transition-colors cursor-pointer self-start sm:self-auto"
+                    >
+                      Mark All as Read
+                    </button>
+                  )}
+                </div>
+
+                {/* Notifications List */}
+                {customerNotifications.length === 0 ? (
+                  <div className="bg-white border border-[#E5E7EB] rounded-2xl p-10 text-center shadow-2xs">
+                    <div className="w-14 h-14 rounded-full bg-blue-50 text-[#1A56DB] flex items-center justify-center mx-auto mb-3">
+                      <Bell className="w-7 h-7 stroke-[1.5]" />
+                    </div>
+                    <h4 className="text-sm font-black text-gray-800">No Notifications Yet</h4>
+                    <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">
+                      Whenever you place an order or our showroom team confirms or dispatches your hardware, you will receive real-time notifications right here.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('orders')}
+                      className="mt-4 inline-flex h-9 px-4 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                    >
+                      <Package className="w-3.5 h-3.5" />
+                      <span>View My Orders</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {customerNotifications.map((notif: any) => {
+                      const isUnread = !notif.read;
+                      return (
+                        <div
+                          key={notif.id}
+                          onClick={() => {
+                            markCustomerNotificationAsRead(notif.id);
+                            if (notif.link) {
+                              router.push(notif.link);
+                            }
+                          }}
+                          className={`bg-white border rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-start gap-3.5 ${
+                            isUnread ? 'border-blue-300 bg-blue-50/30 ring-1 ring-blue-100' : 'border-[#E5E7EB]'
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            {notif.title.includes('Deliver') ? <Sparkles className="w-5 h-5 text-emerald-600" /> :
+                             notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-5 h-5 text-indigo-600" /> :
+                             notif.title.includes('Pack') ? <Package className="w-5 h-5 text-blue-600" /> :
+                             notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-5 h-5 text-amber-600" /> :
+                             <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className={`text-sm ${isUnread ? 'font-black text-gray-900' : 'font-bold text-gray-800'}`}>
+                                {notif.title}
+                              </h4>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {isUnread && (
+                                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                                )}
+                                <span className="text-[11px] text-gray-400 font-medium">
+                                  {new Date(notif.createdAt).toLocaleDateString('en-IN', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                              {notif.message}
+                            </p>
+                            {notif.orderId && (
+                              <div className="mt-2.5 flex items-center gap-2">
+                                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-700 border border-gray-200">
+                                  Order #{notif.orderId}
+                                </span>
+                                <span className="text-xs text-[#1A56DB] font-extrabold hover:underline flex items-center gap-1">
+                                  Track Order →
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 

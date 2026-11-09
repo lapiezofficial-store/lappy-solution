@@ -17,6 +17,7 @@ import { CMSBrand, DEFAULT_BRANDS } from '../data/brands';
 import { CATEGORIES } from '../data/categories';
 import { INITIAL_BANNERS, encodeBannerConfig, decodeBannerConfig } from '../data/banners';
 import { adminFetch, broadcastCmsUpdate, subscribeToCmsUpdates } from '../lib/adminApi';
+import { playCustomerUpdateSound, triggerDesktopNotification } from '../lib/soundAlert';
 
 export interface CMSSubcategory {
   id: string;
@@ -311,6 +312,11 @@ interface StoreContextType {
   reorderCategories: (newCategories: CMSCategory[]) => Promise<boolean>;
   resetCategoriesToDefault: () => Promise<boolean>;
   fetchCategories: () => Promise<void>;
+  customerNotifications: any[];
+  unreadCustomerNotifCount: number;
+  fetchCustomerNotifications: () => Promise<void>;
+  markCustomerNotificationAsRead: (id?: string) => Promise<void>;
+  markAllCustomerNotificationsAsRead: () => Promise<void>;
 }
 
 export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
@@ -718,6 +724,113 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       subscription.unsubscribe();
     };
   }, []);
+
+  const [customerNotifications, setCustomerNotifications] = useState<any[]>([]);
+  const [unreadCustomerNotifCount, setUnreadCustomerNotifCount] = useState<number>(0);
+
+  const fetchCustomerNotifications = useCallback(async () => {
+    try {
+      const phone = customer?.phone || (typeof window !== 'undefined' ? localStorage.getItem('ls_customer_phone') : null) || '';
+      const customerId = customer?.id || '';
+      const searchParams = new URLSearchParams();
+      if (phone) searchParams.set('phone', phone);
+      if (customerId) searchParams.set('customerId', customerId);
+
+      if (!phone && !customerId && typeof window !== 'undefined') {
+        const lastOrder = localStorage.getItem('ls_last_order');
+        if (lastOrder) {
+          try {
+            const parsed = JSON.parse(lastOrder);
+            if (parsed.phone) searchParams.set('phone', parsed.phone);
+          } catch {}
+        }
+      }
+
+      if (!searchParams.get('phone') && !searchParams.get('customerId')) {
+        return;
+      }
+
+      const res = await fetch(`/api/notifications?${searchParams.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCustomerNotifications(data.notifications || []);
+        setUnreadCustomerNotifCount(data.unreadCount || 0);
+      }
+    } catch (e) {
+      console.warn('Error fetching customer notifications:', e);
+    }
+  }, [customer]);
+
+  const markCustomerNotificationAsRead = async (id?: string) => {
+    try {
+      if (id) {
+        setCustomerNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        setUnreadCustomerNotifCount(prev => Math.max(0, prev - 1));
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+      }
+    } catch {}
+  };
+
+  const markAllCustomerNotificationsAsRead = async () => {
+    try {
+      const phone = customer?.phone || (typeof window !== 'undefined' ? localStorage.getItem('ls_customer_phone') : null) || '';
+      const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+      setCustomerNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCustomerNotifCount(0);
+      if (cleanPhone) {
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ markAllRead: true, recipient: cleanPhone }),
+        });
+      }
+    } catch {}
+  };
+
+  // Live Realtime listener for customer order updates
+  useEffect(() => {
+    fetchCustomerNotifications();
+    const interval = setInterval(fetchCustomerNotifications, 20000);
+
+    let channel: any = null;
+    try {
+      channel = supabase.channel('lapiez_notifications');
+      channel.on('broadcast', { event: 'customer_order_update' }, (msg: any) => {
+        const payload = msg?.payload;
+        if (!payload) return;
+        const myPhone = customer?.phone || (typeof window !== 'undefined' ? localStorage.getItem('ls_customer_phone') : '') || '';
+        const cleanMy = myPhone.replace(/\D/g, '').slice(-10);
+        const cleanTarget = (payload.phone || '').replace(/\D/g, '').slice(-10);
+
+        const isMine = (cleanMy && cleanTarget && cleanMy === cleanTarget) ||
+                       (customer?.id && payload.customerId && customer.id === payload.customerId) ||
+                       (orders.some(o => o.orderId === payload.orderId));
+
+        if (isMine) {
+          playCustomerUpdateSound();
+          showToast(`${payload.title}: ${payload.message}`);
+          triggerDesktopNotification(payload.title, { body: payload.message });
+          fetchCustomerNotifications();
+          setOrders(prev => prev.map(o => o.orderId === payload.orderId ? {
+            ...o,
+            orderStatus: payload.orderStatus || o.orderStatus,
+            paymentStatus: payload.paymentStatus || o.paymentStatus,
+          } : o));
+        }
+      }).subscribe();
+    } catch (e) {}
+
+    return () => {
+      clearInterval(interval);
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch {}
+      }
+    };
+  }, [fetchCustomerNotifications, customer, orders]);
 
   const loginCustomerManually = (userData: { id?: string; email: string; name?: string; picture?: string; phone?: string }) => {
     const userObj: any = {
@@ -1380,8 +1493,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('ls_last_order', JSON.stringify(savedOrder));
       localStorage.setItem('ls_last_invoice', JSON.stringify(newInvoice));
       localStorage.setItem('ls_cart', JSON.stringify([]));
+      if (savedOrder.phone) {
+        const cleanPhone = savedOrder.phone.replace(/\D/g, '').slice(-10);
+        localStorage.setItem('ls_customer_phone', cleanPhone);
+      }
       showToast(`Order #${savedOrder.orderId} placed. Payment verification is pending.`);
       broadcastCmsUpdate('orders');
+      fetchCustomerNotifications().catch(() => {});
       syncWithDatabase({ forceFresh: true }).catch(() => {});
       return newInvoice;
     } catch (e) {
@@ -3560,6 +3678,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         reorderCategories,
         resetCategoriesToDefault,
         fetchCategories,
+        customerNotifications,
+        unreadCustomerNotifCount,
+        fetchCustomerNotifications,
+        markCustomerNotificationAsRead,
+        markAllCustomerNotificationsAsRead,
       }}
     >
 

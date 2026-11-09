@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { triggerPusherEvent } from '@/lib/pusher';
+import { notifyCustomerOnOrderUpdate } from '@/lib/notificationService';
 
 // GET: Fetch available ready orders for riders
 export async function GET() {
@@ -44,6 +45,9 @@ export async function POST(req: Request) {
       paymentMethod: order.paymentMethod,
       createdAt: order.createdAt,
     });
+
+    // Notify Customer about Ready for Pickup
+    await notifyCustomerOnOrderUpdate(order, 'STATUS').catch(() => {});
 
     return NextResponse.json({ success: true, order });
   } catch (error: any) {

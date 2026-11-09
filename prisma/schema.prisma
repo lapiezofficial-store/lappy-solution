@@ -348,3 +348,23 @@ model WarrantyClaim {
   @@index([purchaseChannel])
   @@index([createdAt])
 }
+
+model Notification {
+  id           String   @id @default(cuid())
+  recipient    String   // "ADMIN" | phone or customerId or email
+  type         String   // "NEW_ORDER" | "ORDER_STATUS" | "PAYMENT_STATUS" | "SYSTEM"
+  title        String
+  message      String
+  orderId      String?
+  link         String?
+  read         Boolean  @default(false)
+  metadataJson String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([recipient])
+  @@index([read])
+  @@index([createdAt])
+  @@index([orderId])
+}
+

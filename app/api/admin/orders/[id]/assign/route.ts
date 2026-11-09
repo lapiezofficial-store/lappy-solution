@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { triggerPusherEvent } from '@/lib/pusher';
+import { notifyCustomerOnOrderUpdate } from '@/lib/notificationService';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -63,6 +64,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       riderId: rider.id,
       riderName: rider.name,
     });
+
+    // Notify Customer about Rider Assignment
+    await notifyCustomerOnOrderUpdate({
+      ...updatedOrder,
+      riderName: rider.name,
+    }, 'RIDER').catch(() => {});
 
     return NextResponse.json({
       success: true,
