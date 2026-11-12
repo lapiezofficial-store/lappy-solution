@@ -57,38 +57,8 @@ export const CategoryGrid: React.FC = () => {
           </Link>
         </div>
 
-        {/* 1. Mobile Category Rail (Clean 1-word labels, no price) */}
-        <div className="flex sm:hidden items-start gap-3 overflow-x-auto pb-2 pt-0.5 px-0.5 no-scrollbar snap-x snap-mandatory">
-          {displayCategories.map((cat) => {
-            const label = formatShortCategoryName(cat.name || cat.title);
-            const img = cat.image || cat.imageUrl || '/images/categories/laptop-adapters.png';
-            const href = cat.href || `/shop?cat=${encodeURIComponent(cat.name)}`;
-
-            return (
-              <Link
-                key={`bubble-${cat.id || cat.slug}`}
-                href={href}
-                className="flex flex-col items-center flex-shrink-0 group active:scale-95 transition-transform w-[72px] text-center snap-start"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200/90 shadow-2xs group-hover:border-[#1A56DB] p-2.5 flex items-center justify-center transition-all">
-                  <img
-                    src={img}
-                    alt={label}
-                    loading="lazy"
-                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
-                  />
-                </div>
-
-                <span className="text-[11.5px] font-bold text-gray-800 group-hover:text-[#1A56DB] leading-tight w-full mt-2 truncate">
-                  {label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* 2. Desktop & Tablet Category Grid (Clean white tiles, 1-word label, zero price/explore clutter) */}
-        <div className="hidden sm:grid sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-[repeat(auto-fit,minmax(112px,1fr))] gap-2.5">
+        {/* Unified Responsive Category Grid (All categories upfront, zero horizontal swipe on mobile or desktop) */}
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-[repeat(auto-fit,minmax(112px,1fr))] gap-2 sm:gap-2.5">
           {displayCategories.map((cat) => {
             const label = formatShortCategoryName(cat.name || cat.title);
             const img = cat.image || cat.imageUrl || '/images/categories/laptop-adapters.png';
@@ -99,9 +69,9 @@ export const CategoryGrid: React.FC = () => {
                 key={cat.id || cat.slug}
                 href={href}
                 title={cat.name || label}
-                className="group bg-white hover:bg-blue-50/40 border border-gray-200 hover:border-[#1A56DB] rounded-2xl p-3 flex flex-col items-center justify-center gap-2.5 text-center transition-all shadow-2xs hover:shadow-sm active:scale-[0.98]"
+                className="group bg-white hover:bg-blue-50/40 border border-gray-200 hover:border-[#1A56DB] rounded-2xl p-2.5 sm:p-3 flex flex-col items-center justify-center gap-2 sm:gap-2.5 text-center transition-all shadow-2xs hover:shadow-sm active:scale-[0.98]"
               >
-                <div className="w-14 h-14 flex items-center justify-center">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center">
                   <img
                     src={img}
                     alt={label}
@@ -109,7 +79,7 @@ export const CategoryGrid: React.FC = () => {
                     className="max-h-full max-w-full object-contain transform group-hover:scale-110 transition-transform duration-200"
                   />
                 </div>
-                <span className="text-[13px] font-bold text-[#111827] group-hover:text-[#1A56DB] transition-colors leading-none whitespace-nowrap">
+                <span className="text-[11.5px] sm:text-[13px] font-bold text-[#111827] group-hover:text-[#1A56DB] transition-colors leading-none whitespace-nowrap">
                   {label}
                 </span>
               </Link>

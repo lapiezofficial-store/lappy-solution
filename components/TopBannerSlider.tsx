@@ -129,7 +129,7 @@ export const TopBannerSlider: React.FC = () => {
 
   return (
     <section 
-      className="w-full relative py-0.5 sm:py-2 select-none overflow-hidden"
+      className="w-full relative pt-2 sm:pt-4 pb-1 select-none px-2.5 sm:px-6"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
@@ -137,92 +137,81 @@ export const TopBannerSlider: React.FC = () => {
       onTouchEnd={handleTouchEnd}
       aria-label="Promotional Banners Carousel"
     >
-      {/* Container: Aligned with standard 7xl site grid on desktop, edge-to-edge on mobile */}
-      <div className="w-full max-w-7xl mx-auto px-0 sm:px-4 md:px-6">
+      {/* Pure 16:9 Hero Slider Frame matching BrightBooks HeroSlider for Web & Mobile */}
+      <div className="relative w-full max-w-[1240px] mx-auto aspect-[16/9] overflow-hidden rounded-2xl md:rounded-[2rem] shadow-sm bg-[#071A33] border border-[#E5E7EB]">
         
-        {/* Banner Frame Container:
-            - Phone (<640px): aspect-[16/9] max-h-[230px] -> 1920x1080 images fit 100% edge-to-edge without crop
-            - Tablet/Desktop: Sleek widescreen proportion capped at max-h-[420px], preventing giant 1080px tall viewports
-        */}
-        <div className="relative overflow-hidden w-full rounded-none sm:rounded-2xl border-0 sm:border border-[#E5E7EB] bg-slate-900 shadow-xs">
-          <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] md:aspect-[24/9] max-h-[230px] sm:max-h-[320px] md:max-h-[380px] lg:max-h-[420px] overflow-hidden">
-            
-            {/* Absolute Slide Deck: Each slide is strictly 100% container width, eliminating 200% flexbox track offsets and half-slide cutoffs */}
-            <div className="relative w-full h-full overflow-hidden">
-              {slides.map((slide, index) => {
-                const offset = index - currentSlide;
-                return (
-                  <div 
-                    key={slide.id} 
-                    className="absolute inset-0 w-full h-full transition-transform duration-500 ease-out overflow-hidden"
-                    style={{ 
-                      transform: `translate3d(${offset * 100}%, 0, 0)`,
-                      WebkitTransform: `translate3d(${offset * 100}%, 0, 0)`,
-                      willChange: 'transform',
-                      backfaceVisibility: 'hidden',
-                      WebkitBackfaceVisibility: 'hidden'
-                    }}
-                  >
-                    <Link
-                      href={slide.ctaLink}
-                      aria-label={slide.title}
-                      className="block w-full h-full relative group cursor-pointer"
-                    >
-                      <img
-                        src={slide.image}
-                        alt={slide.title}
-                        className="w-full h-full object-cover object-center"
-                        loading={index === 0 ? 'eager' : 'lazy'}
-                        decoding="async"
-                      />
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Left Arrow Navigation Button (Only if multiple slides) */}
-            {totalSlides > 1 && (
-              <button
-                onClick={prevSlide}
-                aria-label="Previous Slide"
-                className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-9 md:h-9 rounded-full bg-black/40 hover:bg-black/75 text-white items-center justify-center backdrop-blur-md transition-all border border-white/20 shadow-md z-20 active:scale-95 cursor-pointer"
+        {/* Smooth Crossfade Slide Deck: 100% active slide visible, zero half-cutoff glitches */}
+        <div className="relative w-full h-full">
+          {slides.map((slide, index) => {
+            const isActive = index === currentSlide;
+            return (
+              <div 
+                key={slide.id} 
+                className={`absolute inset-0 w-full h-full transition-opacity duration-500 ease-in-out ${
+                  isActive ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
+                }`}
               >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
-
-            {/* Right Arrow Navigation Button (Only if multiple slides) */}
-            {totalSlides > 1 && (
-              <button
-                onClick={nextSlide}
-                aria-label="Next Slide"
-                className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-9 md:h-9 rounded-full bg-black/40 hover:bg-black/75 text-white items-center justify-center backdrop-blur-md transition-all border border-white/20 shadow-md z-20 active:scale-95 cursor-pointer"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
-
-            {/* Bottom Dots Indicator Bar (Only if multiple slides) */}
-            {totalSlides > 1 && (
-              <div className="absolute bottom-2.5 left-0 right-0 z-20 flex items-center justify-center gap-1.5 pointer-events-none">
-                {slides.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentSlide(i)}
-                    aria-label={`Go to slide ${i + 1}`}
-                    className={`pointer-events-auto transition-all duration-300 rounded-full h-1.5 cursor-pointer ${
-                      currentSlide === i 
-                        ? 'w-6 bg-[#FDE047] shadow-xs' 
-                        : 'w-1.5 bg-white/50 hover:bg-white/80'
-                    }`}
+                <Link
+                  href={slide.ctaLink}
+                  aria-label={slide.title}
+                  className="block w-full h-full relative group cursor-pointer"
+                >
+                  <img
+                    src={slide.image}
+                    alt={slide.title}
+                    className="w-full h-full object-contain object-center"
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
                   />
-                ))}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none" />
+                </Link>
               </div>
-            )}
-
-          </div>
+            );
+          })}
         </div>
+
+        {/* Left Arrow Navigation Button */}
+        {totalSlides > 1 && (
+          <button
+            type="button"
+            onClick={prevSlide}
+            aria-label="Previous Slide"
+            className="hidden sm:flex absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-9 h-9 md:w-10 md:h-10 rounded-full bg-black/40 hover:bg-black/75 text-white items-center justify-center backdrop-blur-md transition-all border border-white/20 shadow-md z-20 active:scale-95 cursor-pointer"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Right Arrow Navigation Button */}
+        {totalSlides > 1 && (
+          <button
+            type="button"
+            onClick={nextSlide}
+            aria-label="Next Slide"
+            className="hidden sm:flex absolute right-3 md:right-4 top-1/2 -translate-y-1/2 w-9 h-9 md:w-10 md:h-10 rounded-full bg-black/40 hover:bg-black/75 text-white items-center justify-center backdrop-blur-md transition-all border border-white/20 shadow-md z-20 active:scale-95 cursor-pointer"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Bottom Dots Indicator Bar */}
+        {totalSlides > 1 && (
+          <div className="absolute bottom-3 left-0 right-0 z-20 flex items-center justify-center gap-1.5 pointer-events-none">
+            {slides.map((_, i) => (
+              <button
+                type="button"
+                key={i}
+                onClick={() => setCurrentSlide(i)}
+                aria-label={`Go to slide ${i + 1}`}
+                className={`pointer-events-auto transition-all duration-300 rounded-full h-1.5 sm:h-2 cursor-pointer ${
+                  currentSlide === i 
+                    ? 'w-7 sm:w-8 bg-[#FDE047] shadow-xs' 
+                    : 'w-1.5 sm:w-2 bg-white/50 hover:bg-white/80'
+                }`}
+              />
+            ))}
+          </div>
+        )}
 
       </div>
     </section>

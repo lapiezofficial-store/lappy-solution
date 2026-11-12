@@ -9,6 +9,7 @@ import { BrandLogoRenderer } from './BrandLogoRenderer';
 export const BrandShowcase: React.FC = () => {
   const { brands } = useStore();
   const [showAll, setShowAll] = useState(false);
+  const [showAllMobile, setShowAllMobile] = useState(false);
 
   const activeBrands = useMemo(() => {
     return (brands || [])
@@ -17,6 +18,11 @@ export const BrandShowcase: React.FC = () => {
   }, [brands]);
 
   if (activeBrands.length === 0) return null;
+
+  const MOBILE_LIMIT = 5;
+  const mobileBrands = showAllMobile || activeBrands.length <= MOBILE_LIMIT
+    ? activeBrands
+    : activeBrands.slice(0, MOBILE_LIMIT);
 
   const INITIAL_LIMIT = 18;
   const displayedBrands = showAll || activeBrands.length <= INITIAL_LIMIT
@@ -42,36 +48,51 @@ export const BrandShowcase: React.FC = () => {
           </Link>
         </div>
 
-        {/* MOBILE VIEW: Smooth Horizontal Dual-Row Carousel */}
+        {/* MOBILE VIEW: Clean 3-column Grid showing 5 Brands + View More toggle */}
         <div className="block sm:hidden">
-          <div className="flex gap-2.5 overflow-x-auto pb-2.5 pt-0.5 px-0.5 no-scrollbar snap-x snap-mandatory">
-            {/* Split displayedBrands into pairs of 2 per column */}
-            {Array.from({ length: Math.ceil(displayedBrands.length / 2) }).map((_, colIdx) => {
-              const b1 = displayedBrands[colIdx * 2];
-              const b2 = displayedBrands[colIdx * 2 + 1];
+          <div className="grid grid-cols-3 gap-2">
+            {mobileBrands.map((b) => {
+              const href = b.query?.startsWith('/')
+                ? b.query
+                : `/shop?search=${encodeURIComponent(b.query || b.name)}`;
 
               return (
-                <div key={colIdx} className="flex flex-col gap-2 flex-shrink-0 w-[128px] snap-start">
-                  {b1 && (
-                    <Link
-                      href={b1.query?.startsWith('/') ? b1.query : `/shop?search=${encodeURIComponent(b1.query || b1.name)}`}
-                      className="bg-white border border-[#E5E7EB] hover:border-[#1A56DB] rounded-xl h-[54px] px-2 flex items-center justify-center shadow-2xs active:scale-95 transition-all text-center"
-                    >
-                      <BrandLogoRenderer brand={b1} className="scale-90" />
-                    </Link>
-                  )}
-                  {b2 && (
-                    <Link
-                      href={b2.query?.startsWith('/') ? b2.query : `/shop?search=${encodeURIComponent(b2.query || b2.name)}`}
-                      className="bg-white border border-[#E5E7EB] hover:border-[#1A56DB] rounded-xl h-[54px] px-2 flex items-center justify-center shadow-2xs active:scale-95 transition-all text-center"
-                    >
-                      <BrandLogoRenderer brand={b2} className="scale-90" />
-                    </Link>
-                  )}
-                </div>
+                <Link
+                  key={`mob-${b.id || b.name}`}
+                  href={href}
+                  title={`View all ${b.name} products`}
+                  className="bg-white border border-[#E5E7EB] hover:border-[#1A56DB] rounded-xl h-[54px] px-2 flex items-center justify-center shadow-2xs active:scale-95 transition-all"
+                >
+                  <BrandLogoRenderer brand={b} className="scale-90" />
+                </Link>
               );
             })}
+
+            {/* View More card directly in 6th slot when collapsed */}
+            {!showAllMobile && activeBrands.length > MOBILE_LIMIT && (
+              <button
+                type="button"
+                onClick={() => setShowAllMobile(true)}
+                className="bg-blue-50/80 hover:bg-blue-100 border border-blue-200 text-[#1A56DB] rounded-xl h-[54px] px-2 flex flex-col items-center justify-center shadow-2xs active:scale-95 transition-all cursor-pointer"
+              >
+                <span className="text-[11px] font-black leading-tight">View More</span>
+                <span className="text-[9.5px] font-bold text-blue-600">+{activeBrands.length - MOBILE_LIMIT} Brands</span>
+              </button>
+            )}
           </div>
+
+          {showAllMobile && activeBrands.length > MOBILE_LIMIT && (
+            <div className="mt-2.5 text-center">
+              <button
+                type="button"
+                onClick={() => setShowAllMobile(false)}
+                className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full bg-white border border-gray-200 text-xs font-bold text-[#1A56DB] shadow-2xs cursor-pointer"
+              >
+                <span>Show Less</span>
+                <ChevronUp className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* TABLET & DESKTOP VIEW: Clean Multi-Column Grid */}

@@ -3,12 +3,12 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { 
-  Package, Heart, User, MapPin, Phone, Mail, 
-  Clock, ShieldCheck, ShoppingCart, Trash2, ArrowRight, 
-  Store, ExternalLink, Search, Filter, ChevronRight, 
-  FileText, CheckCircle2, AlertCircle, Sparkles, Star, 
-  Tag, CreditCard, HelpCircle, Download, Check, X, 
+import {
+  Package, Heart, User, MapPin, Phone, Mail,
+  Clock, ShieldCheck, ShoppingCart, Trash2, ArrowRight,
+  Store, ExternalLink, Search, Filter, ChevronRight,
+  FileText, CheckCircle2, AlertCircle, Sparkles, Star,
+  Tag, CreditCard, HelpCircle, Download, Check, X,
   Printer, ArrowLeft, RefreshCw, MessageSquare, QrCode, LogOut, Bell, Truck
 } from 'lucide-react';
 
@@ -16,15 +16,15 @@ import { useStore } from '../../context/StoreContext';
 import { STORE_INFO } from '../../data/storeData';
 import { Product } from '../../data/products';
 
-type AccountTab = 
-  | 'orders' 
+type AccountTab =
+  | 'orders'
   | 'notifications'
   | 'cart'
-  | 'profile' 
-  | 'addresses' 
-  | 'wishlist' 
-  | 'gst' 
-  | 'payments' 
+  | 'profile'
+  | 'addresses'
+  | 'wishlist'
+  | 'gst'
+  | 'payments'
   | 'support';
 
 interface SavedAddress {
@@ -70,16 +70,16 @@ const DEFAULT_ADDRESSES: SavedAddress[] = [
 function AccountContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { 
-    orders, 
+  const {
+    orders,
     cart,
     updateQuantity,
     removeFromCart,
     clearCart,
-    wishlistIds, 
-    products, 
-    addToCart, 
-    toggleWishlist, 
+    wishlistIds,
+    products,
+    addToCart,
+    toggleWishlist,
     siteSettings,
     paymentSettings,
     showToast,
@@ -200,7 +200,7 @@ function AccountContent() {
     });
     try {
       localStorage.setItem('ls_customer_profile', JSON.stringify(updatedProfile));
-    } catch (e) {}
+    } catch (e) { }
     setIsGuestModalOpen(false);
   };
 
@@ -264,7 +264,7 @@ function AccountContent() {
 
       const savedGst = localStorage.getItem('ls_customer_gst');
       if (savedGst) setGstInfo(JSON.parse(savedGst));
-    } catch (e) {}
+    } catch (e) { }
   }, []);
 
   const wishlistProducts = products.filter((p) => wishlistIds.includes(p.id));
@@ -281,8 +281,8 @@ function AccountContent() {
       const orderEmail = (o.customerEmail || o.email || '').toLowerCase().trim();
       const orderPhone = (o.phone || '').replace(/\D/g, '').slice(-10);
       const isOwner = (o.customerId && o.customerId === custId) ||
-                      (custEmail && orderEmail === custEmail) ||
-                      (custPhone && orderPhone && custPhone === orderPhone);
+        (custEmail && orderEmail === custEmail) ||
+        (custPhone && orderPhone && custPhone === orderPhone);
 
       if (!isOwner) return false;
 
@@ -306,7 +306,7 @@ function AccountContent() {
     try {
       localStorage.setItem('ls_customer_profile', JSON.stringify(profile));
       showToast('Profile information updated successfully!');
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleSaveGst = (e: React.FormEvent) => {
@@ -314,7 +314,7 @@ function AccountContent() {
     try {
       localStorage.setItem('ls_customer_gst', JSON.stringify(gstInfo));
       showToast('GST Business details saved for tax invoicing!');
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleAddAddressSubmit = (e: React.FormEvent) => {
@@ -339,7 +339,7 @@ function AccountContent() {
     setAddresses(updated);
     try {
       localStorage.setItem('ls_customer_addresses', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
     setIsAddAddressOpen(false);
     setNewAddr({ name: '', phone: '', pincode: '822114', locality: '', address: '', city: 'Garhwa', state: 'Jharkhand', type: 'HOME' });
     showToast('New address saved successfully!');
@@ -350,7 +350,7 @@ function AccountContent() {
     setAddresses(updated);
     try {
       localStorage.setItem('ls_customer_addresses', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
     showToast('Address removed.');
   };
 
@@ -359,7 +359,7 @@ function AccountContent() {
     setAddresses(updated);
     try {
       localStorage.setItem('ls_customer_addresses', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
     showToast('Default delivery address updated.');
   };
 
@@ -383,7 +383,7 @@ function AccountContent() {
 
   return (
     <div className="bg-[#F1F3F6] min-h-screen pb-20 font-sans">
-      
+
       {/* 1. FLIPKART STYLE BREADCRUMB BAR */}
       <div className="bg-white border-b border-[#E5E7EB] py-2 px-3 sm:px-6 shadow-2xs">
         <div className="max-w-7xl mx-auto flex items-center gap-1.5 text-[11px] sm:text-xs text-[#6B7280]">
@@ -398,12 +398,12 @@ function AccountContent() {
       {/* 2. MAIN 2-COLUMN CONTAINER */}
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6 pt-4 sm:pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-5 items-start">
-          
+
           {/* ========================================================= */}
           {/* LEFT SIDEBAR (FLIPKART / AMAZON INDIAN ECOM STYLE)        */}
           {/* ========================================================= */}
           <div className="lg:col-span-4 xl:col-span-3 space-y-3">
-            
+
             {/* User Greeting Card */}
             <div className="bg-white rounded-xl border border-[#E5E7EB] p-3.5 sm:p-4 shadow-2xs flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
@@ -474,16 +474,15 @@ function AccountContent() {
 
             {/* Navigation Menu Card */}
             <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-2xs divide-y divide-[#F3F4F6] overflow-hidden text-xs">
-              
+
               {/* GROUP 1: MY ORDERS & MY CART */}
               <div className="p-2 space-y-1">
                 <button
                   onClick={() => setActiveTab('orders')}
-                  className={`w-full py-2.5 px-3 rounded-lg flex items-center justify-between font-bold transition-all ${
-                    activeTab === 'orders'
+                  className={`w-full py-2.5 px-3 rounded-lg flex items-center justify-between font-bold transition-all ${activeTab === 'orders'
                       ? 'bg-[#EFF6FF] text-[#1A56DB]'
                       : 'text-[#374151] hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <Package className={`w-4 h-4 ${activeTab === 'orders' ? 'text-[#1A56DB]' : 'text-gray-400'}`} />
@@ -499,11 +498,10 @@ function AccountContent() {
 
                 <button
                   onClick={() => setActiveTab('notifications')}
-                  className={`w-full py-2.5 px-3 rounded-lg flex items-center justify-between font-bold transition-all ${
-                    activeTab === 'notifications'
+                  className={`w-full py-2.5 px-3 rounded-lg flex items-center justify-between font-bold transition-all ${activeTab === 'notifications'
                       ? 'bg-[#EFF6FF] text-[#1A56DB]'
                       : 'text-[#374151] hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <Bell className={`w-4 h-4 ${activeTab === 'notifications' ? 'text-[#1A56DB]' : 'text-gray-400'}`} />
@@ -525,20 +523,18 @@ function AccountContent() {
 
                 <button
                   onClick={() => setActiveTab('cart')}
-                  className={`w-full py-2.5 px-3 rounded-lg flex items-center justify-between font-bold transition-all ${
-                    activeTab === 'cart'
+                  className={`w-full py-2.5 px-3 rounded-lg flex items-center justify-between font-bold transition-all ${activeTab === 'cart'
                       ? 'bg-[#EFF6FF] text-[#1A56DB]'
                       : 'text-[#374151] hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <ShoppingCart className={`w-4 h-4 ${activeTab === 'cart' ? 'text-[#1A56DB]' : 'text-gray-400'}`} />
                     <span>MY ACTIVE CART</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                      cart.length > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'
-                    }`}>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${cart.length > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'
+                      }`}>
                       {cart.reduce((s, i) => s + i.quantity, 0)}
                     </span>
                     <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
@@ -555,11 +551,10 @@ function AccountContent() {
 
                 <button
                   onClick={() => setActiveTab('profile')}
-                  className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${
-                    activeTab === 'profile'
+                  className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${activeTab === 'profile'
                       ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
                       : 'text-[#4B5563] hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <span>Profile Information</span>
                   {activeTab === 'profile' && <ChevronRight className="w-3 h-3 text-[#1A56DB]" />}
@@ -567,11 +562,10 @@ function AccountContent() {
 
                 <button
                   onClick={() => setActiveTab('addresses')}
-                  className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${
-                    activeTab === 'addresses'
+                  className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${activeTab === 'addresses'
                       ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
                       : 'text-[#4B5563] hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <span>Manage Addresses</span>
                   {activeTab === 'addresses' && <ChevronRight className="w-3 h-3 text-[#1A56DB]" />}
@@ -579,11 +573,10 @@ function AccountContent() {
 
                 <button
                   onClick={() => setActiveTab('gst')}
-                  className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${
-                    activeTab === 'gst'
+                  className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${activeTab === 'gst'
                       ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
                       : 'text-[#4B5563] hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <span>PAN & GST Invoicing</span>
                   {activeTab === 'gst' && <ChevronRight className="w-3 h-3 text-[#1A56DB]" />}
@@ -599,11 +592,10 @@ function AccountContent() {
 
                 <button
                   onClick={() => setActiveTab('payments')}
-                  className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${
-                    activeTab === 'payments'
+                  className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${activeTab === 'payments'
                       ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
                       : 'text-[#4B5563] hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <span>Saved UPI & Bank Details</span>
                   {activeTab === 'payments' && <ChevronRight className="w-3 h-3 text-[#1A56DB]" />}
@@ -619,11 +611,10 @@ function AccountContent() {
 
                 <button
                   onClick={() => setActiveTab('cart')}
-                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors ${
-                    activeTab === 'cart'
+                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors ${activeTab === 'cart'
                       ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
                       : 'text-[#4B5563] hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <span>My Cart Items</span>
                   <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800">
@@ -633,11 +624,10 @@ function AccountContent() {
 
                 <button
                   onClick={() => setActiveTab('wishlist')}
-                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors ${
-                    activeTab === 'wishlist'
+                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors ${activeTab === 'wishlist'
                       ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
                       : 'text-[#4B5563] hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <span>My Wishlist</span>
                   <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-red-100 text-red-600">
@@ -650,11 +640,10 @@ function AccountContent() {
               <div className="p-2">
                 <button
                   onClick={() => setActiveTab('support')}
-                  className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${
-                    activeTab === 'support'
+                  className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${activeTab === 'support'
                       ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
                       : 'text-[#4B5563] hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <HelpCircle className="w-3.5 h-3.5 text-[#15803D]" />
@@ -716,17 +705,17 @@ function AccountContent() {
           {/* RIGHT MAIN CONTENT AREA                                   */}
           {/* ========================================================= */}
           <div className="lg:col-span-8 xl:col-span-9 space-y-4">
-            
+
             {/* ======================================================= */}
             {/* TAB 1: MY ORDERS (FLIPKART STYLE)                       */}
             {/* ======================================================= */}
             {activeTab === 'orders' && (
               <div className="space-y-3.5">
-                
+
                 {/* Search & Filter Header */}
                 <div className="bg-white border border-[#E5E7EB] rounded-xl p-3 sm:p-4 shadow-2xs space-y-3">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                    
+
                     {/* Search in Orders Bar */}
                     <div className="relative w-full sm:max-w-md">
                       <input
@@ -758,11 +747,10 @@ function AccountContent() {
                         <button
                           key={f.id}
                           onClick={() => setOrderStatusFilter(f.id as any)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors border ${
-                            orderStatusFilter === f.id
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors border ${orderStatusFilter === f.id
                               ? 'bg-[#1A56DB] text-white border-[#1A56DB]'
                               : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                          }`}
+                            }`}
                         >
                           {f.label}
                         </button>
@@ -821,7 +809,7 @@ function AccountContent() {
 
                         {/* Order Items & Delivery Tracking Progress */}
                         <div className="p-4 sm:p-5 space-y-4">
-                          
+
                           {/* Items Rows */}
                           <div className="divide-y divide-gray-100">
                             {ord.items?.map((item: any, idx: number) => (
@@ -850,15 +838,14 @@ function AccountContent() {
                                 {/* Delivery Status Message with Dot */}
                                 <div className="sm:text-right flex-shrink-0">
                                   <div className="flex items-center sm:justify-end gap-1.5">
-                                    <span className={`w-2.5 h-2.5 rounded-full ${
-                                      isDelivered ? 'bg-[#15803D]' : isShipped ? 'bg-[#2563EB]' : 'bg-[#D97706]'
-                                    }`} />
+                                    <span className={`w-2.5 h-2.5 rounded-full ${isDelivered ? 'bg-[#15803D]' : isShipped ? 'bg-[#2563EB]' : 'bg-[#D97706]'
+                                      }`} />
                                     <span className="font-extrabold text-xs text-gray-900">
                                       {isDelivered
                                         ? 'Delivered on counter / address'
                                         : isShipped
-                                        ? 'Out for Delivery (Garhwa Express)'
-                                        : 'Processing for Dispatch'}
+                                          ? 'Out for Delivery (Garhwa Express)'
+                                          : 'Processing for Dispatch'}
                                     </span>
                                   </div>
                                   <span className="text-[11px] text-gray-500 block mt-0.5">
@@ -874,7 +861,7 @@ function AccountContent() {
                           {/* 4-Step Flipkart Progress Stepper */}
                           <div className="pt-3 border-t border-gray-100">
                             <div className="grid grid-cols-4 gap-1 text-center text-[10.5px]">
-                              
+
                               {/* Step 1: Confirmed */}
                               <div className="space-y-1">
                                 <div className="w-5 h-5 mx-auto rounded-full bg-[#15803D] text-white flex items-center justify-center font-bold text-[10px]">
@@ -886,9 +873,8 @@ function AccountContent() {
 
                               {/* Step 2: UPI Verified */}
                               <div className="space-y-1">
-                                <div className={`w-5 h-5 mx-auto rounded-full flex items-center justify-center font-bold text-[10px] ${
-                                  isPaid ? 'bg-[#15803D] text-white' : 'bg-amber-100 text-amber-700'
-                                }`}>
+                                <div className={`w-5 h-5 mx-auto rounded-full flex items-center justify-center font-bold text-[10px] ${isPaid ? 'bg-[#15803D] text-white' : 'bg-amber-100 text-amber-700'
+                                  }`}>
                                   {isPaid ? '✓' : '•'}
                                 </div>
                                 <span className="font-bold text-gray-800 block">UPI Verified</span>
@@ -899,9 +885,8 @@ function AccountContent() {
 
                               {/* Step 3: Shipped */}
                               <div className="space-y-1">
-                                <div className={`w-5 h-5 mx-auto rounded-full flex items-center justify-center font-bold text-[10px] ${
-                                  isShipped || isDelivered ? 'bg-[#15803D] text-white' : 'bg-gray-200 text-gray-500'
-                                }`}>
+                                <div className={`w-5 h-5 mx-auto rounded-full flex items-center justify-center font-bold text-[10px] ${isShipped || isDelivered ? 'bg-[#15803D] text-white' : 'bg-gray-200 text-gray-500'
+                                  }`}>
                                   {isShipped || isDelivered ? '✓' : '•'}
                                 </div>
                                 <span className="font-bold text-gray-800 block">Dispatched</span>
@@ -910,9 +895,8 @@ function AccountContent() {
 
                               {/* Step 4: Delivered */}
                               <div className="space-y-1">
-                                <div className={`w-5 h-5 mx-auto rounded-full flex items-center justify-center font-bold text-[10px] ${
-                                  isDelivered ? 'bg-[#15803D] text-white' : 'bg-gray-200 text-gray-500'
-                                }`}>
+                                <div className={`w-5 h-5 mx-auto rounded-full flex items-center justify-center font-bold text-[10px] ${isDelivered ? 'bg-[#15803D] text-white' : 'bg-gray-200 text-gray-500'
+                                  }`}>
                                   {isDelivered ? '✓' : '•'}
                                 </div>
                                 <span className="font-bold text-gray-800 block">Delivered</span>
@@ -926,7 +910,7 @@ function AccountContent() {
 
                           {/* Bottom Action Strip (Flipkart Style) */}
                           <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2.5">
-                            
+
                             {/* Star Rating Prompt */}
                             <div className="flex items-center gap-1.5 text-xs text-gray-500">
                               <span className="font-bold text-gray-700">Rate product:</span>
@@ -939,7 +923,7 @@ function AccountContent() {
 
                             {/* Buttons */}
                             <div className="flex flex-wrap items-center gap-2">
-                              
+
                               <button
                                 onClick={() => setTrackingOrder(ord)}
                                 className="h-8 px-3 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs flex items-center gap-1.5 transition-colors"
@@ -1097,16 +1081,15 @@ function AccountContent() {
                               router.push(notif.link);
                             }
                           }}
-                          className={`bg-white border rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-start gap-3.5 ${
-                            isUnread ? 'border-blue-300 bg-blue-50/30 ring-1 ring-blue-100' : 'border-[#E5E7EB]'
-                          }`}
+                          className={`bg-white border rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-start gap-3.5 ${isUnread ? 'border-blue-300 bg-blue-50/30 ring-1 ring-blue-100' : 'border-[#E5E7EB]'
+                            }`}
                         >
                           <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
                             {notif.title.includes('Deliver') ? <Sparkles className="w-5 h-5 text-emerald-600" /> :
-                             notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-5 h-5 text-indigo-600" /> :
-                             notif.title.includes('Pack') ? <Package className="w-5 h-5 text-blue-600" /> :
-                             notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-5 h-5 text-amber-600" /> :
-                             <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+                              notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-5 h-5 text-indigo-600" /> :
+                                notif.title.includes('Pack') ? <Package className="w-5 h-5 text-blue-600" /> :
+                                  notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-5 h-5 text-amber-600" /> :
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
@@ -1154,7 +1137,7 @@ function AccountContent() {
             {/* ======================================================= */}
             {activeTab === 'cart' && (
               <div className="space-y-4 animate-in fade-in duration-200">
-                
+
                 {/* Header Card */}
                 <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
@@ -1399,7 +1382,7 @@ function AccountContent() {
                 </div>
 
                 <form onSubmit={handleSaveProfile} className="space-y-5 text-xs">
-                  
+
                   {/* Name Fields */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -1523,7 +1506,7 @@ function AccountContent() {
             {/* ======================================================= */}
             {activeTab === 'addresses' && (
               <div className="space-y-4">
-                
+
                 {/* Header with Add Button */}
                 <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-2xs flex items-center justify-between">
                   <div>
@@ -1652,9 +1635,8 @@ function AccountContent() {
                   {addresses.map((addr) => (
                     <div
                       key={addr.id}
-                      className={`bg-white border rounded-xl p-4 sm:p-5 shadow-2xs transition-all ${
-                        addr.isDefault ? 'border-[#1A56DB] ring-1 ring-[#1A56DB]/20' : 'border-[#E5E7EB]'
-                      }`}
+                      className={`bg-white border rounded-xl p-4 sm:p-5 shadow-2xs transition-all ${addr.isDefault ? 'border-[#1A56DB] ring-1 ring-[#1A56DB]/20' : 'border-[#E5E7EB]'
+                        }`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                         <div className="space-y-1.5">
@@ -1723,12 +1705,12 @@ function AccountContent() {
                   <div className="bg-white border border-[#E5E7EB] rounded-xl divide-y divide-gray-100 overflow-hidden shadow-2xs">
                     {wishlistProducts.map((p) => (
                       <div key={p.id} className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
-                        
+
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="w-16 h-16 rounded-xl bg-gray-50 p-1 border border-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
                             <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
                           </div>
-                          
+
                           <div className="min-w-0 space-y-1">
                             <Link href={`/product/${p.id}`} className="block">
                               <h4 className="font-bold text-xs sm:text-sm text-gray-900 hover:text-[#1A56DB] line-clamp-2">
@@ -1886,7 +1868,7 @@ function AccountContent() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  
+
                   {/* Primary Store UPI Card */}
                   <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/60 space-y-2">
                     <div className="flex items-center justify-between">
@@ -1945,7 +1927,7 @@ function AccountContent() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  
+
                   {/* Showroom Coordinates */}
                   <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-2.5">
                     <span className="text-[10px] font-extrabold uppercase text-gray-500 block">Flagship Showroom Desk</span>
@@ -1999,7 +1981,7 @@ function AccountContent() {
       {invoiceOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 sm:p-7 shadow-2xl space-y-4">
-            
+
             {/* Header & Print controls */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-200 print:hidden">
               <div className="flex items-center gap-2">
@@ -2035,7 +2017,7 @@ function AccountContent() {
 
             {/* Printable Invoice Sheet */}
             <div className="p-4 sm:p-6 border border-gray-200 rounded-xl space-y-5 text-xs bg-white">
-              
+
               {/* Store Biller & GSTIN */}
               <div className="flex justify-between items-start border-b border-gray-200 pb-4">
                 <div>
@@ -2171,7 +2153,7 @@ function AccountContent() {
       {trackingOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
-            
+
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div>
                 <h3 className="font-extrabold text-base text-[#111827]">
@@ -2214,11 +2196,10 @@ function AccountContent() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${
-                  trackingOrder.orderStatus === 'Shipped' || trackingOrder.orderStatus === 'Delivered'
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${trackingOrder.orderStatus === 'Shipped' || trackingOrder.orderStatus === 'Delivered'
                     ? 'bg-emerald-600 text-white'
                     : 'bg-gray-200 text-gray-500'
-                }`}>
+                  }`}>
                   {trackingOrder.orderStatus === 'Shipped' || trackingOrder.orderStatus === 'Delivered' ? '✓' : '3'}
                 </div>
                 <div>
@@ -2228,11 +2209,10 @@ function AccountContent() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${
-                  trackingOrder.orderStatus === 'Delivered'
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${trackingOrder.orderStatus === 'Delivered'
                     ? 'bg-emerald-600 text-white'
                     : 'bg-gray-200 text-gray-500'
-                }`}>
+                  }`}>
                   {trackingOrder.orderStatus === 'Delivered' ? '✓' : '4'}
                 </div>
                 <div>
