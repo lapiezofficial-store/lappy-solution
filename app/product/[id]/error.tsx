@@ -2,7 +2,8 @@
 
 import React, { useEffect } from 'react';
 import Link from 'next/link';
-import { RefreshCw, ShoppingBag, ArrowLeft, MessageSquare, AlertCircle } from 'lucide-react';
+import { RefreshCw, ShoppingBag, ArrowLeft, AlertCircle } from 'lucide-react';
+import { WhatsAppIcon } from '../../../components/WhatsAppIcon';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../../../data/storeData';
 
 export default function ProductError({
@@ -59,7 +60,7 @@ export default function ProductError({
             onClick={handleWhatsApp}
             className="w-full h-9 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
-            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+            <WhatsAppIcon className="w-4 h-4" />
             <span>Inquire on WhatsApp</span>
           </button>
         </div>

@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  Heart, ShoppingCart, MessageSquare, Star, 
+  Heart, ShoppingCart, Star, 
   ShieldCheck, Truck, Store, ArrowLeft, ArrowRight, 
   Check, RefreshCw, Phone, Share2, Award, Zap
 } from 'lucide-react';
@@ -617,7 +617,7 @@ export default function ProductDetailPage() {
                   : 'text-emerald-700 hover:text-emerald-900 bg-emerald-50/80 hover:bg-emerald-100'
               }`}
             >
-              <MessageSquare className="w-3.5 h-3.5 fill-current" />
+              <WhatsAppIcon variant={activeTab === 'whatsapp' || activeTab === 'warranty' ? 'monochrome' : 'color'} className="w-4 h-4" />
               <span>WhatsApp: +91 9608828288</span>
             </button>
             <button
@@ -703,7 +703,7 @@ export default function ProductDetailPage() {
                       rel="noopener noreferrer"
                       className="h-10 px-5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
                     >
-                      <MessageSquare className="w-4 h-4 fill-white" />
+                      <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
                       <span>Chat on WhatsApp</span>
                     </a>
                     <a
@@ -805,7 +805,7 @@ export default function ProductDetailPage() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-bold transition-all shadow-xs"
                       >
-                        <MessageSquare className="w-4 h-4 fill-white" />
+                        <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
                         <span>Submit Feedback / Review on WhatsApp</span>
                       </a>
                     </div>

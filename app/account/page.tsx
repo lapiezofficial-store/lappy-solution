@@ -9,8 +9,9 @@ import {
   Store, ExternalLink, Search, Filter, ChevronRight,
   FileText, CheckCircle2, AlertCircle, Sparkles, Star,
   Tag, CreditCard, HelpCircle, Download, Check, X,
-  Printer, ArrowLeft, RefreshCw, MessageSquare, QrCode, LogOut, Bell, Truck
+  Printer, ArrowLeft, RefreshCw, QrCode, LogOut, Bell, Truck
 } from 'lucide-react';
+import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 
 import { useStore } from '../../context/StoreContext';
 import { STORE_INFO } from '../../data/storeData';
@@ -693,7 +694,7 @@ function AccountContent() {
                   rel="noopener noreferrer"
                   className="flex-1 h-8 rounded-lg bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs"
                 >
-                  <MessageSquare className="w-3 h-3 fill-white" />
+                  <WhatsAppIcon variant="monochrome" className="w-3.5 h-3.5" />
                   <span>WhatsApp</span>
                 </a>
               </div>
@@ -938,7 +939,7 @@ function AccountContent() {
                                 rel="noopener noreferrer"
                                 className="h-8 px-3 rounded-lg bg-green-50 hover:bg-green-100 border border-green-200 text-[#15803D] font-bold text-xs flex items-center gap-1.5 transition-colors"
                               >
-                                <MessageSquare className="w-3.5 h-3.5 fill-[#15803D]" />
+                                <WhatsAppIcon className="w-4 h-4" />
                                 <span>Need Help?</span>
                               </a>
 
@@ -1961,7 +1962,7 @@ function AccountContent() {
                       rel="noopener noreferrer"
                       className="h-9 px-4 rounded-lg bg-[#25D366] hover:bg-[#1EBE5B] text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-2xs"
                     >
-                      <MessageSquare className="w-4 h-4 fill-white" />
+                      <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
                       <span>WhatsApp Store Desk</span>
                     </a>
                   </div>

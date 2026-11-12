@@ -4,8 +4,9 @@ import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { 
   HelpCircle, ChevronDown, ChevronUp, Search, 
-  MessageSquare, ShieldCheck, CheckCircle2, Phone, Sparkles 
+  ShieldCheck, CheckCircle2, Phone, Sparkles 
 } from 'lucide-react';
+import { WhatsAppIcon } from './WhatsAppIcon';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore } from '../context/StoreContext';
 
@@ -228,7 +229,7 @@ export const FaqSection: React.FC<{ compact?: boolean }> = ({ compact = false })
               rel="noopener noreferrer"
               className="h-9 px-4 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-extrabold flex items-center gap-1.5 shadow-sm transition-all"
             >
-              <MessageSquare className="w-3.5 h-3.5" />
+              <WhatsAppIcon variant="monochrome" className="w-3.5 h-3.5" />
               <span>Ask on WhatsApp</span>
             </a>
 

@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ChevronRight, ArrowLeft, ShieldCheck, 
-  MessageSquare, FileText, Calendar, Clock,
+  FileText, Calendar, Clock,
   AlertTriangle, Video, Banknote, Store, Phone, CheckCircle2, Lock
 } from 'lucide-react';
+import { WhatsAppIcon } from '../../../components/WhatsAppIcon';
 import { useStore } from '../../../context/StoreContext';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../../../data/storeData';
 
@@ -376,7 +377,7 @@ export default function DynamicCustomPage() {
                 rel="noopener noreferrer"
                 className="h-10 px-4 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all shadow-sm whitespace-nowrap cursor-pointer active:scale-98"
               >
-                <MessageSquare className="w-4 h-4" />
+                <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
                 <span>WhatsApp Helpline</span>
               </a>
 

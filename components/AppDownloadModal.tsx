@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Smartphone, ShieldCheck, CheckCircle2, 
-  ArrowDownToLine, MessageSquare, AlertCircle, 
+  ArrowDownToLine, AlertCircle, 
   ExternalLink, Sparkles, QrCode, Download, PlusSquare
 } from 'lucide-react';
+import { WhatsAppIcon } from './WhatsAppIcon';
 import { QRCodeSVG } from 'qrcode.react';
 import { useStore } from '../context/StoreContext';
 
@@ -196,7 +197,7 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
                 rel="noopener noreferrer"
                 className="w-full h-11 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <MessageSquare className="w-4 h-4 text-emerald-600" />
+                <WhatsAppIcon className="w-4 h-4" />
                 <span>Get APK on WhatsApp (+91 96088 28288)</span>
               </a>
 

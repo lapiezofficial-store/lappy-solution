@@ -6,9 +6,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { 
   ChevronRight, ArrowLeft, Clock, User, Calendar, 
-  Tag, Share2, MessageSquare, BookOpen, Sparkles, 
+  Tag, Share2, BookOpen, Sparkles, 
   ExternalLink, CheckCircle2, ShoppingBag 
 } from 'lucide-react';
+import { WhatsAppIcon } from '../../../components/WhatsAppIcon';
 import { useStore } from '../../../context/StoreContext';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../../../data/storeData';
 import { DEFAULT_BLOGS } from '../../../data/blogData';
@@ -231,7 +232,7 @@ export default function SingleBlogPostPage() {
                 onClick={handleWhatsAppConsult}
                 className="h-8 px-3 rounded-lg bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
               >
-                <MessageSquare className="w-3.5 h-3.5" />
+                <WhatsAppIcon variant="monochrome" className="w-3.5 h-3.5" />
                 <span>Ask Expert</span>
               </button>
             </div>
@@ -287,7 +288,7 @@ export default function SingleBlogPostPage() {
                 onClick={handleWhatsAppConsult}
                 className="h-10 px-5 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-black flex items-center gap-2 shrink-0 shadow-md cursor-pointer transition-transform active:scale-95"
               >
-                <MessageSquare className="w-4 h-4" />
+                <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
                 <span>WhatsApp Hardware Desk</span>
               </button>
             </div>

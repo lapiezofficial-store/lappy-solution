@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
-  Phone, MessageSquare, MapPin, Mail, Clock, 
+  Phone, MapPin, Mail, Clock, 
   Send, ShieldCheck, CheckCircle2, ChevronRight, 
   Store, Award, Laptop, Navigation, ExternalLink, HelpCircle
 } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { STORE_INFO } from '@/data/storeData';
 import { useStore } from '@/context/StoreContext';
 
@@ -118,8 +119,8 @@ export default function ContactPage() {
 
           {/* Card 2: WhatsApp */}
           <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 hover:border-emerald-300 transition-all flex items-start gap-4">
-            <div className="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-              <MessageSquare className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+              <WhatsAppIcon className="w-6 h-6" />
             </div>
             <div className="space-y-1">
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">WhatsApp Desk</span>
@@ -203,7 +204,7 @@ export default function ContactPage() {
                     rel="noopener noreferrer"
                     className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-colors shadow-xs"
                   >
-                    <MessageSquare className="w-4 h-4" />
+                    <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
                     <span>Send Message on WhatsApp Now</span>
                   </a>
                   <button
@@ -325,7 +326,7 @@ export default function ContactPage() {
                     rel="noopener noreferrer"
                     className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs inline-flex items-center justify-center gap-2 transition-colors"
                   >
-                    <MessageSquare className="w-4 h-4" />
+                    <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
                     <span>Or Connect on WhatsApp</span>
                   </a>
                 </div>

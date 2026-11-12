@@ -4,10 +4,11 @@ import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { 
   BookOpen, Search, ArrowRight, Clock, User, 
-  Calendar, Tag, Sparkles, ChevronRight, MessageSquare,
+  Calendar, Tag, Sparkles, ChevronRight,
   ShieldCheck, Laptop, Cpu, Monitor, Wrench, Printer,
   CheckCircle2, Store, HelpCircle, ChevronDown, ChevronUp, Share2
 } from 'lucide-react';
+import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 import { useStore } from '../../context/StoreContext';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../../data/storeData';
 import { DEFAULT_BLOGS, BLOG_CATEGORIES, BlogPostItem } from '../../data/blogData';
@@ -273,7 +274,7 @@ export default function BlogListingPage() {
                     className="h-10 px-3.5 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/70 text-[#15803D] text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                     title="Consult on WhatsApp"
                   >
-                    <MessageSquare className="w-4 h-4 text-emerald-600" />
+                    <WhatsAppIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Ask on WhatsApp</span>
                   </a>
                 </div>
@@ -442,10 +443,10 @@ export default function BlogListingPage() {
                           href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`Hello Lapiez, I read your article "${blog.title}" and would like to inquire.`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-[#25D366] hover:bg-emerald-50 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-emerald-50 transition-colors"
                           title="Ask question on WhatsApp"
                         >
-                          <MessageSquare className="w-4 h-4" />
+                          <WhatsAppIcon className="w-4 h-4" />
                         </a>
                       </div>
                     </div>
@@ -539,7 +540,7 @@ export default function BlogListingPage() {
               rel="noopener noreferrer"
               className="h-11 px-6 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-black inline-flex items-center justify-center gap-2 transition-all shadow-md w-full sm:w-auto"
             >
-              <MessageSquare className="w-4 h-4 text-emerald-600" />
+              <WhatsAppIcon className="w-4 h-4" />
               <span>Chat on WhatsApp</span>
             </a>
 

@@ -3,11 +3,12 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { 
-  ArrowRight, ShieldCheck, CheckCircle2, ShoppingCart, 
-  Laptop, Camera, Cpu, Zap, MessageSquare, 
+import {
+  ArrowRight, ShieldCheck, CheckCircle2, ShoppingCart,
+  Laptop, Camera, Cpu, Zap,
   MapPin, Store, BadgePercent, Receipt, Truck, Flame, Clock, Plus, Minus
 } from 'lucide-react';
+import { WhatsAppIcon } from './WhatsAppIcon';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 
@@ -64,13 +65,13 @@ export const Hero: React.FC = () => {
     sku: 'SP-ADP-65W'
   };
 
-  const currentDeal = activeTab === 'laptop' 
-    ? laptopDeal 
-    : activeTab === 'cctv' 
-    ? cctvDeal 
-    : activeTab === 'pc' 
-    ? pcDeal 
-    : sparesDeal;
+  const currentDeal = activeTab === 'laptop'
+    ? laptopDeal
+    : activeTab === 'cctv'
+      ? cctvDeal
+      : activeTab === 'pc'
+        ? pcDeal
+        : sparesDeal;
 
   const discountPercent = Math.round(((currentDeal.mrp - currentDeal.price) / currentDeal.mrp) * 100);
   const savings = currentDeal.mrp - currentDeal.price;
@@ -84,12 +85,12 @@ export const Hero: React.FC = () => {
     <section className="bg-white border-b border-[#E5E7EB] pt-6 pb-10 sm:py-12 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-          
+
           {/* ========================================================= */}
           {/* LEFT COLUMN: Indian E-Commerce Banner Headline & Benefits */}
           {/* ========================================================= */}
           <div className="lg:col-span-7 space-y-5">
-            
+
             {/* Festival / Showroom Pill Badge */}
             <div className="inline-flex flex-wrap items-center gap-2 px-3 py-1.5 rounded-full bg-[#FEF3C7] border border-[#FDE68A] text-[12px] font-bold text-[#92400E]">
               <span className="flex items-center gap-1.5 text-[#B45309]">
@@ -128,7 +129,7 @@ export const Hero: React.FC = () => {
                 rel="noopener noreferrer"
                 className="h-11 px-5 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-[14px] flex items-center gap-2 transition-all shadow-sm active:scale-[0.98]"
               >
-                <MessageSquare className="w-4 h-4 fill-white" />
+                <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
                 <span>Order on WhatsApp</span>
               </a>
 
@@ -170,7 +171,7 @@ export const Hero: React.FC = () => {
           {/* ========================================================= */}
           <div className="lg:col-span-5">
             <div className="bg-white border-2 border-[#1A56DB]/30 rounded-2xl p-4 sm:p-5 shadow-md relative">
-              
+
               {/* Deal Header with Clock */}
               <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
                 <div className="flex items-center gap-1.5">
@@ -196,11 +197,10 @@ export const Hero: React.FC = () => {
                   <button
                     key={t.id}
                     onClick={() => setActiveTab(t.id as any)}
-                    className={`flex-1 py-1.5 px-2 rounded-md text-[11.5px] font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap ${
-                      activeTab === t.id
+                    className={`flex-1 py-1.5 px-2 rounded-md text-[11.5px] font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap ${activeTab === t.id
                         ? 'bg-[#1A56DB] text-white shadow-xs'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                    }`}
+                      }`}
                   >
                     <t.icon className="w-3 h-3" />
                     <span>{t.label}</span>
@@ -210,18 +210,18 @@ export const Hero: React.FC = () => {
 
               {/* Product Visual & Content */}
               <div className="space-y-3">
-                
+
                 {/* Visual Stage */}
-                <div 
+                <div
                   onClick={() => setSelectedProduct(currentDeal as any)}
                   className="relative aspect-[16/10] bg-[#F8FAFC] rounded-xl border border-gray-200 p-4 flex items-center justify-center overflow-hidden cursor-pointer group"
                 >
-                  <img 
-                    src={currentDeal.image} 
+                  <img
+                    src={currentDeal.image}
                     alt={currentDeal.name}
                     className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
                   />
-                  
+
                   {/* Status Badge */}
                   <div className="absolute top-2.5 left-2.5 flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold">
                     <CheckCircle2 className="w-3 h-3" />
@@ -243,7 +243,7 @@ export const Hero: React.FC = () => {
                     <span className="font-medium text-gray-400">SKU: {currentDeal.sku}</span>
                   </div>
 
-                  <h3 
+                  <h3
                     onClick={() => setSelectedProduct(currentDeal as any)}
                     className="text-[15.5px] font-bold text-gray-900 hover:text-[#1A56DB] transition-colors cursor-pointer leading-snug line-clamp-1"
                   >

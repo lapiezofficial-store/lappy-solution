@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  CheckCircle2, Printer, MessageSquare, ArrowRight, ArrowLeft,
+  CheckCircle2, Printer, ArrowRight, ArrowLeft,
   MapPin, Phone, ShieldCheck, Store, Clock, Package, Navigation, Check,
   FileText, ExternalLink, Download, QrCode, Building2
 } from 'lucide-react';
+import { WhatsAppIcon } from '../../../components/WhatsAppIcon';
 import { useStore } from '../../../context/StoreContext';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../../../data/storeData';
 import { getHsnCodeForCategory, convertAmountToWords } from '../../../lib/invoiceUtils';
@@ -170,7 +171,7 @@ export default function OrderSuccessPage() {
               onClick={handleWhatsApp}
               className="h-10 sm:h-11 px-4 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all shadow-xs cursor-pointer"
             >
-              <MessageSquare className="w-4 h-4 fill-white" />
+              <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
               <span>WhatsApp Store Desk</span>
             </button>
           </div>

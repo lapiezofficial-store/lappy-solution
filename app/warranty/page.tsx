@@ -5,9 +5,10 @@ import Link from 'next/link';
 import {
   ShieldCheck, Wrench, Search, Phone, CheckCircle2, Clock,
   Laptop, AlertCircle, ArrowRight, Store, Calendar, HelpCircle,
-  FileText, MessageSquare, ChevronRight, RefreshCw, Send, Check,
+  FileText, ChevronRight, RefreshCw, Send, Check,
   Upload, Camera, Globe, History, FileCheck, Eye, Sparkles, User
 } from 'lucide-react';
+import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 import { useStore } from '../../context/StoreContext';
 
 interface ClaimResult {
@@ -750,7 +751,7 @@ export default function WarrantyPage() {
                           rel="noopener noreferrer"
                           className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold inline-flex items-center gap-1.5"
                         >
-                          <MessageSquare className="w-3.5 h-3.5" />
+                          <WhatsAppIcon variant="monochrome" className="w-3.5 h-3.5" />
                           <span>WhatsApp Desk</span>
                         </a>
                       </div>
