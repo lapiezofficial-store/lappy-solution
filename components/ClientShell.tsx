@@ -60,10 +60,15 @@ const DynamicHeadSync: React.FC = () => {
 export const ClientShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const isInvoicePage = pathname?.startsWith('/invoice');
-  const isAdminPage = pathname?.startsWith('/admin') || pathname?.startsWith('/portal-access') || pathname?.startsWith('/staff');
+  const isStandaloneApp = 
+    pathname?.startsWith('/rider') || 
+    pathname?.startsWith('/staff') || 
+    pathname?.startsWith('/admin') || 
+    pathname?.startsWith('/portal-access') || 
+    isInvoicePage;
 
-  // For Admin Portal and Invoice pages, render pure standalone screen without customer website headers or footers
-  if (isInvoicePage || isAdminPage) {
+  // For Admin, Rider, Staff, and Invoice pages, render pure standalone screen without customer website headers or footers
+  if (isStandaloneApp) {
     return (
       <StoreProvider>
         <DynamicHeadSync />

@@ -165,13 +165,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name, category, brand, and a valid price are required.' }, { status: 400 });
     }
     const trimmedName = body.name.trim();
-    const trimmedSerial = typeof body.serialNumber === 'string' ? body.serialNumber.trim().toUpperCase() : '';
-    if (!trimmedSerial) {
-      return NextResponse.json(
-        { error: 'Serial Number dalna aniwarya hai! Bina Serial Number ke product add nahi hoga.' },
-        { status: 400 }
-      );
-    }
+    // Serial Number is optional
+    const trimmedSerial = typeof body.serialNumber === 'string' && body.serialNumber.trim()
+      ? body.serialNumber.trim().toUpperCase()
+      : null;
     const catClean = (body.category || 'GEN').replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase() || 'GEN';
 
     // 1. Rapid double-click deduplication (within last 4 seconds)

@@ -61,11 +61,31 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const cleanId = (id || '').trim();
+
+    if (!cleanId) {
+      return NextResponse.json({ error: 'Rider ID required.' }, { status: 400 });
+    }
+
+    // Find rider by id, riderCode, or phone
+    const existing = await prisma.rider.findFirst({
+      where: {
+        OR: [
+          { id: cleanId },
+          { riderCode: cleanId },
+          { phone: cleanId },
+        ],
+      },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ success: true, message: 'Rider already removed or not found.' });
+    }
 
     // Check if rider has active undelivered orders
     const activeOrders = await prisma.order.count({
       where: {
-        riderId: id,
+        riderId: existing.id,
         orderStatus: { in: ['Out For Delivery', 'Ready'] },
       },
     });
@@ -78,13 +98,17 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
     // Unlink any completed orders to maintain order history
     await prisma.order.updateMany({
-      where: { riderId: id },
+      where: { riderId: existing.id },
       data: { riderId: null },
     });
 
+    // Delete dependent payouts and documents
+    await prisma.riderPayout.deleteMany({ where: { riderId: existing.id } }).catch(() => {});
+    await prisma.riderDocument.deleteMany({ where: { riderId: existing.id } }).catch(() => {});
+
     // Delete Rider
     await prisma.rider.delete({
-      where: { id },
+      where: { id: existing.id },
     });
 
     return NextResponse.json({ success: true, message: 'Rider safaltapoorvak remove ho gaya!' });

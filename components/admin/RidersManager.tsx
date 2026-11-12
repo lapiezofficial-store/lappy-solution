@@ -324,9 +324,7 @@ export default function RidersManager() {
 
   // 6. DELETE / REMOVE RIDER
   const handleDeleteRider = async (rider: Rider) => {
-    const confirmName = prompt(`WARNING: Kya aap pakka "${rider.name}" ko permanently delete karna chahte hain?\nConfirm karne ke liye rider ka naam likhein:`);
-    if (confirmName !== rider.name) {
-      if (confirmName !== null) alert('Naam match nahi kiya. Deletion cancel ho gaya.');
+    if (!confirm(`Kya aap pakka rider "${rider.name}" (${rider.riderCode || rider.phone}) ko permanently delete karna chahte hain?`)) {
       return;
     }
 

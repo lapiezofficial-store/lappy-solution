@@ -1158,11 +1158,6 @@ export default function AdminPage() {
       showToast('Please enter product name and price');
       return;
     }
-    if (!newProductSerialNumber.trim()) {
-      showToast('Serial Number dalna aniwarya hai!');
-      alert('Serial Number dalna aniwarya hai! Bina Serial Number ke product add nahi hoga.');
-      return;
-    }
 
     if (isSavingProduct) return;
 
@@ -10795,18 +10790,17 @@ export default function AdminPage() {
             </div>
 
             <form onSubmit={handleAddProductSubmit} className="space-y-3.5 text-xs">
-              {/* MANDATORY SERIAL NUMBER FIELD */}
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-300">
-                <label className="font-extrabold text-amber-950 block mb-1">
-                  Product Serial Number * (Aniwarya)
+              {/* OPTIONAL SERIAL NUMBER FIELD */}
+              <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-200">
+                <label className="font-bold text-gray-700 block mb-1">
+                  Product Serial Number (Optional)
                 </label>
                 <input
                   type="text"
-                  required
-                  placeholder="Enter Serial No. / S/N (e.g. SN-HP-5CG12345)"
+                  placeholder="Enter Serial No. / S/N if available (e.g. SN-HP-5CG12345)"
                   value={newProductSerialNumber}
                   onChange={(e) => setNewProductSerialNumber(e.target.value.toUpperCase())}
-                  className="w-full h-9 bg-white border border-amber-300 rounded-lg px-3 text-xs text-gray-900 font-mono font-bold uppercase focus:outline-none focus:border-[#1A56DB]"
+                  className="w-full h-9 bg-white border border-gray-300 rounded-lg px-3 text-xs text-gray-900 font-mono focus:outline-none focus:border-[#1A56DB]"
                 />
               </div>
 

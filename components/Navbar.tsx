@@ -1280,7 +1280,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                         {/* Indented Subcategories */}
                         {isExpanded && hasSubs && (
                           <div className="pl-4 py-1 space-y-1 border-l border-gray-200 ml-2">
-                            {cat.subcategories.map((sub) => (
+                            {(cat.subcategories || []).map((sub) => (
                               <Link
                                 key={sub.id || sub.slug}
                                 href={`/shop?cat=${encodeURIComponent(cat.name)}&subcat=${encodeURIComponent(sub.name)}`}

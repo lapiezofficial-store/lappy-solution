@@ -450,7 +450,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                 {selectedCategory === 'All' ? 'All Hardware & Spares Collection' : `${selectedCategory}`}
               </h1>
               <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
-                Showing <strong className="text-gray-900 font-bold">{filteredProducts.length}</strong> genuine products in Garhwa showroom inventory
+                {filteredProducts.length} Products
               </p>
             </div>
 

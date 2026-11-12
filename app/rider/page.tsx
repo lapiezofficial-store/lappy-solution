@@ -296,7 +296,7 @@ export default function RiderApp() {
 
   if (!rider) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center text-sm font-semibold">
+      <div className="min-h-screen bg-slate-50 text-gray-800 flex items-center justify-center text-sm font-semibold">
         Loading Lapiez Rider App...
       </div>
     );
@@ -305,24 +305,24 @@ export default function RiderApp() {
   const rate = Number(rider.commissionPerOrder) || 25;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col pb-24">
+    <div className="min-h-screen bg-[#F8FAFC] text-gray-900 flex flex-col pb-24">
       {/* Top Header Sticky */}
-      <header className="bg-gray-900/95 backdrop-blur-md border-b border-gray-800 px-4 py-3 sticky top-0 z-40">
+      <header className="bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 py-3 sticky top-0 z-40 shadow-2xs">
         <div className="flex items-center justify-between max-w-lg mx-auto gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 text-[#1A56DB] flex items-center justify-center flex-shrink-0 shadow-2xs">
               <Bike className="w-5 h-5" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <h1 className="font-extrabold text-sm text-white truncate">{rider.name}</h1>
+                <h1 className="font-extrabold text-sm text-gray-900 truncate">{rider.name}</h1>
                 {rider.riderCode && (
-                  <span className="text-[10px] font-mono font-bold text-blue-300 bg-blue-500/15 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] font-mono font-bold text-[#1A56DB] bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded">
                     {rider.riderCode}
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-gray-400 truncate">
+              <p className="text-[11px] text-gray-500 truncate">
                 {rider.vehicleType || 'BIKE'} {rider.vehicleNumber ? `• ${rider.vehicleNumber}` : ''}
               </p>
             </div>
@@ -334,17 +334,17 @@ export default function RiderApp() {
               onClick={handleToggleOnline}
               className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 isOnline
-                  ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/25'
-                  : 'bg-gray-800 text-gray-400 border border-gray-700'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-gray-100 text-gray-600 border border-gray-200'
               }`}
             >
-              <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-gray-500'}`} />
+              <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-gray-400'}`} />
               <span>{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
             </button>
 
             <Link
               href="/rider/portal"
-              className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl border border-gray-700"
+              className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl border border-gray-200 transition-colors"
               title="Payout & Bank Portal"
             >
               <User className="w-4 h-4" />
@@ -356,46 +356,46 @@ export default function RiderApp() {
       {/* Main Body */}
       <main className="flex-1 max-w-lg w-full mx-auto p-4 space-y-4">
         {/* Wallet & Today Stats Card */}
-        <div className="bg-gradient-to-br from-[#0F2454] via-[#132C66] to-[#0A1838] border border-blue-500/30 rounded-3xl p-4 sm:p-5 shadow-xl space-y-3">
+        <div className="bg-gradient-to-br from-[#1A56DB] via-[#1E40AF] to-[#0A2560] rounded-3xl p-4 sm:p-5 shadow-lg text-white space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-semibold text-blue-200 block">Wallet Balance</span>
+              <span className="text-[11px] font-semibold text-blue-100 block">Wallet Balance</span>
               <div className="text-3xl font-black text-white mt-0.5">
                 ₹{Number(rider.walletBalance || 0).toLocaleString('en-IN')}
               </div>
             </div>
             <Link
               href="/rider/portal"
-              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs text-blue-200 font-bold flex items-center gap-1 border border-white/15"
+              className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-xs text-white font-bold flex items-center gap-1 border border-white/20 transition-colors"
             >
               <span>Bank / Payouts</span>
               <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-blue-400/20 text-center text-xs">
-            <div className="bg-black/20 rounded-xl p-2">
-              <span className="text-[10px] text-blue-200/75 block">Today Done</span>
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/15 text-center text-xs">
+            <div className="bg-black/15 rounded-xl p-2 border border-white/10">
+              <span className="text-[10px] text-blue-100/80 block">Today Done</span>
               <strong className="text-sm font-black text-white">{stats.todayDeliveries}</strong>
             </div>
-            <div className="bg-black/20 rounded-xl p-2">
-              <span className="text-[10px] text-blue-200/75 block">Today Earned</span>
-              <strong className="text-sm font-black text-emerald-400">₹{stats.todayEarnings}</strong>
+            <div className="bg-black/15 rounded-xl p-2 border border-white/10">
+              <span className="text-[10px] text-blue-100/80 block">Today Earned</span>
+              <strong className="text-sm font-black text-emerald-300">₹{stats.todayEarnings}</strong>
             </div>
-            <div className="bg-black/20 rounded-xl p-2">
-              <span className="text-[10px] text-blue-200/75 block">COD Cash Today</span>
-              <strong className="text-sm font-black text-amber-300">₹{stats.codCollectedToday}</strong>
+            <div className="bg-black/15 rounded-xl p-2 border border-white/10">
+              <span className="text-[10px] text-blue-100/80 block">COD Cash Today</span>
+              <strong className="text-sm font-black text-amber-200">₹{stats.codCollectedToday}</strong>
             </div>
           </div>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex bg-gray-900 p-1 rounded-2xl border border-gray-800 text-xs font-bold">
+        <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 text-xs font-bold shadow-2xs">
           <button
             type="button"
             onClick={() => setActiveTab('available')}
             className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'available' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
+              activeTab === 'available' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             <Bell className="w-3.5 h-3.5" />
@@ -406,7 +406,7 @@ export default function RiderApp() {
             type="button"
             onClick={() => setActiveTab('active')}
             className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'active' ? 'bg-orange-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
+              activeTab === 'active' ? 'bg-orange-600 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             <Navigation className="w-3.5 h-3.5" />
@@ -417,7 +417,7 @@ export default function RiderApp() {
             type="button"
             onClick={() => setActiveTab('completed')}
             className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'completed' ? 'bg-emerald-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
+              activeTab === 'completed' ? 'bg-emerald-600 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             <CheckCircle className="w-3.5 h-3.5" />
@@ -426,8 +426,8 @@ export default function RiderApp() {
         </div>
 
         {/* Refresh Header */}
-        <div className="flex items-center justify-between text-xs text-gray-400 px-1">
-          <span>
+        <div className="flex items-center justify-between text-xs text-gray-500 px-1">
+          <span className="font-semibold">
             {activeTab === 'available'
               ? 'Available Delivery Pool'
               : activeTab === 'active'
@@ -437,7 +437,7 @@ export default function RiderApp() {
           <button
             type="button"
             onClick={() => fetchOrders(rider.id, true)}
-            className="flex items-center gap-1 text-blue-400 hover:text-blue-300 cursor-pointer"
+            className="flex items-center gap-1 text-[#1A56DB] hover:text-[#1E40AF] font-bold cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
@@ -450,52 +450,52 @@ export default function RiderApp() {
             {initialLoading && availableOrders.length === 0 ? (
               <div className="py-12 text-center text-gray-500 text-sm">Loading orders...</div>
             ) : availableOrders.length === 0 ? (
-              <div className="bg-gray-900/50 border border-gray-800/80 rounded-3xl p-8 text-center space-y-2">
-                <Bike className="w-12 h-12 text-gray-600 mx-auto" />
-                <h3 className="font-bold text-white text-base">Abhi koi Ready order nahi hai</h3>
-                <p className="text-gray-400 text-xs">Store se order ready hote hi yahan dikhega.</p>
+              <div className="bg-white border border-gray-200 rounded-3xl p-8 text-center space-y-2 shadow-xs">
+                <Bike className="w-12 h-12 text-gray-400 mx-auto" />
+                <h3 className="font-bold text-gray-900 text-base">Abhi koi Ready order nahi hai</h3>
+                <p className="text-gray-500 text-xs">Store se order ready hote hi yahan dikhega.</p>
               </div>
             ) : (
               availableOrders.map((order) => {
                 const items = parseOrderItems(order.itemsJson);
                 return (
-                  <div key={order.id} className="bg-gray-900 border border-gray-800 rounded-3xl p-4 sm:p-5 shadow-lg space-y-3">
+                  <div key={order.id} className="bg-white border border-gray-200 rounded-3xl p-4 sm:p-5 shadow-xs space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <span className="text-xs font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
+                        <span className="text-xs font-mono font-bold text-[#1A56DB] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
                           #{order.orderId}
                         </span>
-                        <h4 className="font-bold text-white text-base mt-1.5">{order.customerName}</h4>
+                        <h4 className="font-bold text-gray-900 text-base mt-1.5">{order.customerName}</h4>
                       </div>
                       <div className="text-right">
-                        <span className="text-lg font-black text-emerald-400">₹{order.totalAmount.toLocaleString('en-IN')}</span>
-                        <span className="block text-[10px] text-amber-300 uppercase font-bold">
+                        <span className="text-lg font-black text-emerald-600">₹{order.totalAmount.toLocaleString('en-IN')}</span>
+                        <span className="block text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mt-0.5">
                           {order.paymentMethod} • {order.paymentStatus}
                         </span>
                       </div>
                     </div>
 
                     {items.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 text-[11px] text-gray-300">
+                      <div className="flex flex-wrap gap-1.5 text-[11px] text-gray-700">
                         {items.map((it, idx) => (
-                          <span key={idx} className="bg-gray-800 px-2 py-0.5 rounded-md border border-gray-700">
+                          <span key={idx} className="bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200 font-medium">
                             {it.quantity}x {it.name}
                           </span>
                         ))}
                       </div>
                     )}
 
-                    <div className="bg-gray-800/50 p-3 rounded-2xl border border-gray-700/50 text-xs text-gray-300 flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                      <span className="leading-relaxed">{order.address}</span>
+                    <div className="bg-gray-50 p-3 rounded-2xl border border-gray-200 text-xs text-gray-700 flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <span className="leading-relaxed font-medium">{order.address}</span>
                     </div>
 
                     <div className="pt-1 flex gap-2">
                       <a
                         href={`tel:${order.phone}`}
-                        className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-1.5 border border-gray-700"
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-1.5 border border-gray-200 transition-colors"
                       >
-                        <Phone className="w-3.5 h-3.5 text-blue-400" />
+                        <Phone className="w-3.5 h-3.5 text-[#1A56DB]" />
                         <span>Call</span>
                       </a>
 
@@ -503,7 +503,7 @@ export default function RiderApp() {
                         type="button"
                         onClick={() => handleAcceptOrder(order)}
                         disabled={actionLoading === order.id}
-                        className="flex-[2] bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-extrabold py-3 rounded-2xl text-xs flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                        className="flex-[2] bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-extrabold py-3 rounded-2xl text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                       >
                         <Navigation className="w-3.5 h-3.5" />
                         <span>{actionLoading === order.id ? 'Accepting...' : `Accept (₹${rate})`}</span>
@@ -520,62 +520,62 @@ export default function RiderApp() {
         {activeTab === 'active' && (
           <div className="space-y-3">
             {activeOrders.length === 0 ? (
-              <div className="bg-gray-900/50 border border-gray-800/80 rounded-3xl p-8 text-center space-y-2">
-                <Navigation className="w-12 h-12 text-gray-600 mx-auto" />
-                <h3 className="font-bold text-white text-base">Koi active delivery nahi hai</h3>
-                <p className="text-gray-400 text-xs">Ready tab se order accept karein ya Admin dispatch ka wait karein.</p>
+              <div className="bg-white border border-gray-200 rounded-3xl p-8 text-center space-y-2 shadow-xs">
+                <Navigation className="w-12 h-12 text-gray-400 mx-auto" />
+                <h3 className="font-bold text-gray-900 text-base">Koi active delivery nahi hai</h3>
+                <p className="text-gray-500 text-xs">Ready tab se order accept karein ya Admin dispatch ka wait karein.</p>
               </div>
             ) : (
               activeOrders.map((order) => {
                 const items = parseOrderItems(order.itemsJson);
                 const cleanCustPhone = (order.phone || '').replace(/\D/g, '').slice(-10);
                 return (
-                  <div key={order.id} className="bg-gray-900 border-2 border-orange-500/50 rounded-3xl p-4 sm:p-5 shadow-xl space-y-3.5">
+                  <div key={order.id} className="bg-white border-2 border-orange-400 rounded-3xl p-4 sm:p-5 shadow-md space-y-3.5">
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full font-bold">
+                          <span className="text-[10px] bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full font-bold">
                             {order.orderStatus}
                           </span>
-                          <span className="text-xs font-mono text-gray-400">#{order.orderId}</span>
+                          <span className="text-xs font-mono font-bold text-gray-600">#{order.orderId}</span>
                         </div>
-                        <h4 className="font-bold text-white text-lg mt-1">{order.customerName}</h4>
-                        <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                          <Phone className="w-3 h-3" /> {order.phone}
+                        <h4 className="font-bold text-gray-900 text-lg mt-1">{order.customerName}</h4>
+                        <p className="text-xs text-gray-600 flex items-center gap-1 mt-0.5 font-medium">
+                          <Phone className="w-3 h-3 text-[#1A56DB]" /> {order.phone}
                         </p>
                       </div>
 
                       <div className="text-right">
-                        <span className="text-xl font-black text-emerald-400">₹{order.totalAmount.toLocaleString('en-IN')}</span>
+                        <span className="text-xl font-black text-emerald-600">₹{order.totalAmount.toLocaleString('en-IN')}</span>
                         <span className={`block text-[11px] font-bold ${
-                          order.paymentStatus === 'Paid' ? 'text-emerald-400' : 'text-amber-300'
-                        }`}>
+                          order.paymentStatus === 'Paid' ? 'text-emerald-700 bg-emerald-50' : 'text-amber-800 bg-amber-50'
+                        } px-2 py-0.5 rounded mt-0.5 border border-gray-200`}>
                           {order.paymentMethod === 'COD' && order.paymentStatus !== 'Paid' ? 'Collect Cash (COD)' : order.paymentStatus}
                         </span>
                       </div>
                     </div>
 
                     {items.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 text-[11px] text-gray-200">
+                      <div className="flex flex-wrap gap-1.5 text-[11px] text-gray-700">
                         {items.map((it, idx) => (
-                          <span key={idx} className="bg-gray-800 px-2.5 py-1 rounded-lg border border-gray-700 flex items-center gap-1">
-                            <Package className="w-3 h-3 text-blue-400" />
+                          <span key={idx} className="bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200 flex items-center gap-1 font-medium">
+                            <Package className="w-3 h-3 text-[#1A56DB]" />
                             <span>{it.quantity}x {it.name}</span>
                           </span>
                         ))}
                       </div>
                     )}
 
-                    <div className="bg-gray-800/80 p-3.5 rounded-2xl border border-gray-700 space-y-2 text-xs">
-                      <div className="flex items-start gap-2 text-gray-200">
-                        <MapPin className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                        <span className="leading-relaxed">{order.address}</span>
+                    <div className="bg-gray-50 p-3.5 rounded-2xl border border-gray-200 space-y-2 text-xs">
+                      <div className="flex items-start gap-2 text-gray-700">
+                        <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                        <span className="leading-relaxed font-medium">{order.address}</span>
                       </div>
                       <a
                         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-blue-400 font-bold hover:underline pt-0.5"
+                        className="inline-flex items-center gap-1.5 text-[#1A56DB] font-bold hover:underline pt-0.5"
                       >
                         <Navigation className="w-3.5 h-3.5" />
                         <span>Navigate on Google Maps</span>
@@ -585,9 +585,9 @@ export default function RiderApp() {
                     <div className="flex gap-2">
                       <a
                         href={`tel:${order.phone}`}
-                        className="px-3.5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 border border-gray-700"
+                        className="px-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 border border-gray-200 transition-colors"
                       >
-                        <Phone className="w-4 h-4 text-blue-400" />
+                        <Phone className="w-4 h-4 text-[#1A56DB]" />
                         <span>Call</span>
                       </a>
 
@@ -595,7 +595,7 @@ export default function RiderApp() {
                         href={`https://wa.me/91${cleanCustPhone}?text=${encodeURIComponent(`Namaste ${order.customerName} ji, main Lapiez Delivery Rider (${rider.name}) aapka Order #${order.orderId} lekar aa raha hu.`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3.5 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 border border-emerald-700/50"
+                        className="px-3.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 border border-emerald-200 transition-colors"
                         title="Message Customer on WhatsApp"
                       >
                         <WhatsAppIcon className="w-4 h-4" />
@@ -605,7 +605,7 @@ export default function RiderApp() {
                         type="button"
                         onClick={() => handleMarkDelivered(order)}
                         disabled={actionLoading === order.id}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                       >
                         <CheckCircle className="w-4 h-4" />
                         <span>{actionLoading === order.id ? 'Saving...' : `Delivered (+₹${rate})`}</span>
@@ -622,24 +622,24 @@ export default function RiderApp() {
         {activeTab === 'completed' && (
           <div className="space-y-3">
             {completedOrders.length === 0 ? (
-              <div className="bg-gray-900/50 border border-gray-800/80 rounded-3xl p-8 text-center space-y-2">
-                <CheckCircle className="w-12 h-12 text-gray-600 mx-auto" />
-                <h3 className="font-bold text-white text-base">Abhi tak koi delivery complete nahi hui</h3>
-                <p className="text-gray-400 text-xs">Har delivery par ₹{rate} wallet me add honge.</p>
+              <div className="bg-white border border-gray-200 rounded-3xl p-8 text-center space-y-2 shadow-xs">
+                <CheckCircle className="w-12 h-12 text-gray-400 mx-auto" />
+                <h3 className="font-bold text-gray-900 text-base">Abhi tak koi delivery complete nahi hui</h3>
+                <p className="text-gray-500 text-xs">Har delivery par ₹{rate} wallet me add honge.</p>
               </div>
             ) : (
               completedOrders.map((order) => (
-                <div key={order.id} className="bg-gray-900 border border-gray-800 rounded-3xl p-4 flex items-center justify-between gap-3">
+                <div key={order.id} className="bg-white border border-gray-200 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-xs">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold text-gray-400">#{order.orderId}</span>
+                      <span className="text-xs font-mono font-bold text-gray-600">#{order.orderId}</span>
                       <span className="text-[10px] text-gray-500">₹{order.totalAmount.toLocaleString('en-IN')} ({order.paymentMethod})</span>
                     </div>
-                    <h5 className="font-bold text-white text-sm truncate mt-0.5">{order.customerName}</h5>
+                    <h5 className="font-bold text-gray-900 text-sm truncate mt-0.5">{order.customerName}</h5>
                     <p className="text-[11px] text-gray-500 truncate">{order.address}</p>
                   </div>
 
-                  <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 flex-shrink-0">
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 flex-shrink-0">
                     +₹{rate}
                   </span>
                 </div>
@@ -650,20 +650,20 @@ export default function RiderApp() {
       </main>
 
       {/* Bottom Floating Navigation */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-t border-gray-800 px-3 py-2.5 z-30">
+      <footer className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 px-3 py-2.5 z-30 shadow-md">
         <div className="max-w-lg mx-auto flex items-center justify-around text-xs">
           <button
             type="button"
             onClick={() => setActiveTab('active')}
             className={`flex flex-col items-center gap-1 font-bold cursor-pointer ${
-              activeTab !== 'completed' ? 'text-blue-400' : 'text-gray-400'
+              activeTab !== 'completed' ? 'text-[#1A56DB]' : 'text-gray-400 hover:text-gray-700'
             }`}
           >
             <Bike className="w-5 h-5" />
             <span>Orders</span>
           </button>
 
-          <Link href="/rider/portal" className="flex flex-col items-center gap-1 font-bold text-gray-400 hover:text-white">
+          <Link href="/rider/portal" className="flex flex-col items-center gap-1 font-bold text-gray-400 hover:text-gray-700">
             <Wallet className="w-5 h-5" />
             <span>Kamai / Payout</span>
           </Link>
@@ -671,7 +671,7 @@ export default function RiderApp() {
           <a
             href="/downloads/lapiez-rider.apk"
             download="Lapiez-Rider-App.apk"
-            className="flex flex-col items-center gap-1 font-bold text-emerald-400 hover:text-emerald-300"
+            className="flex flex-col items-center gap-1 font-bold text-emerald-600 hover:text-emerald-700"
           >
             <Download className="w-5 h-5" />
             <span>APK</span>
@@ -680,7 +680,7 @@ export default function RiderApp() {
           <button
             type="button"
             onClick={handleLogout}
-            className="flex flex-col items-center gap-1 font-bold text-rose-400 hover:text-rose-300 cursor-pointer"
+            className="flex flex-col items-center gap-1 font-bold text-rose-500 hover:text-rose-600 cursor-pointer"
           >
             <Power className="w-5 h-5" />
             <span>Logout</span>

@@ -153,9 +153,18 @@ export default function StaffManager() {
   };
 
   const handleDelete = async (s: StaffAccount) => {
-    if (!confirm(`Delete Staff ${s.name} (${s.staffCode})?`)) return;
-    const res = await fetch(`/api/admin/staff/${s.id}`, { method: 'DELETE' });
-    if (res.ok) fetchStaff();
+    if (!confirm(`Kya aap pakka Staff "${s.name}" (${s.staffCode}) ko delete karna chahte hain?`)) return;
+    try {
+      const res = await fetch(`/api/admin/staff/${s.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        fetchStaff();
+      } else {
+        alert(data.error || 'Staff delete nahi ho paya.');
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    }
   };
 
   const copyCredentials = (s: StaffAccount) => {

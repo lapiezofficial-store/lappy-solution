@@ -57,11 +57,31 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   }
   try {
     const { id } = await params;
-    await prisma.staffUser.delete({ where: { id } });
+    const cleanId = (id || '').trim();
+
+    if (!cleanId) {
+      return NextResponse.json({ error: 'Staff ID required.' }, { status: 400 });
+    }
+
+    const existing = await prisma.staffUser.findFirst({
+      where: {
+        OR: [
+          { id: cleanId },
+          { staffCode: cleanId },
+          { phone: cleanId },
+        ],
+      },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ success: true, message: 'Staff already removed or not found.' });
+    }
+
+    await prisma.staffUser.delete({ where: { id: existing.id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting staff:', error);
-    return NextResponse.json({ error: 'Failed to delete staff' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete staff: ' + error.message }, { status: 500 });
   }
 }
 
