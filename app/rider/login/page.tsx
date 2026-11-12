@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bike, Phone, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Bike, Phone, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, Smartphone } from 'lucide-react';
 
 export default function RiderLoginPage() {
   const router = useRouter();
@@ -126,6 +126,15 @@ export default function RiderLoginPage() {
           >
             + Create New Rider ID (Apply Now)
           </Link>
+
+          <a
+            href="/downloads/lapiez-rider.apk"
+            download="Lapiez-Rider-App.apk"
+            className="w-full py-2.5 px-4 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold rounded-2xl text-xs border border-emerald-500/30 flex items-center justify-center gap-2 transition-all"
+          >
+            <Smartphone className="w-4 h-4" />
+            <span>Download Rider Android App (.APK)</span>
+          </a>
         </div>
       </div>
 

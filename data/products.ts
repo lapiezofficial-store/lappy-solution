@@ -32,6 +32,7 @@ export interface Product {
   inStock: boolean;
   stockQuantity: number;
   sku: string;
+  serialNumber?: string;
   rating: number;
   reviewsCount: number;
   featured?: boolean;

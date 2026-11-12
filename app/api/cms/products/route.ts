@@ -165,6 +165,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name, category, brand, and a valid price are required.' }, { status: 400 });
     }
     const trimmedName = body.name.trim();
+    const trimmedSerial = typeof body.serialNumber === 'string' ? body.serialNumber.trim().toUpperCase() : '';
+    if (!trimmedSerial) {
+      return NextResponse.json(
+        { error: 'Serial Number dalna aniwarya hai! Bina Serial Number ke product add nahi hoga.' },
+        { status: 400 }
+      );
+    }
     const catClean = (body.category || 'GEN').replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase() || 'GEN';
 
     // 1. Rapid double-click deduplication (within last 4 seconds)
@@ -251,6 +258,7 @@ export async function POST(request: Request) {
         inStock: body.inStock === false || (body.stockQuantity !== undefined && Number(body.stockQuantity) <= 0) ? false : (body.inStock ?? true),
         stockQuantity: body.stockQuantity !== undefined && body.stockQuantity !== null && !isNaN(Number(body.stockQuantity)) ? Number(body.stockQuantity) : 10,
         sku,
+        serialNumber: trimmedSerial,
         rating: Number(body.rating) || 4.5,
         featured: body.featured ?? false,
         status: 'active',
@@ -327,7 +335,7 @@ export async function PUT(request: Request) {
 
     const { id } = body;
     if (typeof id !== 'string') return NextResponse.json({ error: 'Product ID is required.' }, { status: 400 });
-    const allowedFields = ['name', 'slug', 'category', 'brand', 'price', 'mrp', 'discount', 'specs', 'description', 'image', 'inStock', 'stockQuantity', 'sku', 'rating', 'featured', 'status', 'gstRate', 'hsnCode'];
+    const allowedFields = ['name', 'slug', 'category', 'brand', 'price', 'mrp', 'discount', 'specs', 'description', 'image', 'inStock', 'stockQuantity', 'sku', 'serialNumber', 'rating', 'featured', 'status', 'gstRate', 'hsnCode'];
     const data: Record<string, any> = Object.fromEntries(
       Object.entries(body).filter(([key]) => allowedFields.includes(key))
     );

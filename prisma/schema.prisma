@@ -114,6 +114,7 @@ model Product {
   inStock       Boolean  @default(true)
   stockQuantity Int      @default(10)
   sku           String   @unique
+  serialNumber  String?
   rating        Float    @default(4.5)
   featured      Boolean  @default(false)
   status        String   @default("active")
@@ -366,5 +367,23 @@ model Notification {
   @@index([read])
   @@index([createdAt])
   @@index([orderId])
+}
+
+model StaffUser {
+  id                String    @id @default(cuid())
+  staffCode         String    @unique // e.g. "LAP-STF-001"
+  name              String
+  phone             String    @unique
+  password          String
+  role              String    @default("COUNTER") // COUNTER | TECHNICIAN | MANAGER
+  canHandleOrders   Boolean   @default(true)
+  canHandleWarranty Boolean   @default(true)
+  isBlocked         Boolean   @default(false)
+  lastActiveAt      DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([phone])
+  @@index([isBlocked])
 }
 

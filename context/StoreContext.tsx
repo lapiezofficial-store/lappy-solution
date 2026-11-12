@@ -556,6 +556,7 @@ export function normalizeProduct(p: any): Product {
 
   return {
     ...p,
+    serialNumber: p.serialNumber || '',
     subcategory: resolvedSubcat,
     subCategory: resolvedSubcat,
     image: primaryImage,
@@ -2160,6 +2161,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       inStock: finalProd.inStock ?? true,
       stockQuantity: finalProd.stockQuantity !== undefined ? Number(finalProd.stockQuantity) : 10,
       sku: sku,
+      serialNumber: finalProd.serialNumber || '',
       rating: finalProd.rating || 4.8,
       reviewsCount: finalProd.reviewsCount || 12,
       status: 'active',

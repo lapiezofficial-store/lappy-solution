@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Bike, Plus, Search, RefreshCw, CheckCircle, XCircle, 
-  Wallet, Shield, ShieldAlert, Phone, User, DollarSign,
-  AlertCircle, Check, MapPin, Truck, ChevronRight, Edit2,
-  Trash2, ShieldCheck, Key, FileText, Ban, UserCheck, UserX,
-  CreditCard, Navigation, ExternalLink, AlertTriangle, Radar,
-  Map, Eye, Compass, Activity, Send, MessageSquare
+  Bike, Plus, Search, RefreshCw,
+  Wallet, Phone, DollarSign,
+  Check, MapPin, Truck, Edit2,
+  Trash2, Ban, UserCheck, UserX,
+  Navigation, AlertTriangle, Radar,
+  Compass, Copy, Download, ExternalLink
 } from 'lucide-react';
+import { WhatsAppIcon } from '../WhatsAppIcon';
 
 interface Rider {
   id: string;
@@ -47,11 +48,28 @@ interface Rider {
     orders: number;
     payouts: number;
   };
+  deliveredCount?: number;
+  codCollected?: number;
   createdAt: string;
+}
+
+interface UndispatchedOrder {
+  id: string;
+  orderId: string;
+  customerName: string;
+  phone: string;
+  address: string;
+  totalAmount: number;
+  paymentMethod: string;
+  orderStatus: string;
 }
 
 export default function RidersManager() {
   const [riders, setRiders] = useState<Rider[]>([]);
+  const [undispatchedOrders, setUndispatchedOrders] = useState<UndispatchedOrder[]>([]);
+  const [quickAssignSelection, setQuickAssignSelection] = useState<Record<string, string>>({});
+  const [assigningOrderId, setAssigningOrderId] = useState<string | null>(null);
+  const [copiedRiderId, setCopiedRiderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState('');
@@ -104,10 +122,15 @@ export default function RidersManager() {
       } else {
         setIsRefreshing(true);
       }
-      const res = await fetch('/api/admin/riders');
+      const res = await fetch('/api/admin/riders?includeQueue=true', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        setRiders(Array.isArray(data) ? data : []);
+        if (Array.isArray(data)) {
+          setRiders(data);
+        } else {
+          setRiders(Array.isArray(data.riders) ? data.riders : []);
+          setUndispatchedOrders(Array.isArray(data.undispatchedOrders) ? data.undispatchedOrders : []);
+        }
       }
     } catch (err) {
       console.error('Failed to load riders:', err);
@@ -362,6 +385,40 @@ export default function RidersManager() {
     }
   };
 
+  // 8. QUICK DISPATCH UNASSIGNED ORDER TO RIDER
+  const handleQuickDispatch = async (orderId: string) => {
+    const targetRiderId = quickAssignSelection[orderId];
+    if (!targetRiderId) {
+      alert('Pehle dropdown se ek Rider select karein.');
+      return;
+    }
+    try {
+      setAssigningOrderId(orderId);
+      const res = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ riderId: targetRiderId, orderStatus: 'Out For Delivery' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchRiders(false);
+      } else {
+        alert(data.error || 'Dispatch fail hua');
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    } finally {
+      setAssigningOrderId(null);
+    }
+  };
+
+  const handleCopyRiderAccess = (rider: Rider) => {
+    const msg = `Lapiez Rider App Login\nURL: https://www.lapiez.com/rider/login\nRider ID: ${rider.riderCode || rider.phone}\nPhone: ${rider.phone}`;
+    navigator.clipboard.writeText(msg).catch(() => {});
+    setCopiedRiderId(rider.id);
+    setTimeout(() => setCopiedRiderId(null), 2000);
+  };
+
   // Counts & Filter
   const pendingCount = riders.filter((r) => r.approvalStatus === 'PENDING').length;
   const approvedCount = riders.filter((r) => r.approvalStatus === 'APPROVED' && !r.isBlocked).length;
@@ -445,21 +502,97 @@ export default function RidersManager() {
           <span className="text-[11px] text-gray-400 mt-0.5 block">Unsettled wallet balance</span>
         </div>
 
-        {/* Card 5: Action Button */}
-        <div className="bg-gradient-to-br from-[#2271b1] to-[#135e96] rounded-2xl p-4 shadow-sm text-white flex flex-col justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase text-blue-100">Quick Fleet Action</span>
-            <h4 className="font-extrabold text-sm text-white mt-1">+ Create Rider ID</h4>
+        {/* Card 5: Action Button + Rider App Links */}
+        <div className="bg-gradient-to-br from-[#2271b1] to-[#135e96] rounded-2xl p-4 shadow-sm text-white flex flex-col justify-between gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="font-extrabold text-sm text-white">Rider App &amp; ID</h4>
+            <div className="flex items-center gap-1">
+              <a
+                href="/rider/login"
+                target="_blank"
+                className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white"
+                title="Open Rider App"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href="/downloads/lapiez-rider.apk"
+                download="Lapiez-Rider-App.apk"
+                className="p-1.5 rounded-lg bg-emerald-500/30 hover:bg-emerald-500/50 text-emerald-100"
+                title="Download Rider Android APK"
+              >
+                <Download className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="mt-3 bg-white text-[#135e96] hover:bg-blue-50 font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+            className="bg-white text-[#135e96] hover:bg-blue-50 font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Rider</span>
           </button>
         </div>
       </div>
+
+      {/* LIVE DISPATCH QUEUE: Orders waiting for Rider assignment */}
+      {undispatchedOrders.length > 0 && (
+        <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-amber-700" />
+              <h4 className="text-xs sm:text-sm font-black text-amber-950">
+                Pending Delivery Dispatch ({undispatchedOrders.length})
+              </h4>
+            </div>
+            <span className="text-[11px] font-semibold text-amber-800">
+              Select Rider &rarr; Dispatch
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            {undispatchedOrders.slice(0, 6).map((ord) => {
+              const eligibleRiders = riders.filter((r) => r.approvalStatus === 'APPROVED' && !r.isBlocked);
+              return (
+                <div key={ord.id} className="bg-white border border-amber-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-black text-blue-700">#{ord.orderId}</span>
+                      <span className="text-xs font-extrabold text-emerald-700">₹{ord.totalAmount.toLocaleString('en-IN')}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-bold">{ord.orderStatus}</span>
+                    </div>
+                    <div className="text-xs font-bold text-gray-900 truncate mt-0.5">{ord.customerName}</div>
+                    <div className="text-[11px] text-gray-500 truncate">{ord.address}</div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <select
+                      value={quickAssignSelection[ord.orderId] || ''}
+                      onChange={(e) => setQuickAssignSelection((prev) => ({ ...prev, [ord.orderId]: e.target.value }))}
+                      className="h-8 px-2 rounded-lg border border-gray-200 bg-gray-50 text-xs font-semibold text-gray-800 max-w-[140px]"
+                    >
+                      <option value="">Select Rider...</option>
+                      {eligibleRiders.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.isOnline ? '● ' : '○ '}{r.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={assigningOrderId === ord.orderId || !quickAssignSelection[ord.orderId]}
+                      onClick={() => handleQuickDispatch(ord.orderId)}
+                      className="h-8 px-3 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold disabled:opacity-40 cursor-pointer"
+                    >
+                      {assigningOrderId === ord.orderId ? '...' : 'Dispatch'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Control Bar & Filter Tabs */}
       <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
@@ -656,10 +789,10 @@ export default function RidersManager() {
                       href={`https://wa.me/91${rider.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${rider.name}, Lapiez Admin here regarding order delivery dispatch.`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold"
+                      className="p-2 bg-emerald-600/20 hover:bg-emerald-600/40 rounded-xl flex items-center justify-center"
                       title="Chat on WhatsApp"
                     >
-                      <MessageSquare className="w-3.5 h-3.5" />
+                      <WhatsAppIcon className="w-4 h-4" />
                     </a>
 
                     <a
@@ -853,7 +986,7 @@ export default function RidersManager() {
                     )}
                   </div>
 
-                  {/* Details Grid: Wallet, Rate/Order, Vehicle */}
+                  {/* Details Grid: Wallet, Delivered, COD */}
                   <div className="grid grid-cols-3 gap-2 bg-gray-50/70 p-2.5 rounded-xl border border-gray-100 text-center">
                     <div>
                       <span className="text-[10px] text-gray-400 block font-bold uppercase tracking-wider">WALLET</span>
@@ -862,15 +995,15 @@ export default function RidersManager() {
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-gray-400 block font-bold uppercase tracking-wider">RATE/ORDER</span>
-                      <span className="text-xs font-black text-gray-700">
-                        ₹{rider.commissionPerOrder || 25}
+                      <span className="text-[10px] text-gray-400 block font-bold uppercase tracking-wider">DELIVERED</span>
+                      <span className="text-xs font-black text-blue-700">
+                        {rider.deliveredCount ?? rider._count?.orders ?? 0} (₹{rider.commissionPerOrder || 25})
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-gray-400 block font-bold uppercase tracking-wider">VEHICLE</span>
-                      <span className="text-xs font-black text-gray-700 uppercase truncate block">
-                        {rider.vehicleType}
+                      <span className="text-[10px] text-gray-400 block font-bold uppercase tracking-wider">COD CASH</span>
+                      <span className="text-xs font-black text-amber-700">
+                        ₹{(rider.codCollected || 0).toLocaleString('en-IN')}
                       </span>
                     </div>
                   </div>
@@ -928,10 +1061,10 @@ export default function RidersManager() {
                         href={`https://wa.me/91${rider.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${rider.name}, Lapiez Admin here regarding your rider registration.`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold border border-emerald-200 shrink-0 transition-colors"
+                        className="p-2 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 shrink-0 transition-colors flex items-center justify-center"
                         title="Chat on WhatsApp"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
+                        <WhatsAppIcon className="w-4 h-4" />
                       </a>
                       <button
                         onClick={() => handleOpenEdit(rider)}
@@ -962,10 +1095,10 @@ export default function RidersManager() {
                         href={`https://wa.me/91${rider.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${rider.name}, Lapiez Admin here.`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold border border-emerald-200 shrink-0 transition-colors"
+                        className="p-2 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 shrink-0 transition-colors flex items-center justify-center"
                         title="Chat on WhatsApp"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
+                        <WhatsAppIcon className="w-4 h-4" />
                       </a>
                       <button
                         onClick={() => handleOpenEdit(rider)}
@@ -997,14 +1130,23 @@ export default function RidersManager() {
                         <span>Payout</span>
                       </button>
 
+                      <button
+                        type="button"
+                        onClick={() => handleCopyRiderAccess(rider)}
+                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold shrink-0 transition-colors cursor-pointer"
+                        title="Copy Rider ID & App Link"
+                      >
+                        {copiedRiderId === rider.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+
                       <a
                         href={`https://wa.me/91${rider.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${rider.name}, Lapiez Admin here regarding order delivery dispatch.`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold border border-emerald-200 shrink-0 transition-colors"
+                        className="p-2 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 shrink-0 transition-colors flex items-center justify-center"
                         title="Chat on WhatsApp"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
+                        <WhatsAppIcon className="w-4 h-4" />
                       </a>
 
                       <button

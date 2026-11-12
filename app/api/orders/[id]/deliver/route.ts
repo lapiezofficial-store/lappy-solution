@@ -28,6 +28,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         throw new Error('NO_RIDER_ASSIGNED');
       }
 
+      // Use Rider's configured commissionPerOrder rate from DB
+      const assignedRider = await tx.rider.findUnique({
+        where: { id: order.riderId },
+        select: { commissionPerOrder: true },
+      });
+      const earnedAmount = Number(assignedRider?.commissionPerOrder) || payoutPerDelivery;
+
       // Mark order delivered
       const updatedOrder = await tx.order.update({
         where: { id: order.id },
@@ -38,15 +45,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         },
       });
 
-      // Add ₹25 to Rider wallet
+      // Add commission to Rider wallet & update lastDeliveryAt
       const updatedRider = await tx.rider.update({
         where: { id: order.riderId },
         data: {
-          walletBalance: { increment: payoutPerDelivery },
+          walletBalance: { increment: earnedAmount },
+          lastDeliveryAt: new Date(),
         },
       });
 
-      return { order: updatedOrder, rider: updatedRider, earned: payoutPerDelivery };
+      return { order: updatedOrder, rider: updatedRider, earned: earnedAmount };
     });
 
     // Notify Admin Panel

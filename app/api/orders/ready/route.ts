@@ -6,13 +6,24 @@ import { notifyCustomerOnOrderUpdate } from '@/lib/notificationService';
 // GET: Fetch available ready orders for riders
 export async function GET() {
   try {
-    const readyOrders = await prisma.order.findMany({
+    const candidates = await prisma.order.findMany({
       where: {
         orderStatus: { in: ['Ready', 'READY', 'Packed', 'PACKED'] },
         riderId: null,
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
+    });
+
+    const readyOrders = candidates.filter((o) => {
+      const pm = (o.paymentMethod || '').toLowerCase();
+      const addr = (o.address || '').toLowerCase();
+      return (
+        !pm.includes('pickup') &&
+        !pm.includes('counter') &&
+        !addr.includes('store pickup') &&
+        !addr.includes('counter pickup')
+      );
     });
 
     return NextResponse.json(readyOrders);

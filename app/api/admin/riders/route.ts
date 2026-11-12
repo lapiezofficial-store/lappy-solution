@@ -2,24 +2,28 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
-// GET: Fetch all riders + order stats for Admin
-export async function GET() {
+// GET: Fetch all riders + real order/COD stats + undispatched queue for Admin
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const includeQueue = searchParams.get('includeQueue') === 'true';
+
     const riders = await prisma.rider.findMany({
       orderBy: [
         { createdAt: 'desc' },
       ],
       include: {
         orders: {
-          where: {
-            orderStatus: { in: ['Out For Delivery', 'Shipped', 'Ready', 'Confirmed', 'Packed'] },
-          },
           select: {
+            id: true,
             orderId: true,
             orderStatus: true,
             customerName: true,
             address: true,
             totalAmount: true,
+            paymentMethod: true,
+            paymentStatus: true,
+            deliveredAt: true,
           },
         },
         _count: {
@@ -32,11 +36,58 @@ export async function GET() {
     });
 
     const sanitized = riders.map((r) => {
-      const { password, ...rest } = r;
-      return rest;
+      const { password, orders, ...rest } = r;
+      const activeOrders = (orders || []).filter((o) =>
+        ['Out For Delivery', 'Shipped', 'Ready', 'Confirmed', 'Packed'].includes(o.orderStatus)
+      );
+      const deliveredOrders = (orders || []).filter((o) => o.orderStatus === 'Delivered');
+      const codCollected = deliveredOrders
+        .filter((o) => (o.paymentMethod || '').toLowerCase().includes('cod') || (o.paymentMethod || '').toLowerCase().includes('cash'))
+        .reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+
+      return {
+        ...rest,
+        orders: activeOrders,
+        deliveredCount: deliveredOrders.length,
+        codCollected,
+      };
     });
 
-    return NextResponse.json(sanitized);
+    if (!includeQueue) {
+      return NextResponse.json(sanitized);
+    }
+
+    const candidateQueue = await prisma.order.findMany({
+      where: {
+        riderId: null,
+        orderStatus: { in: ['Confirmed', 'Packed', 'Ready', 'Shipped'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 40,
+      select: {
+        id: true,
+        orderId: true,
+        customerName: true,
+        phone: true,
+        address: true,
+        totalAmount: true,
+        paymentMethod: true,
+        paymentStatus: true,
+        orderStatus: true,
+        createdAt: true,
+      },
+    });
+
+    const undispatchedOrders = candidateQueue.filter((o) => {
+      const pm = (o.paymentMethod || '').toLowerCase();
+      const addr = (o.address || '').toLowerCase();
+      return !pm.includes('pickup') && !pm.includes('counter') && !addr.includes('store pickup') && !addr.includes('counter pickup');
+    });
+
+    return NextResponse.json({
+      riders: sanitized,
+      undispatchedOrders,
+    });
   } catch (error: any) {
     console.error('Error fetching riders:', error);
     return NextResponse.json({ error: 'Failed to fetch riders' }, { status: 500 });

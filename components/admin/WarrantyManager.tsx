@@ -3,13 +3,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShieldCheck, Wrench, Search, Plus, RefreshCw, Printer,
-  Phone, MessageSquare, AlertCircle, CheckCircle2, Clock,
+  Phone, AlertCircle, CheckCircle2, Clock,
   ArrowRight, X, ExternalLink, Calendar, User, FileText,
   Laptop, Check, Eye, ChevronDown, Filter, Trash2, Send,
   Cpu, Camera, HardDrive, HelpCircle, Building, Upload,
   Image as ImageIcon, FileCheck, AlertTriangle, Store, Globe, History,
   MapPin, Package, Zap
 } from 'lucide-react';
+import { WhatsAppIcon } from '../WhatsAppIcon';
 import { useStore } from '../../context/StoreContext';
 
 export interface WarrantyClaim {
@@ -103,7 +104,13 @@ const STATUS_CONFIG: Record<
   },
 };
 
-export default function WarrantyManager() {
+export default function WarrantyManager({
+  staffMode = false,
+  staffName,
+}: {
+  staffMode?: boolean;
+  staffName?: string;
+}) {
   const { siteSettings, orders, showToast } = useStore();
 
   const [claims, setClaims] = useState<WarrantyClaim[]>([]);
@@ -153,7 +160,11 @@ export default function WarrantyManager() {
   const [formPhysicalCondition, setFormPhysicalCondition] = useState('Normal condition, minor wear');
   const [formAccessories, setFormAccessories] = useState('Device + Original Power Adapter');
   const [formEstimatedDate, setFormEstimatedDate] = useState('');
-  const [formStaffName, setFormStaffName] = useState('Jay Prakash / Counter');
+  const [formStaffName, setFormStaffName] = useState(staffName || 'Counter Desk');
+
+  useEffect(() => {
+    if (staffName) setFormStaffName(staffName);
+  }, [staffName]);
   
   // File uploads
   const [billFileBase64, setBillFileBase64] = useState<string | null>(null);
@@ -867,19 +878,21 @@ export default function WarrantyManager() {
                           href={`https://wa.me/91${claim.customerPhone}?text=${generateWhatsAppMessage(claim)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 inline-flex items-center justify-center cursor-pointer"
+                          className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 inline-flex items-center justify-center cursor-pointer"
                           title="WhatsApp Customer"
                         >
-                          <MessageSquare className="w-3.5 h-3.5" />
+                          <WhatsAppIcon className="w-4 h-4" />
                         </a>
 
-                        <button
-                          onClick={() => handleDeleteClaim(claim.claimId, claim.id)}
-                          className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer"
-                          title="Delete Claim"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {!staffMode && (
+                          <button
+                            onClick={() => handleDeleteClaim(claim.claimId, claim.id)}
+                            className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer"
+                            title="Delete Claim"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
