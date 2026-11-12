@@ -60,8 +60,12 @@ export const TopBannerSlider: React.FC = () => {
 
     return finalBanners.map((b, idx) => {
       const { targetDevice } = decodeBannerConfig(b.bgGradient);
+      const isCloudinaryDesktop = b.desktopImage && (b.desktopImage.startsWith('http://') || b.desktopImage.startsWith('https://'));
       const pcImage = b.desktopImage || b.mobileImage || '/images/banners/refurbished-laptops-printers.png';
-      const phoneImage = b.mobileImage || b.desktopImage || '/images/banners/refurbished-laptops-printers.png';
+      // If mobileImage is dummy fallback or empty while desktopImage is an uploaded image, use desktopImage on mobile
+      const phoneImage = (b.mobileImage && !b.mobileImage.startsWith('/images/banners/'))
+        ? b.mobileImage
+        : (isCloudinaryDesktop ? b.desktopImage : (b.mobileImage || pcImage));
       const chosenImage = isMobile ? phoneImage : pcImage;
 
       return {
@@ -137,8 +141,8 @@ export const TopBannerSlider: React.FC = () => {
       onTouchEnd={handleTouchEnd}
       aria-label="Promotional Banners Carousel"
     >
-      {/* Pure 16:9 Hero Slider Frame matching BrightBooks HeroSlider for Web & Mobile */}
-      <div className="relative w-full max-w-[1240px] mx-auto aspect-[16/9] overflow-hidden rounded-2xl md:rounded-[2rem] shadow-sm bg-[#071A33] border border-[#E5E7EB]">
+      {/* Sleek, responsive Hero Slider Frame matching e-commerce standards for Web & Mobile */}
+      <div className="relative w-full max-w-[1240px] mx-auto aspect-[16/9] sm:aspect-[21/9] md:aspect-[24/9] max-h-[220px] sm:max-h-[300px] md:max-h-[360px] lg:max-h-[400px] overflow-hidden rounded-2xl md:rounded-[2rem] shadow-sm bg-[#071A33] border border-[#E5E7EB]">
         
         {/* Smooth Crossfade Slide Deck: 100% active slide visible, zero half-cutoff glitches */}
         <div className="relative w-full h-full">
@@ -159,7 +163,7 @@ export const TopBannerSlider: React.FC = () => {
                   <img
                     src={slide.image}
                     alt={slide.title}
-                    className="w-full h-full object-contain object-center"
+                    className="w-full h-full object-cover object-center"
                     loading={index === 0 ? 'eager' : 'lazy'}
                     decoding="async"
                   />
