@@ -161,7 +161,7 @@ export default function Home() {
                   </div>
                   <div className="min-w-0">
                     <h4 className="text-[12px] sm:text-[14px] font-bold text-[#111827] truncate">Brand Warranty</h4>
-                    <p className="text-[10px] sm:text-[11.5px] text-[#4B5563] truncate">HP, Dell, Lenovo verified</p>
+                    <p className="text-[10px] sm:text-[11.5px] text-[#4B5563] truncate">Official brand support</p>
                   </div>
                 </div>
 
@@ -170,7 +170,7 @@ export default function Home() {
                     <Store className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-[12px] sm:text-[14px] font-bold text-[#111827] truncate">30-Min Store Pickup</h4>
+                    <h4 className="text-[12px] sm:text-[14px] font-bold text-[#111827] truncate">Store Pickup</h4>
                     <p className="text-[10px] sm:text-[11.5px] text-[#4B5563] truncate">Chiniya Road, Garhwa</p>
                   </div>
                 </div>
@@ -180,8 +180,8 @@ export default function Home() {
                     <Truck className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-[12px] sm:text-[14px] font-bold text-[#111827] truncate">Free Local Delivery</h4>
-                    <p className="text-[10px] sm:text-[11.5px] text-[#4B5563] truncate">Garhwa & Palamu</p>
+                    <h4 className="text-[12px] sm:text-[14px] font-bold text-[#111827] truncate">Local Delivery</h4>
+                    <p className="text-[10px] sm:text-[11.5px] text-[#4B5563] truncate">Garhwa &amp; Palamu</p>
                   </div>
                 </div>
               </div>
@@ -199,21 +199,16 @@ export default function Home() {
         if (trendingItems.length === 0) return null;
         return (
           <div key={sec.id || 'trending'} className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-3.5 sm:mb-4.5">
-              <div>
-                <h2 className="text-[20px] sm:text-[28px] font-extrabold text-[#111827] tracking-tight">
-                  {sec.title || 'Trending Products'}
-                </h2>
-                <p className="text-[11.5px] sm:text-[13px] text-[#4B5563] mt-0.5 max-w-2xl leading-relaxed">
-                  {sec.subtitle || 'Featuring genuine Frontech frameless & curved monitors, 12th/13th Gen laptops, and showroom verified hardware.'}
-                </p>
-              </div>
+            <div className="flex items-center justify-between gap-3 mb-3.5 sm:mb-4.5">
+              <h2 className="text-[20px] sm:text-[26px] font-extrabold text-[#111827] tracking-tight">
+                {sec.title || 'Trending Products'}
+              </h2>
 
               <Link
                 href="/shop"
-                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs self-start sm:self-auto flex-shrink-0"
+                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs flex-shrink-0"
               >
-                <span>View All {products.length > 0 ? `${products.length} Products` : 'Products'}</span>
+                <span>View All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -268,21 +263,16 @@ export default function Home() {
         if (bestsellerItems.length === 0) return null;
         return (
           <div key={sec.id || 'bestsellers'} className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-3.5 sm:mb-4.5">
-              <div>
-                <h2 className="text-[20px] sm:text-[28px] font-extrabold text-[#111827] tracking-tight">
-                  {sec.title || 'Best Sellers'}
-                </h2>
-                <p className="text-[11.5px] sm:text-[13px] text-[#4B5563] mt-0.5 max-w-2xl leading-relaxed">
-                  {sec.subtitle || 'Top-selling laptops, printers, and computer essentials trusted by 10,000+ customers across Garhwa.'}
-                </p>
-              </div>
+            <div className="flex items-center justify-between gap-3 mb-3.5 sm:mb-4.5">
+              <h2 className="text-[20px] sm:text-[26px] font-extrabold text-[#111827] tracking-tight">
+                {sec.title || 'Best Sellers'}
+              </h2>
 
               <Link
                 href="/shop?sort=bestseller"
-                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs self-start sm:self-auto flex-shrink-0"
+                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs flex-shrink-0"
               >
-                <span>View All Best Sellers</span>
+                <span>View All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -312,21 +302,16 @@ export default function Home() {
         if (premiumItems.length === 0) return null;
         return (
           <div key={sec.id || 'premium'} className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-3.5 sm:mb-4.5">
-              <div>
-                <h2 className="text-[20px] sm:text-[28px] font-extrabold text-[#111827] tracking-tight">
-                  {sec.title || 'Premium Segment'}
-                </h2>
-                <p className="text-[11.5px] sm:text-[13px] text-[#4B5563] mt-0.5 max-w-2xl leading-relaxed">
-                  {sec.subtitle || 'High-performance gaming monitors, flagship workstations, and 200Hz IPS curved displays for power users.'}
-                </p>
-              </div>
+            <div className="flex items-center justify-between gap-3 mb-3.5 sm:mb-4.5">
+              <h2 className="text-[20px] sm:text-[26px] font-extrabold text-[#111827] tracking-tight">
+                {sec.title || 'Premium Segment'}
+              </h2>
 
               <Link
                 href="/shop?cat=Computers"
-                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs self-start sm:self-auto flex-shrink-0"
+                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs flex-shrink-0"
               >
-                <span>Explore Premium</span>
+                <span>Explore All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -355,21 +340,16 @@ export default function Home() {
         if (refItems.length === 0) return null;
         return (
           <div key={sec.id || 'refurbished_laptops'} className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-3.5 sm:mb-4.5">
-              <div>
-                <h2 className="text-[20px] sm:text-[28px] font-extrabold text-[#111827] tracking-tight">
-                  {sec.title || 'Refurbished Laptops & Printers'}
-                </h2>
-                <p className="text-[11.5px] sm:text-[13px] text-[#4B5563] mt-0.5 max-w-2xl leading-relaxed">
-                  {sec.subtitle || 'Tested quality Dell Latitude, HP EliteBook, Lenovo ThinkPad & commercial printers with local warranty support.'}
-                </p>
-              </div>
+            <div className="flex items-center justify-between gap-3 mb-3.5 sm:mb-4.5">
+              <h2 className="text-[20px] sm:text-[26px] font-extrabold text-[#111827] tracking-tight">
+                {sec.title || 'Refurbished Laptops & Printers'}
+              </h2>
 
               <Link
                 href="/shop?cat=Laptops"
-                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs self-start sm:self-auto flex-shrink-0"
+                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs flex-shrink-0"
               >
-                <span>View Refurbished Stock</span>
+                <span>View All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -391,15 +371,12 @@ export default function Home() {
               
               {/* Banner A: SSD & Memory Upgrade */}
               <div className="rounded-xl bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] border border-[#BFDBFE] p-4 sm:p-6 flex flex-col justify-between shadow-2xs relative overflow-hidden group">
-                <div className="space-y-1.5 sm:space-y-2 z-10 max-w-md">
-                  <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-[#1D4ED8] px-2 py-0.5 rounded bg-white/90 border border-blue-200 inline-block">
-                    GENUINE NVME & RAM UPGRADES
-                  </span>
+                <div className="space-y-1.5 z-10 max-w-md">
                   <h3 className="text-[16px] sm:text-[22px] font-extrabold text-[#111827] tracking-tight leading-snug">
-                    Boost Your Laptop Speed by up to 10X
+                    NVMe SSD &amp; RAM Upgrades
                   </h3>
                   <p className="text-[11.5px] sm:text-[12.5px] text-[#374151] leading-relaxed">
-                    Crucial, Kingston & WD NVMe M.2 SSDs in stock from ₹1,299 with free showroom installation and data transfer.
+                    Crucial, Kingston &amp; WD NVMe SSDs in stock with showroom installation.
                   </p>
                 </div>
                 <div className="pt-3 sm:pt-4 z-10">
@@ -415,15 +392,12 @@ export default function Home() {
 
               {/* Banner B: Business & Student Laptops */}
               <div className="rounded-xl bg-gradient-to-br from-[#F0FDF4] to-[#DCFCE7] border border-[#BBF7D0] p-4 sm:p-6 flex flex-col justify-between shadow-2xs relative overflow-hidden group">
-                <div className="space-y-1.5 sm:space-y-2 z-10 max-w-md">
-                  <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-[#15803D] px-2 py-0.5 rounded bg-white/90 border border-emerald-200 inline-block">
-                    SEALED BOX WITH GST INVOICE
-                  </span>
+                <div className="space-y-1.5 z-10 max-w-md">
                   <h3 className="text-[16px] sm:text-[22px] font-extrabold text-[#111827] tracking-tight leading-snug">
-                    Certified Business Laptops Under ₹55,000
+                    Business &amp; Student Laptops
                   </h3>
                   <p className="text-[11.5px] sm:text-[12.5px] text-[#374151] leading-relaxed">
-                    HP 15s, Dell Inspiron, Lenovo ThinkPad & IdeaPad loaded with 16GB RAM, fast NVMe storage, and manufacturer warranty.
+                    HP, Dell &amp; Lenovo laptops available with 18% GST billing and brand warranty.
                   </p>
                 </div>
                 <div className="pt-3 sm:pt-4 z-10">
@@ -448,21 +422,16 @@ export default function Home() {
         if (cctvItems.length === 0) return null;
         return (
           <div key={sec.id || 'cctv_spotlight'} className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-3.5 sm:mb-4.5">
-              <div>
-                <h2 className="text-[20px] sm:text-[28px] font-extrabold text-[#111827] tracking-tight">
-                  {sec.title || 'CCTV & Security Surveillance'}
-                </h2>
-                <p className="text-[11.5px] sm:text-[13px] text-[#4B5563] mt-0.5 max-w-2xl leading-relaxed">
-                  {sec.subtitle || 'Complete security camera setups, bullet & dome cameras, DVRs for homes & shops in Garhwa.'}
-                </p>
-              </div>
+            <div className="flex items-center justify-between gap-3 mb-3.5 sm:mb-4.5">
+              <h2 className="text-[20px] sm:text-[26px] font-extrabold text-[#111827] tracking-tight">
+                {sec.title || 'CCTV & Security Surveillance'}
+              </h2>
 
               <Link
                 href="/shop?cat=CCTV%20%26%20Security"
-                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs self-start sm:self-auto flex-shrink-0"
+                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs flex-shrink-0"
               >
-                <span>View CCTV Setups</span>
+                <span>View All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -483,21 +452,16 @@ export default function Home() {
 
         return (
           <div key={sec.id || 'blogs_preview'} className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-3.5 sm:mb-4.5">
-              <div>
-                <h2 className="text-[20px] sm:text-[28px] font-extrabold text-[#111827] tracking-tight">
-                  {sec.title || 'Latest Tech Guides & Hardware News'}
-                </h2>
-                <p className="text-[11.5px] sm:text-[13px] text-[#4B5563] mt-0.5 max-w-2xl leading-relaxed">
-                  {sec.subtitle || 'Expert advice on buying refurbished laptops, Frontech monitors, and repair tutorials.'}
-                </p>
-              </div>
+            <div className="flex items-center justify-between gap-3 mb-3.5 sm:mb-4.5">
+              <h2 className="text-[20px] sm:text-[26px] font-extrabold text-[#111827] tracking-tight">
+                {sec.title || 'Latest Tech Guides'}
+              </h2>
 
               <Link
                 href="/blogs"
-                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs self-start sm:self-auto flex-shrink-0"
+                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs flex-shrink-0"
               >
-                <span>Read All Articles</span>
+                <span>Read All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -563,20 +527,10 @@ export default function Home() {
               </div>
 
               <div className="relative z-10 space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-blue-200 px-2.5 py-0.5 rounded-full bg-white/10 border border-white/20 inline-flex items-center gap-1">
-                    <Layers className="w-3 h-3 text-[#4ADE80]" />
-                    COMPLETE GARHWA SHOWROOM INVENTORY
-                  </span>
-                </div>
-
                 <div className="max-w-2xl">
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-                    Looking for Specific Hardware, CCTV or Spare Parts?
+                    Browse Complete Hardware Catalog
                   </h2>
-                  <p className="text-xs sm:text-[13.5px] text-blue-100 mt-1 leading-relaxed">
-                    Explore all {products.length || 413}+ in-stock products with advanced filters by brand, category, and price in ₹ with same-day showroom dispatch.
-                  </p>
                 </div>
 
                 {/* Quick Category Chips */}
@@ -607,7 +561,7 @@ export default function Home() {
                     href="/shop?cat=Laptops"
                     className="h-10 sm:h-11 px-4 sm:px-5 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-semibold text-xs sm:text-[13.5px] inline-flex items-center gap-1.5 transition-colors"
                   >
-                    <span>Browse Laptops Only</span>
+                    <span>Browse Laptops</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
@@ -622,15 +576,12 @@ export default function Home() {
           <div key="showroom" className="max-w-7xl mx-auto px-3 sm:px-6">
             <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-5">
-                <div className="space-y-1 sm:space-y-1.5 max-w-xl">
-                  <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#1A56DB] block">
-                    GARHWA SHOWROOM VERIFICATION
-                  </span>
+                <div className="space-y-1 max-w-xl">
                   <h3 className="text-base sm:text-xl font-extrabold text-[#111827]">
-                    Need Hands-On Hardware Inspection Before Paying?
+                    Visit Lapiez Showroom, Garhwa
                   </h3>
                   <p className="text-xs sm:text-[13px] text-[#4B5563] leading-relaxed">
-                    Visit our physical showroom opposite G P Plaza, Chiniya Road, Garhwa. Test display quality, keyboard travel, and specifications on the counter before making payment.
+                    {siteSettings?.address || 'In front of G P Plaza, Chiniya Road, Garhwa, Jharkhand - 822114'}
                   </p>
                 </div>
 
@@ -666,21 +617,14 @@ export default function Home() {
         const genericProducts = getSectionProducts(sec, products.slice(0, 8));
         return (
           <div key={sec.id || sec.sectionKey} className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-3.5 sm:mb-4.5">
-              <div>
-                <h2 className="text-[20px] sm:text-[28px] font-extrabold text-[#111827] tracking-tight">
-                  {sec.title}
-                </h2>
-                {sec.subtitle && (
-                  <p className="text-[11.5px] sm:text-[13px] text-[#4B5563] mt-0.5 max-w-2xl leading-relaxed">
-                    {sec.subtitle}
-                  </p>
-                )}
-              </div>
+            <div className="flex items-center justify-between gap-3 mb-3.5 sm:mb-4.5">
+              <h2 className="text-[20px] sm:text-[26px] font-extrabold text-[#111827] tracking-tight">
+                {sec.title}
+              </h2>
 
               <Link
                 href="/shop"
-                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs self-start sm:self-auto flex-shrink-0"
+                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs flex-shrink-0"
               >
                 <span>View All</span>
                 <ArrowRight className="w-3.5 h-3.5" />

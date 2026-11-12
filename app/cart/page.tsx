@@ -322,7 +322,7 @@ export default function CartPage() {
                   <div className="text-center">
                     <span className="text-[11px] text-gray-500 font-medium flex items-center justify-center gap-1">
                       <Lock className="w-3 h-3 text-emerald-600" />
-                      <span>Verified Secure 256-Bit Checkout • 100% Genuine Hardware</span>
+                      <span>Secure Checkout • 18% GST Invoice</span>
                     </span>
                   </div>
                 </div>

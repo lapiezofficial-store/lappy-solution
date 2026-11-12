@@ -116,17 +116,9 @@ export const FaqSection: React.FC<{ compact?: boolean }> = ({ compact = false })
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-8">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#1A56DB] text-xs font-bold uppercase tracking-wider mb-2">
-            <HelpCircle className="w-3.5 h-3.5 text-[#1A56DB]" />
-            <span>Customer Helpdesk & FAQ</span>
-          </div>
-
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight">
             Frequently Asked Questions
           </h2>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1.5">
-            Everything you need to know about our certified laptops, 18% GST invoices, warranty, and Garhwa showroom services.
-          </p>
 
           {/* Search Bar */}
           <div className="mt-5 relative max-w-md mx-auto">

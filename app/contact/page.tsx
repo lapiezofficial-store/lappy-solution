@@ -88,15 +88,11 @@ export default function ContactPage() {
           </div>
 
           <div className="max-w-3xl space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/30 text-yellow-300 text-[11px] font-bold uppercase tracking-wider">
-              <Store className="w-3.5 h-3.5" />
-              <span>GARHWA SHOWROOM & DIRECT SUPPORT</span>
-            </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
               Get in Touch with {siteName}
             </h1>
             <p className="text-blue-100 text-sm sm:text-base leading-relaxed">
-              Visit our physical tech showroom on Chiniya Road, Garhwa, or contact our engineers for laptop spares, CCTV installations, and instant price quotations.
+              Visit our showroom on Chiniya Road, Garhwa, or contact our team for sales and support.
             </p>
           </div>
         </div>

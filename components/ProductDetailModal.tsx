@@ -321,15 +321,15 @@ export const ProductDetailModal: React.FC = () => {
             <div className="pt-2 border-t border-slate-100 grid grid-cols-3 gap-2 text-[10px] text-slate-500 text-center">
               <div className="flex flex-col items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>100% Genuine Boxed</span>
+                <span>Brand Warranty</span>
               </div>
               <div className="flex flex-col items-center gap-1">
                 <Store className="w-3.5 h-3.5 text-blue-600" />
-                <span>Counter Testing</span>
+                <span>Showroom Pickup</span>
               </div>
               <div className="flex flex-col items-center gap-1">
                 <Truck className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Garhwa Express</span>
+                <span>Local Delivery</span>
               </div>
             </div>
 

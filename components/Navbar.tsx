@@ -3,9 +3,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  Search, ShoppingCart, Heart, User, 
-  Phone, Menu, X, ArrowRight, MapPin, 
+import {
+  Search, ShoppingCart, Heart, User,
+  Phone, Menu, X, ArrowRight, MapPin,
   ShieldCheck, MessageSquare, ChevronDown, ChevronUp, ChevronRight,
   ShoppingBag, ExternalLink, Laptop, Printer,
   HelpCircle, Layers, CheckCircle2, Award,
@@ -102,11 +102,11 @@ const FALLBACK_MEGA_MENU_COLUMNS = [
 export const Navbar: React.FC<NavbarProps> = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { 
-    cart, 
-    wishlistIds, 
-    setIsCartOpen, 
-    products, 
+  const {
+    cart,
+    wishlistIds,
+    setIsCartOpen,
+    products,
     setSelectedProduct,
     siteSettings,
     customer,
@@ -124,7 +124,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
   const [mobileShopOpen, setMobileShopOpen] = useState(false);
   const [mobileRefurbishedOpen, setMobileRefurbishedOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  
+
   type ActiveNavMenu = 'shop' | 'refurbished' | 'more' | null;
   const [activeNavMenu, setActiveNavMenu] = useState<ActiveNavMenu>(null);
 
@@ -199,16 +199,16 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
   // Instant Search Suggestions
   const searchResults = searchQuery.trim().length > 1
-    ? products.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.brand.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 6)
+    ? products.filter(p =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.brand.toLowerCase().includes(searchQuery.toLowerCase())
+    ).slice(0, 6)
     : [];
 
   return (
     <header ref={headerRef} className="sticky top-0 z-50 w-full bg-white shadow-xs">
-      
+
       {/* ========================================================= */}
       {/* MOBILE HEADER (lg:hidden) - EXACT 3 LINES FROM SCREENSHOT */}
       {/* ========================================================= */}
@@ -217,9 +217,9 @@ export const Navbar: React.FC<NavbarProps> = () => {
         <div className="bg-[#1A56DB] text-white text-[10.5px] py-1 px-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5 truncate">
             <MapPin className="w-3 h-3 text-[#FEF08A] flex-shrink-0" />
-            <span className="truncate font-semibold">Garhwa & Palamu Delivery • 100% Genuine</span>
+            <span className="truncate font-semibold">Garhwa &amp; Palamu Delivery</span>
           </div>
-          <a 
+          <a
             href={`tel:${siteSettings?.phone || STORE_INFO.phone}`}
             className="text-yellow-200 font-extrabold text-[10.5px] flex-shrink-0 ml-2 hover:underline"
           >
@@ -232,9 +232,9 @@ export const Navbar: React.FC<NavbarProps> = () => {
           {/* Left: Brand Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             {!logoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
-              <img 
-                src={siteSettings.logo} 
-                alt={siteSettings?.siteName || "Lapiez"} 
+              <img
+                src={siteSettings.logo}
+                alt={siteSettings?.siteName || "Lapiez"}
                 onError={() => setLogoError(true)}
                 className="h-7 sm:h-8 w-auto max-w-[140px] object-contain"
               />
@@ -243,14 +243,9 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#1A56DB] to-[#0A2560] text-white flex items-center justify-center shadow-xs">
                   <ShoppingCart className="w-4 h-4 text-white" />
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[20px] font-black tracking-tight text-[#111827] leading-none">
-                    LAP<span className="text-[#1A56DB]">IEZ</span>
-                  </span>
-                  <span className="text-[8.5px] uppercase tracking-wider text-gray-400 font-bold leading-none mt-0.5">
-                    {siteSettings?.tagline || 'IT Showroom Garhwa'}
-                  </span>
-                </div>
+                <span className="text-[20px] font-black tracking-tight text-[#111827] leading-none">
+                  LAP<span className="text-[#1A56DB]">IEZ</span>
+                </span>
               </div>
             )}
           </Link>
@@ -340,16 +335,15 @@ export const Navbar: React.FC<NavbarProps> = () => {
                                 setIsNotificationOpen(false);
                               }
                             }}
-                            className={`p-3 hover:bg-blue-50/70 transition-colors cursor-pointer flex items-start gap-2.5 ${
-                              isUnread ? 'bg-blue-50/40' : ''
-                            }`}
+                            className={`p-3 hover:bg-blue-50/70 transition-colors cursor-pointer flex items-start gap-2.5 ${isUnread ? 'bg-blue-50/40' : ''
+                              }`}
                           >
                             <div className="w-7 h-7 rounded-lg bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
                               {notif.title.includes('Deliver') ? <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> :
-                               notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-3.5 h-3.5 text-indigo-600" /> :
-                               notif.title.includes('Pack') ? <Package className="w-3.5 h-3.5 text-blue-600" /> :
-                               notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-3.5 h-3.5 text-amber-600" /> :
-                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                                notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-3.5 h-3.5 text-indigo-600" /> :
+                                  notif.title.includes('Pack') ? <Package className="w-3.5 h-3.5 text-blue-600" /> :
+                                    notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-3.5 h-3.5 text-amber-600" /> :
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1">
@@ -453,10 +447,10 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 >
                   <div className="flex items-center gap-2.5 min-w-0 pr-2">
                     <div className="w-9 h-9 bg-gray-50 rounded-lg border border-gray-100 p-1 flex-shrink-0 flex items-center justify-center">
-                      <img 
-                        src={p.image || '/images/product-placeholder.svg'} 
-                        alt={p.name} 
-                        className="max-h-full max-w-full object-contain" 
+                      <img
+                        src={p.image || '/images/product-placeholder.svg'}
+                        alt={p.name}
+                        className="max-h-full max-w-full object-contain"
                       />
                     </div>
                     <div className="min-w-0">
@@ -480,25 +474,16 @@ export const Navbar: React.FC<NavbarProps> = () => {
       <div className="hidden lg:block">
         {/* 1. Top Announcement Bar */}
         <div className="bg-[#1A56DB] text-white text-[11px] sm:text-[12px] py-1 px-3 sm:px-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
-          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs">
-            <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FEF08A] flex-shrink-0" />
-            <span className="text-blue-100 hidden sm:inline">Deliver to:</span>
-            <strong className="text-white font-semibold">Garhwa & Palamu (822114)</strong>
-            <span className="hidden md:inline-block ml-2 text-blue-200">
-              | Free Same-Day Delivery
-            </span>
-          </div>
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs">
+              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FEF08A] flex-shrink-0" />
+              <span className="text-blue-100 hidden sm:inline">Deliver to:</span>
+              <strong className="text-white font-semibold">Garhwa &amp; Palamu (822114)</strong>
+            </div>
 
-          <div className="flex items-center gap-3 sm:gap-4 text-[11px] sm:text-xs">
-            <span className="hidden lg:inline-flex items-center gap-1.5 text-blue-100">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#4ADE80]" />
-              {siteSettings?.announcementText || '100% Asli Samaan • 18% GST Bill • Lapiez Garhwa'}
-            </span>
-            {!isApp && (
-              <>
-                <span className="hidden sm:inline text-blue-300">|</span>
-                <button 
+            <div className="flex items-center gap-3 sm:gap-4 text-[11px] sm:text-xs">
+              {!isApp && (
+                <button
                   type="button"
                   onClick={() => setIsAppModalOpen(true)}
                   className="flex items-center gap-1 text-white hover:text-yellow-200 font-semibold transition-colors cursor-pointer"
@@ -507,53 +492,51 @@ export const Navbar: React.FC<NavbarProps> = () => {
                   <Smartphone className="w-3 h-3 text-emerald-300" />
                   <span>Download App</span>
                 </button>
-              </>
-            )}
-            <span className="hidden md:inline text-blue-300">|</span>
-            <a 
-              href={`tel:${siteSettings?.phone || STORE_INFO.phone}`} 
-              className="hidden md:flex items-center gap-1 text-white hover:text-yellow-200 font-medium transition-colors"
-            >
-              <Phone className="w-3 h-3 text-yellow-300" />
-              <span>{siteSettings?.phone || STORE_INFO.phone}</span>
-            </a>
-            <span className="hidden sm:inline text-blue-300">|</span>
-            <Link 
-              href="/account" 
-              className="hidden sm:inline-block text-white hover:text-yellow-200 font-medium transition-colors"
-            >
-              Track Order
-            </Link>
+              )}
+              <span className="hidden md:inline text-blue-300">|</span>
+              <a
+                href={`tel:${siteSettings?.phone || STORE_INFO.phone}`}
+                className="hidden md:flex items-center gap-1 text-white hover:text-yellow-200 font-medium transition-colors"
+              >
+                <Phone className="w-3 h-3 text-yellow-300" />
+                <span>{siteSettings?.phone || STORE_INFO.phone}</span>
+              </a>
+              <span className="hidden sm:inline text-blue-300">|</span>
+              <Link
+                href="/account"
+                className="hidden sm:inline-block text-white hover:text-yellow-200 font-medium transition-colors"
+              >
+                Track Order
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 2. Main E-Commerce Header Bar */}
-      <div className="border-b border-[#E5E7EB] bg-white px-4 sm:px-8 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 xl:gap-8">
-          
-          {/* LEFT: Dynamic Site Logo */}
-          <div className="flex items-center flex-shrink-0">
-            <Link href="/" className="flex items-center gap-2 group">
-              {!logoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
-                <div className="flex items-center gap-2 py-0.5">
-                  <img 
-                    src={siteSettings.logo} 
-                    alt={siteSettings?.siteName || "Lapiez"} 
-                    onError={() => setLogoError(true)}
-                    className="h-8 sm:h-9 w-auto max-w-[150px] sm:max-w-[200px] object-contain group-hover:scale-[1.02] transition-transform"
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="relative flex items-center justify-center">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1A56DB] to-[#0A2560] text-white flex items-center justify-center shadow-xs transform group-hover:scale-105 transition-transform">
-                      <ShoppingCart className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+        {/* 2. Main E-Commerce Header Bar */}
+        <div className="border-b border-[#E5E7EB] bg-white px-4 sm:px-8 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 xl:gap-8">
+
+            {/* LEFT: Dynamic Site Logo */}
+            <div className="flex items-center flex-shrink-0">
+              <Link href="/" className="flex items-center gap-2 group">
+                {!logoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
+                  <div className="flex items-center gap-2 py-0.5">
+                    <img
+                      src={siteSettings.logo}
+                      alt={siteSettings?.siteName || "Lapiez"}
+                      onError={() => setLogoError(true)}
+                      className="h-8 sm:h-9 w-auto max-w-[150px] sm:max-w-[200px] object-contain group-hover:scale-[1.02] transition-transform"
+                    />
                   </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1A56DB] to-[#0A2560] text-white flex items-center justify-center shadow-xs transform group-hover:scale-105 transition-transform">
+                        <ShoppingCart className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                    </div>
 
-                  <div className="flex flex-col">
                     <span className="text-[20px] sm:text-[22px] font-black tracking-tight text-[#111827] leading-none">
                       {siteSettings?.siteName ? (
                         siteSettings.siteName.toLowerCase().includes('lapiez') ? (
@@ -565,686 +548,676 @@ export const Navbar: React.FC<NavbarProps> = () => {
                         <>LAP<span className="text-[#1A56DB]">IEZ</span></>
                       )}
                     </span>
-                    <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold leading-none mt-0.5">
-                      {siteSettings?.tagline || 'Garhwa Hardware Store'}
-                    </span>
                   </div>
-                </div>
-              )}
-            </Link>
-          </div>
-
-          {/* MIDDLE: Primary Nav Links (Home, Categories, Refurbished, Support, More) */}
-          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-[14.5px] font-semibold text-[#1E3A8A]">
-            
-            {/* Home Link */}
-            <Link 
-              href="/" 
-              className={`hover:text-[#2563EB] transition-colors ${pathname === '/' ? 'text-[#2563EB] font-bold' : ''}`}
-            >
-              Home
-            </Link>
-
-            {/* Categories Flyout (Header -> Category -> Subcategory) */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setActiveNavMenu(activeNavMenu === 'shop' ? null : 'shop')}
-                className={`flex items-center gap-1.5 hover:text-[#2563EB] transition-colors py-1 cursor-pointer ${
-                  isShopMenuOpen ? 'text-[#2563EB] font-bold' : ''
-                }`}
-              >
-                <span>Categories</span>
-                {isShopMenuOpen ? (
-                  <ChevronUp className="w-4 h-4 text-[#2563EB] stroke-[2.5]" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-gray-500 stroke-[2.5]" />
                 )}
-              </button>
+              </Link>
             </div>
 
-            {/* Refurbished Dropdown (Laptops & Others) */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setActiveNavMenu(activeNavMenu === 'refurbished' ? null : 'refurbished')}
-                className={`flex items-center gap-1.5 hover:text-[#2563EB] transition-colors py-1 cursor-pointer ${
-                  isRefurbishedMenuOpen || pathname.includes('refurbished') ? 'text-[#2563EB] font-bold' : ''
-                }`}
-              >
-                <span>Refurbished</span>
-                {isRefurbishedMenuOpen ? (
-                  <ChevronUp className="w-3.5 h-3.5 text-[#2563EB] stroke-[2.5]" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5 text-gray-500 stroke-[2.5]" />
-                )}
-              </button>
+            {/* MIDDLE: Primary Nav Links (Home, Categories, Refurbished, Support, More) */}
+            <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-[14.5px] font-semibold text-[#1E3A8A]">
 
-              {isRefurbishedMenuOpen && (
-                <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="space-y-1">
-                    {/* Item 1: Laptops */}
+              {/* Home Link */}
+              <Link
+                href="/"
+                className={`hover:text-[#2563EB] transition-colors ${pathname === '/' ? 'text-[#2563EB] font-bold' : ''}`}
+              >
+                Home
+              </Link>
+
+              {/* Categories Flyout (Header -> Category -> Subcategory) */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setActiveNavMenu(activeNavMenu === 'shop' ? null : 'shop')}
+                  className={`flex items-center gap-1.5 hover:text-[#2563EB] transition-colors py-1 cursor-pointer ${isShopMenuOpen ? 'text-[#2563EB] font-bold' : ''
+                    }`}
+                >
+                  <span>Categories</span>
+                  {isShopMenuOpen ? (
+                    <ChevronUp className="w-4 h-4 text-[#2563EB] stroke-[2.5]" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-500 stroke-[2.5]" />
+                  )}
+                </button>
+              </div>
+
+              {/* Refurbished Dropdown (Laptops & Others) */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setActiveNavMenu(activeNavMenu === 'refurbished' ? null : 'refurbished')}
+                  className={`flex items-center gap-1.5 hover:text-[#2563EB] transition-colors py-1 cursor-pointer ${isRefurbishedMenuOpen || pathname.includes('refurbished') ? 'text-[#2563EB] font-bold' : ''
+                    }`}
+                >
+                  <span>Refurbished</span>
+                  {isRefurbishedMenuOpen ? (
+                    <ChevronUp className="w-3.5 h-3.5 text-[#2563EB] stroke-[2.5]" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 text-gray-500 stroke-[2.5]" />
+                  )}
+                </button>
+
+                {isRefurbishedMenuOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="space-y-1">
+                      {/* Item 1: Laptops */}
+                      <Link
+                        href="/shop?cat=Computer%20%26%20Laptops"
+                        onClick={() => setActiveNavMenu(null)}
+                        className="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-blue-50/80 transition-colors border border-transparent hover:border-blue-200"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Laptop className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span className="font-extrabold text-[13.5px] text-gray-900 group-hover:text-[#1A56DB] block">
+                            Refurbished Laptops
+                          </span>
+                          <span className="text-[11px] text-gray-500 block leading-tight mt-0.5">
+                            HP, Dell, Lenovo Business Series (6-Month Warranty)
+                          </span>
+                        </div>
+                      </Link>
+
+                      {/* Item 2: Others */}
+                      <Link
+                        href="/shop?cat=Printers%20%26%20Accessories"
+                        onClick={() => setActiveNavMenu(null)}
+                        className="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-amber-50/80 transition-colors border border-transparent hover:border-amber-200"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Printer className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span className="font-extrabold text-[13.5px] text-gray-900 group-hover:text-amber-800 block">
+                            Others (Printers & Desktops)
+                          </span>
+                          <span className="text-[11px] text-gray-500 block leading-tight mt-0.5">
+                            LaserJet Printers, Monitors & Custom Desktop Rigs
+                          </span>
+                        </div>
+                      </Link>
+                    </div>
+
+                    {/* Quality Assurance Footer */}
+                    <div className="mt-2 pt-2 border-t border-gray-100 px-2 flex items-center justify-between text-[10.5px] text-emerald-700 font-bold">
+                      <span className="flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        24-Point Tested
+                      </span>
+                      <span>•</span>
+                      <span>Showroom Warranty</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Support Link */}
+              <Link
+                href="/contact"
+                className="hover:text-[#2563EB] transition-colors"
+              >
+                Support
+              </Link>
+
+              {/* More with dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setActiveNavMenu(activeNavMenu === 'more' ? null : 'more')}
+                  className="flex items-center gap-1 hover:text-[#2563EB] transition-colors py-1 cursor-pointer"
+                >
+                  <span>More</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                </button>
+
+                {isMoreMenuOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50 text-xs">
                     <Link
-                      href="/shop?cat=Computer%20%26%20Laptops"
-                      onClick={() => setActiveNavMenu(null)}
-                      className="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-blue-50/80 transition-colors border border-transparent hover:border-blue-200"
+                      href="/blogs"
+                      className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
                     >
-                      <div className="w-9 h-9 rounded-lg bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Laptop className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <span className="font-extrabold text-[13.5px] text-gray-900 group-hover:text-[#1A56DB] block">
-                          Refurbished Laptops
-                        </span>
-                        <span className="text-[11px] text-gray-500 block leading-tight mt-0.5">
-                          HP, Dell, Lenovo Business Series (6-Month Warranty)
-                        </span>
-                      </div>
+                      Tech Guides & Tutorials
                     </Link>
-
-                    {/* Item 2: Others */}
                     <Link
-                      href="/shop?cat=Printers%20%26%20Accessories"
-                      onClick={() => setActiveNavMenu(null)}
-                      className="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-amber-50/80 transition-colors border border-transparent hover:border-amber-200"
+                      href="/faq"
+                      className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
                     >
-                      <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Printer className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <span className="font-extrabold text-[13.5px] text-gray-900 group-hover:text-amber-800 block">
-                          Others (Printers & Desktops)
-                        </span>
-                        <span className="text-[11px] text-gray-500 block leading-tight mt-0.5">
-                          LaserJet Printers, Monitors & Custom Desktop Rigs
-                        </span>
-                      </div>
+                      Showroom FAQ & Helpdesk
+                    </Link>
+                    <Link
+                      href="/contact"
+                      className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
+                    >
+                      Showroom Location & Counter
+                    </Link>
+                    <Link
+                      href="/account?tab=gst"
+                      className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
+                    >
+                      18% GST Invoicing & ITC
+                    </Link>
+                    <Link
+                      href="/warranty"
+                      className="block px-4 py-2 hover:bg-emerald-50 text-emerald-800 hover:text-emerald-900 font-semibold"
+                    >
+                      Warranty Claim & Testing
+                    </Link>
+                    <Link
+                      href="/pages/terms-and-conditions"
+                      className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
+                    >
+                      Terms & Conditions
+                    </Link>
+                    <Link
+                      href="/pages/privacy-policy"
+                      className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
+                    >
+                      Privacy Policy
                     </Link>
                   </div>
-
-                  {/* Quality Assurance Footer */}
-                  <div className="mt-2 pt-2 border-t border-gray-100 px-2 flex items-center justify-between text-[10.5px] text-emerald-700 font-bold">
-                    <span className="flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      24-Point Tested
-                    </span>
-                    <span>•</span>
-                    <span>Showroom Warranty</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Support Link */}
-            <Link 
-              href="/contact" 
-              className="hover:text-[#2563EB] transition-colors"
-            >
-              Support
-            </Link>
-
-            {/* More with dropdown */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setActiveNavMenu(activeNavMenu === 'more' ? null : 'more')}
-                className="flex items-center gap-1 hover:text-[#2563EB] transition-colors py-1 cursor-pointer"
-              >
-                <span>More</span>
-                <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-              </button>
-
-              {isMoreMenuOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50 text-xs">
-                  <Link 
-                    href="/blogs" 
-                    className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
-                  >
-                    Tech Guides & Tutorials
-                  </Link>
-                  <Link 
-                    href="/faq" 
-                    className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
-                  >
-                    Showroom FAQ & Helpdesk
-                  </Link>
-                  <Link 
-                    href="/contact" 
-                    className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
-                  >
-                    Showroom Location & Counter
-                  </Link>
-                  <Link 
-                    href="/account?tab=gst" 
-                    className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
-                  >
-                    18% GST Invoicing & ITC
-                  </Link>
-                  <Link 
-                    href="/warranty" 
-                    className="block px-4 py-2 hover:bg-emerald-50 text-emerald-800 hover:text-emerald-900 font-semibold"
-                  >
-                    Warranty Claim & Testing
-                  </Link>
-                  <Link 
-                    href="/pages/terms-and-conditions" 
-                    className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
-                  >
-                    Terms & Conditions
-                  </Link>
-                  <Link 
-                    href="/pages/privacy-policy" 
-                    className="block px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-[#1A56DB] font-medium"
-                  >
-                    Privacy Policy
-                  </Link>
-                </div>
-              )}
-            </div>
-
-          </nav>
-
-          {/* RIGHT: Action Icons (Search, User, WhatsApp, Cart) */}
-          <div className="flex items-center gap-2 sm:gap-3.5 flex-shrink-0">
-            
-            {/* Search Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="p-2 rounded-full text-gray-600 hover:text-[#1A56DB] hover:bg-gray-100 transition-colors cursor-pointer"
-              title="Search store"
-              aria-label="Search"
-            >
-              <Search className="w-5 h-5" />
-            </button>
-
-            {/* Customer Account Button */}
-            <Link
-              href="/account"
-              className="p-2 rounded-full text-gray-700 hover:text-[#1A56DB] hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer group"
-              title={customer ? `Signed in as ${customer.user_metadata?.full_name || customer.email}` : "Customer Account & Orders"}
-              aria-label="Customer Account"
-            >
-              {customer?.user_metadata?.avatar_url ? (
-                <img 
-                  src={customer.user_metadata.avatar_url} 
-                  alt="Account" 
-                  className="w-5 h-5 rounded-full object-cover border border-blue-400 group-hover:scale-105 transition-transform"
-                />
-              ) : (
-                <User className="w-5 h-5 text-gray-700 group-hover:text-[#1A56DB] transition-colors" />
-              )}
-            </Link>
-
-            {/* WhatsApp Support Button (Visible on tablet/desktop, docked on mobile bottom bar) */}
-            <a
-              href={`https://wa.me/${getCleanWhatsAppNumber(siteSettings?.whatsapp)}?text=${encodeURIComponent(`Hello ${siteSettings?.siteName || 'Lapiez'}, I want to inquire about products.`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-full text-[#16A34A] hover:bg-emerald-50 transition-colors hidden sm:flex"
-              title="Chat on WhatsApp"
-            >
-              <MessageSquare className="w-5 h-5" />
-            </a>
-
-            {/* Customer Order Notification Center (Desktop) */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                className="relative p-2 rounded-full text-gray-700 hover:text-[#1A56DB] hover:bg-blue-50 transition-colors cursor-pointer group"
-                title="Customer Order Notifications & Updates"
-                aria-label="Order Notifications"
-              >
-                <Bell className="w-5 h-5 text-gray-700 group-hover:text-[#1A56DB] transition-colors" />
-                {unreadCustomerNotifCount > 0 ? (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-4.5 w-4.5 bg-rose-600 text-white text-[9px] font-black items-center justify-center ring-2 ring-white shadow-xs">
-                      {unreadCustomerNotifCount > 9 ? '9+' : unreadCustomerNotifCount}
-                    </span>
-                  </span>
-                ) : (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
                 )}
+              </div>
+
+            </nav>
+
+            {/* RIGHT: Action Icons (Search, User, WhatsApp, Cart) */}
+            <div className="flex items-center gap-2 sm:gap-3.5 flex-shrink-0">
+
+              {/* Search Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                className="p-2 rounded-full text-gray-600 hover:text-[#1A56DB] hover:bg-gray-100 transition-colors cursor-pointer"
+                title="Search store"
+                aria-label="Search"
+              >
+                <Search className="w-5 h-5" />
               </button>
 
-              {/* Desktop Notification Dropdown */}
-              {isNotificationOpen && (
-                <div className="absolute right-0 top-full mt-2 w-88 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 text-gray-900 animate-in fade-in slide-in-from-top-2 duration-150">
-                  {/* Header */}
-                  <div className="bg-gradient-to-r from-[#1A56DB] to-[#0A2560] text-white px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Bell className="w-4 h-4 text-yellow-300" />
-                      <span className="font-bold text-xs uppercase tracking-wider">Notifications & Updates</span>
-                      {unreadCustomerNotifCount > 0 && (
-                        <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
-                          {unreadCustomerNotifCount} New
-                        </span>
+              {/* Customer Account Button */}
+              <Link
+                href="/account"
+                className="p-2 rounded-full text-gray-700 hover:text-[#1A56DB] hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer group"
+                title={customer ? `Signed in as ${customer.user_metadata?.full_name || customer.email}` : "Customer Account & Orders"}
+                aria-label="Customer Account"
+              >
+                {customer?.user_metadata?.avatar_url ? (
+                  <img
+                    src={customer.user_metadata.avatar_url}
+                    alt="Account"
+                    className="w-5 h-5 rounded-full object-cover border border-blue-400 group-hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <User className="w-5 h-5 text-gray-700 group-hover:text-[#1A56DB] transition-colors" />
+                )}
+              </Link>
+
+              {/* WhatsApp Support Button (Visible on tablet/desktop, docked on mobile bottom bar) */}
+              <a
+                href={`https://wa.me/${getCleanWhatsAppNumber(siteSettings?.whatsapp)}?text=${encodeURIComponent(`Hello ${siteSettings?.siteName || 'Lapiez'}, I want to inquire about products.`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-full text-[#16A34A] hover:bg-emerald-50 transition-colors hidden sm:flex"
+                title="Chat on WhatsApp"
+              >
+                <MessageSquare className="w-5 h-5" />
+              </a>
+
+              {/* Customer Order Notification Center (Desktop) */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                  className="relative p-2 rounded-full text-gray-700 hover:text-[#1A56DB] hover:bg-blue-50 transition-colors cursor-pointer group"
+                  title="Customer Order Notifications & Updates"
+                  aria-label="Order Notifications"
+                >
+                  <Bell className="w-5 h-5 text-gray-700 group-hover:text-[#1A56DB] transition-colors" />
+                  {unreadCustomerNotifCount > 0 ? (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-4.5 w-4.5 bg-rose-600 text-white text-[9px] font-black items-center justify-center ring-2 ring-white shadow-xs">
+                        {unreadCustomerNotifCount > 9 ? '9+' : unreadCustomerNotifCount}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+                  )}
+                </button>
+
+                {/* Desktop Notification Dropdown */}
+                {isNotificationOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-88 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 text-gray-900 animate-in fade-in slide-in-from-top-2 duration-150">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-[#1A56DB] to-[#0A2560] text-white px-4 py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Bell className="w-4 h-4 text-yellow-300" />
+                        <span className="font-bold text-xs uppercase tracking-wider">Notifications & Updates</span>
+                        {unreadCustomerNotifCount > 0 && (
+                          <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+                            {unreadCustomerNotifCount} New
+                          </span>
+                        )}
+                      </div>
+                      {customerNotifications.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => markAllCustomerNotificationsAsRead()}
+                          className="text-[11px] text-blue-200 hover:text-white underline cursor-pointer"
+                        >
+                          Mark all read
+                        </button>
                       )}
                     </div>
-                    {customerNotifications.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => markAllCustomerNotificationsAsRead()}
-                        className="text-[11px] text-blue-200 hover:text-white underline cursor-pointer"
-                      >
-                        Mark all read
-                      </button>
-                    )}
-                  </div>
 
-                  {/* Body: Notifications List */}
-                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
-                    {customerNotifications.length === 0 ? (
-                      <div className="p-6 text-center text-gray-500">
-                        <div className="w-12 h-12 rounded-full bg-blue-50 text-[#1A56DB] flex items-center justify-center mx-auto mb-2">
-                          <Bell className="w-6 h-6 stroke-[1.5]" />
-                        </div>
-                        <p className="text-xs font-bold text-gray-800">Koi naya notification nahi hai</p>
-                        <p className="text-[11px] text-gray-400 mt-1 max-w-[240px] mx-auto leading-relaxed">
-                          Jab bhi aapka order accept, confirm, pack ya dispatch hoga, live alert yahan dikhega.
-                        </p>
-                      </div>
-                    ) : (
-                      customerNotifications.map((notif: any) => {
-                        const isUnread = !notif.read;
-                        return (
-                          <div
-                            key={notif.id}
-                            onClick={() => {
-                              markCustomerNotificationAsRead(notif.id);
-                              if (notif.link) {
-                                router.push(notif.link);
-                                setIsNotificationOpen(false);
-                              }
-                            }}
-                            className={`p-3.5 hover:bg-blue-50/70 transition-colors cursor-pointer flex items-start gap-3 ${
-                              isUnread ? 'bg-blue-50/40' : ''
-                            }`}
-                          >
-                            <div className="w-8 h-8 rounded-xl bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
-                              {notif.title.includes('Deliver') ? <Sparkles className="w-4 h-4 text-emerald-600" /> :
-                               notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-4 h-4 text-indigo-600" /> :
-                               notif.title.includes('Pack') ? <Package className="w-4 h-4 text-blue-600" /> :
-                               notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-4 h-4 text-amber-600" /> :
-                               <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1">
-                                <span className={`text-xs block truncate ${isUnread ? 'font-black text-gray-900' : 'font-semibold text-gray-700'}`}>
-                                  {notif.title}
-                                </span>
-                                {isUnread && (
-                                  <span className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" />
-                                )}
-                              </div>
-                              <p className="text-[11px] text-gray-600 line-clamp-2 mt-0.5 leading-tight">
-                                {notif.message}
-                              </p>
-                              <div className="flex items-center justify-between mt-1 text-[10px] text-gray-400">
-                                <span>{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                <span className="text-[#1A56DB] font-bold hover:underline flex items-center gap-0.5">
-                                  Track Order →
-                                </span>
-                              </div>
-                            </div>
+                    {/* Body: Notifications List */}
+                    <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                      {customerNotifications.length === 0 ? (
+                        <div className="p-6 text-center text-gray-500">
+                          <div className="w-12 h-12 rounded-full bg-blue-50 text-[#1A56DB] flex items-center justify-center mx-auto mb-2">
+                            <Bell className="w-6 h-6 stroke-[1.5]" />
                           </div>
-                        );
-                      })
-                    )}
-                  </div>
+                          <p className="text-xs font-bold text-gray-800">Koi naya notification nahi hai</p>
+                          <p className="text-[11px] text-gray-400 mt-1 max-w-[240px] mx-auto leading-relaxed">
+                            Jab bhi aapka order accept, confirm, pack ya dispatch hoga, live alert yahan dikhega.
+                          </p>
+                        </div>
+                      ) : (
+                        customerNotifications.map((notif: any) => {
+                          const isUnread = !notif.read;
+                          return (
+                            <div
+                              key={notif.id}
+                              onClick={() => {
+                                markCustomerNotificationAsRead(notif.id);
+                                if (notif.link) {
+                                  router.push(notif.link);
+                                  setIsNotificationOpen(false);
+                                }
+                              }}
+                              className={`p-3.5 hover:bg-blue-50/70 transition-colors cursor-pointer flex items-start gap-3 ${isUnread ? 'bg-blue-50/40' : ''
+                                }`}
+                            >
+                              <div className="w-8 h-8 rounded-xl bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                {notif.title.includes('Deliver') ? <Sparkles className="w-4 h-4 text-emerald-600" /> :
+                                  notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-4 h-4 text-indigo-600" /> :
+                                    notif.title.includes('Pack') ? <Package className="w-4 h-4 text-blue-600" /> :
+                                      notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-4 h-4 text-amber-600" /> :
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className={`text-xs block truncate ${isUnread ? 'font-black text-gray-900' : 'font-semibold text-gray-700'}`}>
+                                    {notif.title}
+                                  </span>
+                                  {isUnread && (
+                                    <span className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" />
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-gray-600 line-clamp-2 mt-0.5 leading-tight">
+                                  {notif.message}
+                                </p>
+                                <div className="flex items-center justify-between mt-1 text-[10px] text-gray-400">
+                                  <span>{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <span className="text-[#1A56DB] font-bold hover:underline flex items-center gap-0.5">
+                                    Track Order →
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
 
-                  {/* Footer */}
-                  <div className="p-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs">
-                    <Link
-                      href="/account?tab=orders"
-                      onClick={() => setIsNotificationOpen(false)}
-                      className="text-[#1A56DB] font-bold hover:underline flex items-center gap-1"
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>Track Orders in Account</span>
-                    </Link>
-                    {!isApp && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsNotificationOpen(false);
-                          setIsAppModalOpen(true);
-                        }}
-                        className="text-gray-500 hover:text-gray-900 flex items-center gap-1 text-[11px] font-medium cursor-pointer"
+                    {/* Footer */}
+                    <div className="p-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs">
+                      <Link
+                        href="/account?tab=orders"
+                        onClick={() => setIsNotificationOpen(false)}
+                        className="text-[#1A56DB] font-bold hover:underline flex items-center gap-1"
                       >
-                        <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Get Android App</span>
-                      </button>
-                    )}
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                        <span>Track Orders in Account</span>
+                      </Link>
+                      {!isApp && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsNotificationOpen(false);
+                            setIsAppModalOpen(true);
+                          }}
+                          className="text-gray-500 hover:text-gray-900 flex items-center gap-1 text-[11px] font-medium cursor-pointer"
+                        >
+                          <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Get Android App</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
+                )}
+              </div>
+
+              {/* Wishlist Button */}
+              <Link
+                href="/account?tab=wishlist"
+                className="relative p-2 rounded-full text-gray-600 hover:text-[#DC2626] hover:bg-red-50 transition-colors hidden sm:flex"
+                title="Wishlist"
+              >
+                <Heart className="w-5 h-5" />
+                {wishlistIds.length > 0 && (
+                  <span className="absolute top-0.5 right-0.5 bg-[#DC2626] text-white text-[9.5px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    {wishlistIds.length}
+                  </span>
+                )}
+              </Link>
+
+              {/* Shopping Cart Button */}
+              <button
+                type="button"
+                onClick={() => setIsCartOpen(true)}
+                className="relative p-2 rounded-full text-gray-800 hover:text-[#1A56DB] hover:bg-gray-100 transition-colors cursor-pointer"
+                title="Shopping Cart"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-[#FB641B] text-white text-[10px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-xs">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Mobile Drawer Hamburger Button */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 text-gray-600 hover:text-gray-900 rounded-lg"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+
+            </div>
+
+          </div>
+
+          {/* Search Bar Flyout */}
+          {isSearchOpen && (
+            <div className="max-w-2xl mx-auto mt-3 pt-3 border-t border-gray-100">
+              <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Search genuine laptops, SSDs, CP-PLUS CCTV, keyboards..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 250)}
+                  className="w-full h-11 pl-4 pr-12 rounded-xl bg-gray-50 border border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:bg-white focus:border-[#1A56DB] focus:outline-none shadow-xs"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-2 h-8 px-3 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold transition-colors"
+                >
+                  Search
+                </button>
+              </form>
+
+              {/* Instant Search Suggestions */}
+              {isSearchFocused && searchResults.length > 0 && (
+                <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-xl p-2 z-50 divide-y divide-gray-50">
+                  {searchResults.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => {
+                        setIsSearchFocused(false);
+                        setIsSearchOpen(false);
+                        setSearchQuery('');
+                        setSelectedProduct(null);
+                        router.push(`/product/${encodeURIComponent(p.id)}`);
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                      }}
+                      className="p-2.5 hover:bg-blue-50/60 rounded-lg cursor-pointer flex items-center justify-between transition-colors group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
+                        <div className="w-10 h-10 bg-gray-50 rounded-lg border border-gray-100 p-1 flex-shrink-0 flex items-center justify-center">
+                          <img
+                            src={p.image || '/images/product-placeholder.svg'}
+                            alt={p.name}
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-gray-900 group-hover:text-[#1A56DB] transition-colors truncate">{p.name}</div>
+                          <div className="text-[10px] text-gray-500 font-semibold truncate">{p.category} • {p.brand}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs font-extrabold text-[#1A56DB]">
+                          ₹{Number(p.price || 0).toLocaleString('en-IN')}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setIsSearchFocused(false);
+                            setIsSearchOpen(false);
+                            setSelectedProduct(p);
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                          }}
+                          className="hidden sm:inline-flex text-[10px] font-bold text-gray-500 hover:text-blue-700 bg-gray-100 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
+                          title="Quick View"
+                        >
+                          Quick View
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
+          )}
 
-            {/* Wishlist Button */}
-            <Link
-              href="/account?tab=wishlist"
-              className="relative p-2 rounded-full text-gray-600 hover:text-[#DC2626] hover:bg-red-50 transition-colors hidden sm:flex"
-              title="Wishlist"
+          {/* 3. MEGA DROPDOWN MENU (LIVE CMS CATEGORIES) */}
+          {isShopMenuOpen && (
+            <div
+              className="hidden lg:block absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-2xl z-50 transition-all animate-in fade-in slide-in-from-top-1 duration-150"
             >
-              <Heart className="w-5 h-5" />
-              {wishlistIds.length > 0 && (
-                <span className="absolute top-0.5 right-0.5 bg-[#DC2626] text-white text-[9.5px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {wishlistIds.length}
-                </span>
-              )}
-            </Link>
+              <div className="max-w-7xl mx-auto px-6 py-6">
 
-            {/* Shopping Cart Button */}
-            <button
-              type="button"
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-2 rounded-full text-gray-800 hover:text-[#1A56DB] hover:bg-gray-100 transition-colors cursor-pointer"
-              title="Shopping Cart"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-[#FB641B] text-white text-[10px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-xs">
-                  {cartCount}
-                </span>
-              )}
-            </button>
+                {/* 2-STAGE HIERARCHICAL PANEL: Header -> Category -> Subcategory */}
+                <div className="flex bg-gray-50/50 rounded-2xl border border-gray-200/80 overflow-hidden shadow-xs min-h-[420px]">
 
-            {/* Mobile Drawer Hamburger Button */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-gray-600 hover:text-gray-900 rounded-lg"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-
-          </div>
-
-        </div>
-
-        {/* Search Bar Flyout */}
-        {isSearchOpen && (
-          <div className="max-w-2xl mx-auto mt-3 pt-3 border-t border-gray-100">
-            <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-              <input
-                type="text"
-                autoFocus
-                placeholder="Search genuine laptops, SSDs, CP-PLUS CCTV, keyboards..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setTimeout(() => setIsSearchFocused(false), 250)}
-                className="w-full h-11 pl-4 pr-12 rounded-xl bg-gray-50 border border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:bg-white focus:border-[#1A56DB] focus:outline-none shadow-xs"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 h-8 px-3 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold transition-colors"
-              >
-                Search
-              </button>
-            </form>
-
-            {/* Instant Search Suggestions */}
-            {isSearchFocused && searchResults.length > 0 && (
-              <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-xl p-2 z-50 divide-y divide-gray-50">
-                {searchResults.map((p) => (
-                  <div
-                    key={p.id}
-                    onClick={() => {
-                      setIsSearchFocused(false);
-                      setIsSearchOpen(false);
-                      setSearchQuery('');
-                      setSelectedProduct(null);
-                      router.push(`/product/${encodeURIComponent(p.id)}`);
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                    }}
-                    className="p-2.5 hover:bg-blue-50/60 rounded-lg cursor-pointer flex items-center justify-between transition-colors group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0 pr-2">
-                      <div className="w-10 h-10 bg-gray-50 rounded-lg border border-gray-100 p-1 flex-shrink-0 flex items-center justify-center">
-                        <img 
-                          src={p.image || '/images/product-placeholder.svg'} 
-                          alt={p.name} 
-                          className="max-h-full max-w-full object-contain" 
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold text-gray-900 group-hover:text-[#1A56DB] transition-colors truncate">{p.name}</div>
-                        <div className="text-[10px] text-gray-500 font-semibold truncate">{p.category} • {p.brand}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs font-extrabold text-[#1A56DB]">
-                        ₹{Number(p.price || 0).toLocaleString('en-IN')}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          setIsSearchFocused(false);
-                          setIsSearchOpen(false);
-                          setSelectedProduct(p);
-                        }}
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                        }}
-                        className="hidden sm:inline-flex text-[10px] font-bold text-gray-500 hover:text-blue-700 bg-gray-100 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
-                        title="Quick View"
-                      >
-                        Quick View
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 3. MEGA DROPDOWN MENU (LIVE CMS CATEGORIES) */}
-        {isShopMenuOpen && (
-          <div 
-            className="hidden lg:block absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-2xl z-50 transition-all animate-in fade-in slide-in-from-top-1 duration-150"
-          >
-            <div className="max-w-7xl mx-auto px-6 py-6">
-              
-              {/* 2-STAGE HIERARCHICAL PANEL: Header -> Category -> Subcategory */}
-              <div className="flex bg-gray-50/50 rounded-2xl border border-gray-200/80 overflow-hidden shadow-xs min-h-[420px]">
-                
-                {/* 1. LEFT COLUMN: Categories List */}
-                <div className="w-80 bg-white border-r border-gray-200/80 p-3.5 flex flex-col justify-between flex-shrink-0">
-                  <div className="space-y-1">
-                    <div className="px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-gray-400 flex items-center justify-between">
-                      <span>Select Category</span>
-                      <span className="text-[10px] bg-blue-50 text-[#1A56DB] px-1.5 py-0.5 rounded-full font-bold">
-                        {parentCategories.length} Categories
-                      </span>
-                    </div>
-
-                    <div className="space-y-0.5 max-h-[360px] overflow-y-auto pr-1">
-                      {parentCategories.map((cat) => {
-                        const isSelected = (selectedNavCategory?.id || parentCategories[0]?.id) === cat.id;
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => setSelectedNavCategory(cat)}
-                            onMouseEnter={() => setSelectedNavCategory(cat)}
-                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-[#1A56DB] text-white font-bold shadow-xs'
-                                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-semibold'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                                isSelected ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                {cat.image || cat.imageUrl ? (
-                                  <img src={cat.image || cat.imageUrl} alt="" className="w-6 h-6 object-contain" />
-                                ) : (
-                                  <Layers className="w-4 h-4" />
-                                )}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="text-[13px] truncate">{cat.name}</div>
-                                {cat.startingPrice && (
-                                  <div className={`text-[10px] truncate ${isSelected ? 'text-blue-100' : 'text-emerald-700 font-bold'}`}>
-                                    {cat.startingPrice}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <ChevronRight className={`w-4 h-4 flex-shrink-0 transition-transform ${
-                              isSelected ? 'text-white translate-x-0.5' : 'text-gray-400'
-                            }`} />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* View All Categories Link */}
-                  <div className="pt-2 border-t border-gray-100 px-2 mt-2">
-                    <Link
-                      href="/shop"
-                      onClick={() => setActiveNavMenu(null)}
-                      className="text-xs font-bold text-[#1A56DB] hover:text-[#1E40AF] flex items-center justify-between py-1"
-                    >
-                      <span>Explore Full Inventory</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-
-                {/* 2. RIGHT PANEL: Subcategories of the Selected Category */}
-                <div className="flex-1 bg-white p-6 flex flex-col justify-between min-w-0">
-                  {selectedNavCategory ? (
-                    <div>
-                      {/* Category Header */}
-                      <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 p-1 flex items-center justify-center flex-shrink-0">
-                            <img
-                              src={selectedNavCategory.image || selectedNavCategory.imageUrl || '/images/categories/laptop-adapters.png'}
-                              alt={selectedNavCategory.name}
-                              className="max-h-full max-w-full object-contain"
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="font-black text-lg text-gray-900 tracking-tight">
-                                {selectedNavCategory.name}
-                              </h3>
-                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                {selectedNavCategory.subcategories?.length || 0} Subcategories
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                              {selectedNavCategory.shortDesc || `Browse certified ${selectedNavCategory.name} with showroom warranty & GST bill.`}
-                            </p>
-                          </div>
-                        </div>
-
-                        <Link
-                          href={selectedNavCategory.href || `/shop?cat=${encodeURIComponent(selectedNavCategory.name)}`}
-                          onClick={() => setActiveNavMenu(null)}
-                          className="px-3.5 py-1.5 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs flex-shrink-0"
-                        >
-                          <span>View All {selectedNavCategory.name}</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
+                  {/* 1. LEFT COLUMN: Categories List */}
+                  <div className="w-80 bg-white border-r border-gray-200/80 p-3.5 flex flex-col justify-between flex-shrink-0">
+                    <div className="space-y-1">
+                      <div className="px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-gray-400 flex items-center justify-between">
+                        <span>Select Category</span>
+                        <span className="text-[10px] bg-blue-50 text-[#1A56DB] px-1.5 py-0.5 rounded-full font-bold">
+                          {parentCategories.length} Categories
+                        </span>
                       </div>
 
-                      {/* Subcategories Grid */}
-                      {selectedNavCategory.subcategories && selectedNavCategory.subcategories.length > 0 ? (
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 max-h-[290px] overflow-y-auto pr-1">
-                          {selectedNavCategory.subcategories.map((sub) => (
-                            <Link
-                              key={sub.id || sub.slug}
-                              href={`/shop?cat=${encodeURIComponent(selectedNavCategory.name)}&sub=${encodeURIComponent(sub.name)}`}
-                              onClick={() => setActiveNavMenu(null)}
-                              className="group flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-blue-300 hover:bg-blue-50/40 transition-all shadow-2xs"
+                      <div className="space-y-0.5 max-h-[360px] overflow-y-auto pr-1">
+                        {parentCategories.map((cat) => {
+                          const isSelected = (selectedNavCategory?.id || parentCategories[0]?.id) === cat.id;
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => setSelectedNavCategory(cat)}
+                              onMouseEnter={() => setSelectedNavCategory(cat)}
+                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer ${isSelected
+                                  ? 'bg-[#1A56DB] text-white font-bold shadow-xs'
+                                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-semibold'
+                                }`}
                             >
-                              <div className="min-w-0 pr-2">
-                                <span className="font-bold text-xs text-gray-800 group-hover:text-[#1A56DB] block truncate transition-colors">
-                                  {sub.name}
-                                </span>
-                                {sub.startingPrice ? (
-                                  <span className="text-[10.5px] font-bold text-emerald-600 block mt-0.5">
-                                    {sub.startingPrice}
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] text-gray-400 block mt-0.5">
-                                    Showroom Stock
-                                  </span>
-                                )}
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                  {cat.image || cat.imageUrl ? (
+                                    <img src={cat.image || cat.imageUrl} alt="" className="w-6 h-6 object-contain" />
+                                  ) : (
+                                    <Layers className="w-4 h-4" />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-[13px] truncate">{cat.name}</div>
+                                  {cat.startingPrice && (
+                                    <div className={`text-[10px] truncate ${isSelected ? 'text-blue-100' : 'text-emerald-700 font-bold'}`}>
+                                      {cat.startingPrice}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#1A56DB] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
-                            </Link>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 space-y-3">
-                          <Layers className="w-8 h-8 text-gray-400 mx-auto" />
-                          <div>
-                            <p className="text-sm font-bold text-gray-700">Browse {selectedNavCategory.name}</p>
-                            <p className="text-xs text-gray-400 mt-1">Directly view all available products and models in this category.</p>
+                              <ChevronRight className={`w-4 h-4 flex-shrink-0 transition-transform ${isSelected ? 'text-white translate-x-0.5' : 'text-gray-400'
+                                }`} />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* View All Categories Link */}
+                    <div className="pt-2 border-t border-gray-100 px-2 mt-2">
+                      <Link
+                        href="/shop"
+                        onClick={() => setActiveNavMenu(null)}
+                        className="text-xs font-bold text-[#1A56DB] hover:text-[#1E40AF] flex items-center justify-between py-1"
+                      >
+                        <span>Explore Full Inventory</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* 2. RIGHT PANEL: Subcategories of the Selected Category */}
+                  <div className="flex-1 bg-white p-6 flex flex-col justify-between min-w-0">
+                    {selectedNavCategory ? (
+                      <div>
+                        {/* Category Header */}
+                        <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 p-1 flex items-center justify-center flex-shrink-0">
+                              <img
+                                src={selectedNavCategory.image || selectedNavCategory.imageUrl || '/images/categories/laptop-adapters.png'}
+                                alt={selectedNavCategory.name}
+                                className="max-h-full max-w-full object-contain"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-black text-lg text-gray-900 tracking-tight">
+                                  {selectedNavCategory.name}
+                                </h3>
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  {selectedNavCategory.subcategories?.length || 0} Subcategories
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                                {selectedNavCategory.shortDesc || `Browse certified ${selectedNavCategory.name} with showroom warranty & GST bill.`}
+                              </p>
+                            </div>
                           </div>
+
                           <Link
-                            href={`/shop?cat=${encodeURIComponent(selectedNavCategory.name)}`}
+                            href={selectedNavCategory.href || `/shop?cat=${encodeURIComponent(selectedNavCategory.name)}`}
                             onClick={() => setActiveNavMenu(null)}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A56DB] text-white text-xs font-bold hover:bg-[#1E40AF]"
+                            className="px-3.5 py-1.5 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs flex-shrink-0"
                           >
-                            <span>Open {selectedNavCategory.name} Catalog</span>
+                            <span>View All {selectedNavCategory.name}</span>
                             <ArrowRight className="w-3.5 h-3.5" />
                           </Link>
                         </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                      Select a category on the left to view subcategories.
-                    </div>
-                  )}
 
-                  {/* Quality Assurance Footer */}
-                  <div className="pt-3 mt-4 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      <span>100% Genuine Certified Hardware • Opp G P Plaza, Chiniya Road Garhwa • 18% GST Invoice</span>
+                        {/* Subcategories Grid */}
+                        {selectedNavCategory.subcategories && selectedNavCategory.subcategories.length > 0 ? (
+                          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 max-h-[290px] overflow-y-auto pr-1">
+                            {selectedNavCategory.subcategories.map((sub) => (
+                              <Link
+                                key={sub.id || sub.slug}
+                                href={`/shop?cat=${encodeURIComponent(selectedNavCategory.name)}&sub=${encodeURIComponent(sub.name)}`}
+                                onClick={() => setActiveNavMenu(null)}
+                                className="group flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-blue-300 hover:bg-blue-50/40 transition-all shadow-2xs"
+                              >
+                                <div className="min-w-0 pr-2">
+                                  <span className="font-bold text-xs text-gray-800 group-hover:text-[#1A56DB] block truncate transition-colors">
+                                    {sub.name}
+                                  </span>
+                                  {sub.startingPrice ? (
+                                    <span className="text-[10.5px] font-bold text-emerald-600 block mt-0.5">
+                                      {sub.startingPrice}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-gray-400 block mt-0.5">
+                                      Showroom Stock
+                                    </span>
+                                  )}
+                                </div>
+                                <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#1A56DB] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                              </Link>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 space-y-3">
+                            <Layers className="w-8 h-8 text-gray-400 mx-auto" />
+                            <div>
+                              <p className="text-sm font-bold text-gray-700">Browse {selectedNavCategory.name}</p>
+                              <p className="text-xs text-gray-400 mt-1">Directly view all available products and models in this category.</p>
+                            </div>
+                            <Link
+                              href={`/shop?cat=${encodeURIComponent(selectedNavCategory.name)}`}
+                              onClick={() => setActiveNavMenu(null)}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A56DB] text-white text-xs font-bold hover:bg-[#1E40AF]"
+                            >
+                              <span>Open {selectedNavCategory.name} Catalog</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                        Select a category on the left to view subcategories.
+                      </div>
+                    )}
+
+                    {/* Showroom Footer */}
+                    <div className="pt-3 mt-4 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <MapPin className="w-3.5 h-3.5 text-[#1A56DB]" />
+                        <span>Opp G P Plaza, Chiniya Road, Garhwa • 18% GST Invoice</span>
+                      </div>
+                      <Link
+                        href="/shop"
+                        onClick={() => setActiveNavMenu(null)}
+                        className="font-bold text-[#1A56DB] hover:underline"
+                      >
+                        All Products &rarr;
+                      </Link>
                     </div>
-                    <Link
-                      href="/shop"
-                      onClick={() => setActiveNavMenu(null)}
-                      className="font-bold text-[#1A56DB] hover:underline"
-                    >
-                      All Showroom Products &rarr;
-                    </Link>
                   </div>
+
                 </div>
 
               </div>
-
             </div>
-          </div>
-        )}
+          )}
 
+        </div>
       </div>
-    </div>
 
       {/* 4. Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden bg-white border-b border-gray-200 p-5 space-y-4 max-h-[85vh] overflow-y-auto">
-          
+
           <div className="space-y-2">
             <Link
               href="/"

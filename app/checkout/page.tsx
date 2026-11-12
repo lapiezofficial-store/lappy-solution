@@ -1370,7 +1370,7 @@ export default function CheckoutPage() {
               
               <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-2xl text-xs text-blue-900 font-semibold flex items-center gap-2.5">
                 <ShieldCheck className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                <span>100% Genuine Hardware • Official Garhwa GST Bill</span>
+                <span>Official 18% GST Tax Invoice Included</span>
               </div>
 
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -1485,19 +1485,19 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Security Badges */}
+              {/* Order Assurance */}
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-[11px] text-slate-600">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                  <span>100% Genuine Boxed Goods with Warranty</span>
+                  <span>Manufacturer Brand Warranty</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Store className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                  <span>Verified Garhwa Flagship Store Location</span>
+                  <span>Lapiez Showroom, Chiniya Road, Garhwa</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                  <span>Express Dispatch from Chiniya Road Lab</span>
+                  <span>Local Delivery &amp; Counter Pickup</span>
                 </div>
               </div>
 

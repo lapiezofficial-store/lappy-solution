@@ -48,14 +48,9 @@ export const Footer: React.FC = () => {
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#1A56DB] to-[#0A2560] text-white flex items-center justify-center font-bold text-sm shadow-xs">
                 LP
               </div>
-              <div className="text-left">
-                <span className="font-black text-[#111827] text-base tracking-tight block leading-none">
-                  LAP<span className="text-[#1A56DB]">IEZ</span>
-                </span>
-                <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold block leading-none mt-0.5">
-                  Official Android App Edition
-                </span>
-              </div>
+              <span className="font-black text-[#111827] text-base tracking-tight leading-none">
+                LAP<span className="text-[#1A56DB]">IEZ</span>
+              </span>
             </div>
 
             {/* Showroom Direct Connect Card */}
@@ -119,8 +114,7 @@ export const Footer: React.FC = () => {
             </div>
 
             <div className="text-[10.5px] text-slate-400 space-y-0.5 pt-1">
-              <p>© 2026 Lapiez Garhwa • 100% Brand Sealed Genuine Hardware</p>
-              <p className="text-[9.5px] text-slate-400">Official Mobile App Edition v1.0.0</p>
+              <p>© 2026 Lapiez • Garhwa</p>
             </div>
           </div>
         </footer>
@@ -134,19 +128,10 @@ export const Footer: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-                  <span className="text-[12px] font-semibold text-[#059669] uppercase tracking-wider">
-                    Direct Showroom Counter
-                  </span>
-                </div>
+              <div>
                 <h3 className="text-[17px] sm:text-[19px] font-bold text-[#0F172A] tracking-tight">
-                  Need Help Choosing Hardware or Laptop Spares in Garhwa?
+                  Need Help Choosing Hardware or Laptop Spares?
                 </h3>
-                <p className="text-[13px] text-[#64748B]">
-                  Speak directly with our hardware technicians on Chiniya Road for compatibility advice and instant quotes.
-                </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -210,22 +195,17 @@ export const Footer: React.FC = () => {
                     <div className="w-10 h-10 rounded-[10px] bg-[#2563EB] flex items-center justify-center text-white font-bold text-lg shadow-sm transition-transform group-hover:scale-105">
                       LP
                     </div>
-                    <div>
-                      <span className="font-bold text-[#0F172A] text-[19px] tracking-tight block">
-                        {siteSettings?.siteName ? (
-                          siteSettings.siteName.toLowerCase().includes('lapiez') ? (
-                            <>LAP<span className="text-[#2563EB]">IEZ</span></>
-                          ) : (
-                            siteSettings.siteName
-                          )
-                        ) : (
+                    <span className="font-bold text-[#0F172A] text-[19px] tracking-tight">
+                      {siteSettings?.siteName ? (
+                        siteSettings.siteName.toLowerCase().includes('lapiez') ? (
                           <>LAP<span className="text-[#2563EB]">IEZ</span></>
-                        )}
-                      </span>
-                      <span className="text-[10px] text-[#64748B] uppercase tracking-widest font-semibold block">
-                        {siteSettings?.tagline || 'Technology • Security • Solutions'}
-                      </span>
-                    </div>
+                        ) : (
+                          siteSettings.siteName
+                        )
+                      ) : (
+                        <>LAP<span className="text-[#2563EB]">IEZ</span></>
+                      )}
+                    </span>
                   </>
                 )}
               </Link>

@@ -126,3 +126,4 @@ export function triggerDesktopNotification(title: string, options?: Notification
     console.warn('Desktop notification error:', err);
   }
 }
+

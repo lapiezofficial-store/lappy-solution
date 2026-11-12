@@ -188,11 +188,7 @@ export const CartDrawer: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-center gap-3 text-[10px] text-gray-500 pt-0.5">
-                <span className="flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-[#15803D]" /> 100% Genuine
-                </span>
-                <span>•</span>
-                <span>GST Tax Invoice</span>
+                <span>18% GST Tax Invoice</span>
                 <span>•</span>
                 <span>UPI / Cash on Delivery</span>
               </div>

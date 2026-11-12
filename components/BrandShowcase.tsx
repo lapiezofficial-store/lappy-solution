@@ -7,7 +7,7 @@ import { useStore } from '../context/StoreContext';
 import { BrandLogoRenderer } from './BrandLogoRenderer';
 
 const BRAND_CATEGORIES = [
-  { id: 'all', label: 'All Authorized Brands' },
+  { id: 'all', label: 'All Brands' },
   { id: 'laptops', label: 'Laptops & PCs', keys: ['hp', 'dell', 'lenovo', 'acer', 'asus', 'msi', 'gigabyte'] },
   { id: 'cctv', label: 'CCTV & Security', keys: ['cpplus', 'hikvision', 'dahua', 'ezviz', 'imou', 'secureye'] },
   { id: 'storage', label: 'Storage & Processors', keys: ['wd', 'seagate', 'kingston', 'sandisk', 'crucial', 'adata', 'consistent', 'intel', 'amd'] },
@@ -48,25 +48,16 @@ export const BrandShowcase: React.FC = () => {
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6">
         
         {/* Header Ribbon */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 mb-3.5">
-          <div>
-            <div className="flex items-center gap-1.5 text-[10.5px] sm:text-[11.5px] font-bold text-[#1A56DB] uppercase tracking-wider mb-0.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>DIRECT BRAND AUTHORIZATION</span>
-            </div>
-            <h3 className="text-[18px] sm:text-[22px] font-black text-[#111827] tracking-tight leading-tight">
-              Top Brands We Deal In
-            </h3>
-            <p className="text-[11.5px] sm:text-[12.5px] text-[#4B5563] mt-0.5">
-              100% Genuine products with official manufacturer warranty &amp; 18% GST invoice.
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-2 mb-3.5">
+          <h3 className="text-[18px] sm:text-[22px] font-black text-[#111827] tracking-tight leading-tight">
+            Top Brands We Deal In
+          </h3>
 
           <Link
             href="/shop"
-            className="text-[12px] sm:text-[13px] font-bold text-[#1A56DB] hover:text-[#1E40AF] flex items-center gap-1 self-start sm:self-auto group flex-shrink-0"
+            className="text-[12px] sm:text-[13px] font-bold text-[#1A56DB] hover:text-[#1E40AF] flex items-center gap-1 group flex-shrink-0"
           >
-            <span>Explore All Brands</span>
+            <span>Explore All</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
@@ -108,28 +99,23 @@ export const BrandShowcase: React.FC = () => {
                   {b1 && (
                     <Link
                       href={b1.query?.startsWith('/') ? b1.query : `/shop?search=${encodeURIComponent(b1.query || b1.name)}`}
-                      className="bg-white border border-[#E5E7EB] hover:border-[#1A56DB] rounded-xl h-[56px] px-2 flex flex-col items-center justify-center shadow-2xs active:scale-95 transition-all text-center"
+                      className="bg-white border border-[#E5E7EB] hover:border-[#1A56DB] rounded-xl h-[54px] px-2 flex items-center justify-center shadow-2xs active:scale-95 transition-all text-center"
                     >
                       <BrandLogoRenderer brand={b1} className="scale-90" />
-                      <span className="text-[9px] font-bold text-gray-400 mt-0.5">Official Store</span>
                     </Link>
                   )}
                   {b2 && (
                     <Link
                       href={b2.query?.startsWith('/') ? b2.query : `/shop?search=${encodeURIComponent(b2.query || b2.name)}`}
-                      className="bg-white border border-[#E5E7EB] hover:border-[#1A56DB] rounded-xl h-[56px] px-2 flex flex-col items-center justify-center shadow-2xs active:scale-95 transition-all text-center"
+                      className="bg-white border border-[#E5E7EB] hover:border-[#1A56DB] rounded-xl h-[54px] px-2 flex items-center justify-center shadow-2xs active:scale-95 transition-all text-center"
                     >
                       <BrandLogoRenderer brand={b2} className="scale-90" />
-                      <span className="text-[9px] font-bold text-gray-400 mt-0.5">Official Store</span>
                     </Link>
                   )}
                 </div>
               );
             })}
           </div>
-          <span className="text-[10px] text-gray-400 text-center block mt-1 font-medium">
-            ← Swipe to view more authorized partner brands →
-          </span>
         </div>
 
         {/* TABLET & DESKTOP VIEW: Clean Multi-Column Grid */}
@@ -170,17 +156,6 @@ export const BrandShowcase: React.FC = () => {
             </button>
           </div>
         )}
-
-        {/* Indian Reassurance Guarantee */}
-        <div className="mt-3 text-center">
-          <p className="text-[11.5px] sm:text-[12px] text-[#4B5563] font-medium">
-            <span className="text-[#15803D] font-bold">100% Original Products</span>
-            <span className="mx-2 text-gray-300">•</span>
-            <span className="text-[#1A56DB] font-bold">18% GST Bill Included</span>
-            <span className="mx-2 text-gray-300">•</span>
-            <span className="text-[#D97706] font-bold">All-India Service Center Support</span>
-          </p>
-        </div>
 
       </div>
     </section>

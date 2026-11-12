@@ -59,25 +59,16 @@ export const CategoryGrid: React.FC = () => {
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6">
         
         {/* Header section matching Indian e-commerce style */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1.5 sm:gap-2 mb-3 pb-0.5">
-          <div>
-            <div className="flex items-center gap-1.5 text-[10.5px] sm:text-[11.5px] font-bold text-[#1A56DB] uppercase tracking-wider mb-0.5">
-              <Layers className="w-3.5 h-3.5" />
-              <span>GARHWA SHOWROOM INVENTORY</span>
-            </div>
-            <h2 className="text-[18px] sm:text-[24px] font-black text-[#111827] tracking-tight leading-tight">
-              Shop by Category
-            </h2>
-            <p className="text-[11px] sm:text-[13px] text-[#4B5563] mt-0.5">
-              Genuine laptops, CCTV setups, custom gaming rigs, monitors &amp; spares with 18% GST bill.
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-2 mb-3 pb-0.5">
+          <h2 className="text-[18px] sm:text-[24px] font-black text-[#111827] tracking-tight leading-tight">
+            Shop by Category
+          </h2>
 
           <Link
             href="/shop"
-            className="text-[11.5px] sm:text-[13px] font-bold text-[#1A56DB] hover:text-[#1E40AF] flex items-center gap-1 self-start sm:self-auto group flex-shrink-0"
+            className="text-[11.5px] sm:text-[13px] font-bold text-[#1A56DB] hover:text-[#1E40AF] flex items-center gap-1 group flex-shrink-0"
           >
-            <span>View All Categories</span>
+            <span>View All</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
