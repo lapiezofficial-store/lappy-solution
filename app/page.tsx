@@ -13,7 +13,6 @@ import { Hero } from '../components/Hero';
 import { CategoryGrid } from '../components/CategoryGrid';
 import { ProductCard } from '../components/ProductCard';
 import { BrandShowcase } from '../components/BrandShowcase';
-import { FaqSection } from '../components/FaqSection';
 import { useStore, CMSSection, isDemoProduct } from '../context/StoreContext';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { Product } from '../data/products';
@@ -78,28 +77,27 @@ export default function Home() {
     { name: 'CCTV Security', count: products.filter(p => (p.category || '').toLowerCase().includes('cctv') || (p.category || '').toLowerCase().includes('security')).length, href: '/shop?cat=CCTV%20%26%20Security' },
   ], [products]);
 
-  // Sorted list of active homepage sections (Brands placed directly below banners)
+  // Sorted list of active homepage sections (excludes hero, trust_bar, blogs_preview, faq)
   const sortedSections = useMemo(() => {
     let sectionsList: CMSSection[] = [];
+    const excludedKeys = new Set(['hero', 'trust_bar', 'blogs_preview', 'faq']);
     if (homepageSections && homepageSections.length > 0) {
       sectionsList = [...homepageSections]
-        .filter((s) => s.isVisible && s.sectionKey !== 'hero')
+        .filter((s) => s.isVisible && !excludedKeys.has(s.sectionKey))
         .sort((a, b) => a.position - b.position);
     } else {
       sectionsList = [
         { sectionKey: 'banners', title: 'Banner Slider', position: 1, isVisible: true },
         { sectionKey: 'brands', title: 'Brands Showcase', position: 2, isVisible: true },
-        { sectionKey: 'trust_bar', title: 'Trust Bar', position: 3, isVisible: true },
-        { sectionKey: 'categories', title: 'Categories', position: 4, isVisible: true },
-        { sectionKey: 'trending', title: 'Trending Products', position: 5, isVisible: true },
-        { sectionKey: 'bestsellers', title: 'Best Sellers', position: 6, isVisible: true },
-        { sectionKey: 'premium', title: 'Premium Segment', position: 7, isVisible: true },
-        { sectionKey: 'refurbished_laptops', title: 'Refurbished Laptops & Printers', position: 8, isVisible: true },
-        { sectionKey: 'promo', title: 'Promotional Deals', position: 9, isVisible: true },
-        { sectionKey: 'cctv_spotlight', title: 'CCTV & Security Surveillance', position: 10, isVisible: true },
-        { sectionKey: 'blogs_preview', title: 'Latest Tech Guides', position: 11, isVisible: true },
-        { sectionKey: 'catalog_cta', title: 'Catalog CTA', position: 12, isVisible: true },
-        { sectionKey: 'showroom', title: 'Showroom Guarantee', position: 13, isVisible: true },
+        { sectionKey: 'categories', title: 'Categories', position: 3, isVisible: true },
+        { sectionKey: 'trending', title: 'Trending Products', position: 4, isVisible: true },
+        { sectionKey: 'bestsellers', title: 'Best Sellers', position: 5, isVisible: true },
+        { sectionKey: 'premium', title: 'Premium Segment', position: 6, isVisible: true },
+        { sectionKey: 'refurbished_laptops', title: 'Refurbished Laptops & Printers', position: 7, isVisible: true },
+        { sectionKey: 'promo', title: 'Promotional Deals', position: 8, isVisible: true },
+        { sectionKey: 'cctv_spotlight', title: 'CCTV & Security Surveillance', position: 9, isVisible: true },
+        { sectionKey: 'catalog_cta', title: 'Catalog CTA', position: 10, isVisible: true },
+        { sectionKey: 'showroom', title: 'Showroom Guarantee', position: 11, isVisible: true },
       ] as CMSSection[];
     }
 
@@ -141,53 +139,7 @@ export default function Home() {
         return <Hero key="hero" />;
 
       case 'trust_bar':
-        return (
-          <div key="trust_bar" className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="bg-white border border-[#E5E7EB] rounded-xl p-3 sm:p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-6">
-                <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-0">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-[#1A56DB] flex-shrink-0">
-                    <Receipt className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-[12px] sm:text-[14px] font-bold text-[#111827] truncate">18% GST Invoicing</h4>
-                    <p className="text-[10px] sm:text-[11.5px] text-[#4B5563] truncate">Claim ITC for business</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-0">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-green-50 border border-green-100 flex items-center justify-center text-[#15803D] flex-shrink-0">
-                    <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-[12px] sm:text-[14px] font-bold text-[#111827] truncate">Brand Warranty</h4>
-                    <p className="text-[10px] sm:text-[11.5px] text-[#4B5563] truncate">Official brand support</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-0">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-[#D97706] flex-shrink-0">
-                    <Store className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-[12px] sm:text-[14px] font-bold text-[#111827] truncate">Store Pickup</h4>
-                    <p className="text-[10px] sm:text-[11.5px] text-[#4B5563] truncate">Chiniya Road, Garhwa</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-0">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center text-[#7C3AED] flex-shrink-0">
-                    <Truck className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-[12px] sm:text-[14px] font-bold text-[#111827] truncate">Local Delivery</h4>
-                    <p className="text-[10px] sm:text-[11.5px] text-[#4B5563] truncate">Garhwa &amp; Palamu</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return null;
 
       case 'categories':
         return <CategoryGrid key="categories" />;
@@ -371,13 +323,10 @@ export default function Home() {
               
               {/* Banner A: SSD & Memory Upgrade */}
               <div className="rounded-xl bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] border border-[#BFDBFE] p-4 sm:p-6 flex flex-col justify-between shadow-2xs relative overflow-hidden group">
-                <div className="space-y-1.5 z-10 max-w-md">
+                <div className="z-10 max-w-md">
                   <h3 className="text-[16px] sm:text-[22px] font-extrabold text-[#111827] tracking-tight leading-snug">
                     NVMe SSD &amp; RAM Upgrades
                   </h3>
-                  <p className="text-[11.5px] sm:text-[12.5px] text-[#374151] leading-relaxed">
-                    Crucial, Kingston &amp; WD NVMe SSDs in stock with showroom installation.
-                  </p>
                 </div>
                 <div className="pt-3 sm:pt-4 z-10">
                   <Link
@@ -392,13 +341,10 @@ export default function Home() {
 
               {/* Banner B: Business & Student Laptops */}
               <div className="rounded-xl bg-gradient-to-br from-[#F0FDF4] to-[#DCFCE7] border border-[#BBF7D0] p-4 sm:p-6 flex flex-col justify-between shadow-2xs relative overflow-hidden group">
-                <div className="space-y-1.5 z-10 max-w-md">
+                <div className="z-10 max-w-md">
                   <h3 className="text-[16px] sm:text-[22px] font-extrabold text-[#111827] tracking-tight leading-snug">
                     Business &amp; Student Laptops
                   </h3>
-                  <p className="text-[11.5px] sm:text-[12.5px] text-[#374151] leading-relaxed">
-                    HP, Dell &amp; Lenovo laptops available with 18% GST billing and brand warranty.
-                  </p>
                 </div>
                 <div className="pt-3 sm:pt-4 z-10">
                   <Link
@@ -445,73 +391,9 @@ export default function Home() {
         );
       }
 
-      // 7. BLOGS PREVIEW SECTION
-      case 'blogs_preview': {
-        const latestBlogs = blogPosts.slice(0, 3);
-        if (latestBlogs.length === 0) return null;
-
-        return (
-          <div key={sec.id || 'blogs_preview'} className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="flex items-center justify-between gap-3 mb-3.5 sm:mb-4.5">
-              <h2 className="text-[20px] sm:text-[26px] font-extrabold text-[#111827] tracking-tight">
-                {sec.title || 'Latest Tech Guides'}
-              </h2>
-
-              <Link
-                href="/blogs"
-                className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs flex-shrink-0"
-              >
-                <span>Read All</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {latestBlogs.map((b) => (
-                <Link
-                  key={b.id}
-                  href={`/blogs/${b.slug}`}
-                  className="group bg-white rounded-xl border border-gray-200 hover:border-[#1A56DB] hover:shadow-md transition-all overflow-hidden flex flex-col justify-between"
-                >
-                  <div className="w-full h-44 bg-slate-900 relative overflow-hidden">
-                    <img
-                      src={b.coverImage}
-                      alt={b.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <span className="absolute bottom-3 left-3 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-[#1A56DB] text-white">
-                      {b.category}
-                    </span>
-                  </div>
-
-                  <div className="p-4 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#1A56DB] transition-colors line-clamp-2 leading-snug">
-                        {b.title}
-                      </h3>
-                      <p className="text-xs text-gray-500 line-clamp-2 mt-1.5 leading-relaxed">
-                        {b.excerpt}
-                      </p>
-                    </div>
-
-                    <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{b.readTime}</span>
-                      </div>
-                      <span className="text-[#1A56DB] font-bold group-hover:underline">Read Guide &rarr;</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        );
-      }
+      // 7. BLOGS PREVIEW REMOVED FROM HOMEPAGE (Dedicated /blogs page)
+      case 'blogs_preview':
+        return null;
 
       // BRANDS SHOWCASE
       case 'brands':
@@ -570,19 +452,16 @@ export default function Home() {
           </div>
         );
 
-      // SHOWROOM VERIFICATION
+      // SHOWROOM CONTACT
       case 'showroom':
         return (
           <div key="showroom" className="max-w-7xl mx-auto px-3 sm:px-6">
             <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-5">
-                <div className="space-y-1 max-w-xl">
+                <div>
                   <h3 className="text-base sm:text-xl font-extrabold text-[#111827]">
                     Visit Lapiez Showroom, Garhwa
                   </h3>
-                  <p className="text-xs sm:text-[13px] text-[#4B5563] leading-relaxed">
-                    {siteSettings?.address || 'In front of G P Plaza, Chiniya Road, Garhwa, Jharkhand - 822114'}
-                  </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -610,7 +489,7 @@ export default function Home() {
         );
 
       case 'faq':
-        return <FaqSection key={sec.id || 'faq'} />;
+        return null;
 
       // GENERIC PRODUCT SECTION CREATED/EDITED BY ADMIN
       default: {
@@ -645,7 +524,6 @@ export default function Home() {
   return (
     <div className="space-y-6 sm:space-y-9 pb-20 sm:pb-14 bg-[#F1F3F6] overflow-x-hidden">
       {sortedSections.map((sec) => renderSection(sec))}
-      {!sortedSections.some((s) => s.sectionKey === 'faq') && <FaqSection />}
     </div>
   );
 }

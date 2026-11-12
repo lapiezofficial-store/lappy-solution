@@ -2,46 +2,30 @@
 
 import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Layers, ChevronRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useStore, DEFAULT_SHOP_BY_CATEGORIES } from '../context/StoreContext';
 
-function formatCategoryStartingPrice(raw?: string | null): string {
-  if (!raw || !raw.trim()) return 'From Showroom';
-  const val = raw.trim();
+function formatShortCategoryName(rawName?: string | null): string {
+  const name = (rawName || 'Category').trim();
+  const lower = name.toLowerCase();
 
-  if (/^(Starting|From)\s*₹/i.test(val)) {
-    return val;
-  }
+  if (lower.includes('laptop parts') || lower.includes('spare')) return 'Spares';
+  if (lower.includes('laptop')) return 'Laptops';
+  if (lower.includes('peripheral')) return 'Peripherals';
+  if (lower.includes('printer')) return 'Printers';
+  if (lower.includes('cctv') || lower.includes('security') || lower.includes('camera')) return 'CCTV';
+  if (lower.includes('storage') || lower.includes('memory') || lower.includes('ssd') || lower.includes('ram')) return 'Storage';
+  if (lower.includes('antivirus') || lower.includes('software')) return 'Antivirus';
+  if (lower.includes('audio') || lower.includes('electronics') || lower.includes('headset') || lower.includes('speaker')) return 'Audio';
+  if (lower.includes('toner') || lower.includes('ink') || lower.includes('cartridge')) return 'Toners';
+  if (lower.includes('monitor') || lower.includes('display')) return 'Monitors';
+  if (lower.includes('desktop') || lower.includes('pc')) return 'Desktops';
+  if (lower.includes('network') || lower.includes('router') || lower.includes('wifi')) return 'Networking';
+  if (lower.includes('accessor')) return 'Accessories';
 
-  if (/^\d+$/.test(val)) {
-    return `From ₹${Number(val).toLocaleString('en-IN')}`;
-  }
-
-  if (/^₹\s*[\d,]+$/.test(val)) {
-    return `From ${val.replace(/\s+/g, '')}`;
-  }
-
-  if (/^(Starting|From)\s*\d+/i.test(val)) {
-    return val.replace(/^(Starting|From)\s*(\d[\d,]*)/i, 'From ₹$2');
-  }
-
-  if (/^\d/.test(val)) {
-    return `From ₹${val}`;
-  }
-
-  return val;
+  const firstWord = name.split(/[\s&,/]+/).filter(Boolean)[0];
+  return firstWord || name;
 }
-
-// Category visual theme mapping for soft, modern e-commerce cards on tablet/desktop
-const CATEGORY_THEMES: Record<string, { bg: string; border: string; badge: string }> = {
-  'laptops': { bg: 'from-blue-50/70 to-indigo-50/40', border: 'border-blue-100', badge: 'Popular' },
-  'cctv': { bg: 'from-emerald-50/70 to-teal-50/40', border: 'border-emerald-100', badge: 'Top Security' },
-  'computers': { bg: 'from-purple-50/70 to-violet-50/40', border: 'border-purple-100', badge: 'Custom Rig' },
-  'printers': { bg: 'from-amber-50/70 to-orange-50/40', border: 'border-amber-100', badge: 'All Brands' },
-  'accessories': { bg: 'from-slate-50 to-gray-50', border: 'border-slate-200/80', badge: 'Genuine Spares' },
-  'storage': { bg: 'from-cyan-50/70 to-sky-50/40', border: 'border-cyan-100', badge: '10X Speed' },
-  'monitors': { bg: 'from-blue-50/80 to-sky-50/50', border: 'border-blue-100', badge: 'Curved IPS' }
-};
 
 export const CategoryGrid: React.FC = () => {
   const { categories } = useStore();
@@ -73,90 +57,61 @@ export const CategoryGrid: React.FC = () => {
           </Link>
         </div>
 
-        {/* 1. Mobile Category Stories (Horizontal Swipe Rail with badges & non-truncated 2-line names) */}
+        {/* 1. Mobile Category Rail (Clean 1-word labels, no price) */}
         <div className="flex sm:hidden items-start gap-3 overflow-x-auto pb-2 pt-0.5 px-0.5 no-scrollbar snap-x snap-mandatory">
           {displayCategories.map((cat) => {
-            const title = cat.name || cat.title || 'Category';
-            const price = formatCategoryStartingPrice(cat.startingPrice);
+            const label = formatShortCategoryName(cat.name || cat.title);
             const img = cat.image || cat.imageUrl || '/images/categories/laptop-adapters.png';
-            const cleanSearchQuery = (cat.name || '').replace(/^Laptop\s*/i, '').trim();
             const href = cat.href || `/shop?cat=${encodeURIComponent(cat.name)}`;
 
             return (
               <Link
                 key={`bubble-${cat.id || cat.slug}`}
                 href={href}
-                className="flex flex-col items-center flex-shrink-0 group active:scale-95 transition-transform w-[76px] text-center snap-start"
+                className="flex flex-col items-center flex-shrink-0 group active:scale-95 transition-transform w-[72px] text-center snap-start"
               >
-                {/* Rounded Icon with floating Price Badge */}
-                <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200/90 shadow-2xs group-hover:border-blue-500 p-2 flex items-center justify-center transition-all relative">
+                <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200/90 shadow-2xs group-hover:border-[#1A56DB] p-2.5 flex items-center justify-center transition-all">
                   <img
                     src={img}
-                    alt={title}
+                    alt={label}
                     loading="lazy"
                     className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
                   />
-                  {price && price !== 'From Showroom' && (
-                    <span className="absolute -bottom-1.5 px-1.5 py-0.2 rounded-full bg-emerald-600 text-white font-extrabold text-[8px] shadow-2xs whitespace-nowrap">
-                      {price}
-                    </span>
-                  )}
                 </div>
 
-                {/* 2-line clean category title (never truncated with ugly ...) */}
-                <span className="text-[11px] font-bold text-gray-800 group-hover:text-blue-600 leading-tight w-full mt-2.5 line-clamp-2 min-h-[26px]">
-                  {title}
+                <span className="text-[11.5px] font-bold text-gray-800 group-hover:text-[#1A56DB] leading-tight w-full mt-2 truncate">
+                  {label}
                 </span>
               </Link>
             );
           })}
         </div>
 
-        {/* 2. Desktop & Tablet Category Grid (Hidden on mobile to eliminate duplication and screen clutter) */}
-        <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+        {/* 2. Desktop & Tablet Category Grid (Clean white tiles, 1-word label, zero price/explore clutter) */}
+        <div className="hidden sm:grid sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-[repeat(auto-fit,minmax(112px,1fr))] gap-2.5">
           {displayCategories.map((cat) => {
-            const title = cat.name || cat.title || 'Category';
-            const price = formatCategoryStartingPrice(cat.startingPrice);
+            const label = formatShortCategoryName(cat.name || cat.title);
             const img = cat.image || cat.imageUrl || '/images/categories/laptop-adapters.png';
-            const cleanSearchQuery = (cat.name || '').replace(/^Laptop\s*/i, '').trim();
             const href = cat.href || `/shop?cat=${encodeURIComponent(cat.name)}`;
-
-            const slugKey = (cat.slug || cat.name || '').toLowerCase();
-            const themeKey = Object.keys(CATEGORY_THEMES).find(k => slugKey.includes(k)) || 'accessories';
-            const theme = CATEGORY_THEMES[themeKey];
 
             return (
               <Link
                 key={cat.id || cat.slug}
                 href={href}
-                title={cat.title || cat.name}
-                className={`group bg-gradient-to-br ${theme.bg} hover:bg-white border ${theme.border} hover:border-[#1A56DB] rounded-2xl p-3 sm:p-3.5 flex items-center justify-between min-h-[92px] sm:min-h-[98px] transition-all shadow-2xs hover:shadow-sm relative overflow-hidden active:scale-[0.98]`}
+                title={cat.name || label}
+                className="group bg-white hover:bg-blue-50/40 border border-gray-200 hover:border-[#1A56DB] rounded-2xl p-3 flex flex-col items-center justify-center gap-2.5 text-center transition-all shadow-2xs hover:shadow-sm active:scale-[0.98]"
               >
-                {/* Left side text and starting price */}
-                <div className="pr-1.5 z-10 flex-1 min-w-0">
-                  <span className="block text-[13px] sm:text-[14px] font-extrabold text-[#111827] group-hover:text-[#1A56DB] transition-colors leading-snug truncate">
-                    {title}
-                  </span>
-                  {price && (
-                    <span className="inline-block text-[11px] font-bold text-[#15803D] mt-0.5">
-                      {price}
-                    </span>
-                  )}
-                  <div className="flex items-center gap-0.5 text-[10px] text-blue-600 font-bold mt-1 group-hover:translate-x-0.5 transition-transform">
-                    <span>Explore</span>
-                    <ChevronRight className="w-2.5 h-2.5" />
-                  </div>
-                </div>
-
-                {/* Right side product cutout image */}
-                <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 flex items-center justify-center z-10 bg-white/80 rounded-xl p-1 shadow-2xs border border-white/60">
+                <div className="w-14 h-14 flex items-center justify-center">
                   <img
                     src={img}
-                    alt={title}
+                    alt={label}
                     loading="lazy"
                     className="max-h-full max-w-full object-contain transform group-hover:scale-110 transition-transform duration-200"
                   />
                 </div>
+                <span className="text-[13px] font-bold text-[#111827] group-hover:text-[#1A56DB] transition-colors leading-none whitespace-nowrap">
+                  {label}
+                </span>
               </Link>
             );
           })}

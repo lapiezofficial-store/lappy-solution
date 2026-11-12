@@ -117,16 +117,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
 
         {/* Product Title (Clean 2-line clamp with stable min-height) */}
-        <Link href={`/product/${product.id}`} className="block mb-1 px-0.5">
+        <Link href={`/product/${product.id}`} className="block mb-2 px-0.5">
           <h3 className="text-[13px] sm:text-[14px] font-semibold text-[#111827] group-hover:text-[#1A56DB] transition-colors line-clamp-2 leading-snug min-h-[36px]">
             {product.name}
           </h3>
         </Link>
-
-        {/* Technical Specs snippet */}
-        <p className="text-[11px] sm:text-[11.5px] text-[#6B7280] line-clamp-1 mb-2 px-0.5 font-normal">
-          {product.specs}
-        </p>
 
       </div>
 
