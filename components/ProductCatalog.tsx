@@ -858,23 +858,18 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
               </div>
             </div>
 
-            {/* 5. In-Stock Garhwa Showroom Verification Toggle */}
+            {/* 5. In-Stock Verification Toggle */}
             <div className="pt-3 border-t border-gray-100">
-              <label className="flex items-start gap-2.5 p-2 rounded-lg bg-emerald-50/70 border border-emerald-200 text-xs text-emerald-950 cursor-pointer select-none">
+              <label className="flex items-center gap-2.5 p-2.5 rounded-lg bg-emerald-50/70 border border-emerald-200 text-xs text-emerald-950 cursor-pointer select-none">
                 <input 
                   type="checkbox"
                   checked={onlyInStock}
                   onChange={(e) => setOnlyInStock(e.target.checked)}
-                  className="rounded border-emerald-400 text-[#15803D] focus:ring-[#15803D] mt-0.5"
+                  className="rounded border-emerald-400 text-[#15803D] focus:ring-[#15803D]"
                 />
-                <div>
-                  <div className="font-extrabold text-[11.5px] flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Garhwa Showroom In-Stock Only</span>
-                  </div>
-                  <p className="text-[10px] text-emerald-800 leading-tight mt-0.5">
-                    Ready for 30-min store pickup or same-day delivery
-                  </p>
+                <div className="font-extrabold text-[12px] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span>In Stock Only</span>
                 </div>
               </label>
             </div>
@@ -1256,7 +1251,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                 </div>
               </div>
 
-              {/* In-Stock Garhwa Checkbox */}
+              {/* In-Stock Checkbox */}
               <div className="pt-3 border-t border-gray-100">
                 <label className="flex items-center gap-2.5 text-xs text-gray-800 font-semibold cursor-pointer select-none">
                   <input 
@@ -1265,7 +1260,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                     onChange={(e) => setOnlyInStock(e.target.checked)}
                     className="w-4 h-4 rounded border-gray-300 text-[#1A56DB] focus:ring-[#1A56DB]"
                   />
-                  <span>Show In-Stock Garhwa Showroom Only</span>
+                  <span>In Stock Only</span>
                 </label>
               </div>
 

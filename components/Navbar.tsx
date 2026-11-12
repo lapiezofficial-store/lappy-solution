@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore, DEFAULT_SHOP_BY_CATEGORIES, CMSCategory } from '../context/StoreContext';
+import { WhatsAppIcon } from './WhatsAppIcon';
 
 interface NavbarProps {
   onOpenAccount?: () => void;
@@ -758,10 +759,10 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 href={`https://wa.me/${getCleanWhatsAppNumber(siteSettings?.whatsapp)}?text=${encodeURIComponent(`Hello ${siteSettings?.siteName || 'Lapiez'}, I want to inquire about products.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-full text-[#16A34A] hover:bg-emerald-50 transition-colors hidden sm:flex"
+                className="p-1.5 rounded-full hover:bg-emerald-50 transition-colors hidden sm:flex items-center justify-center"
                 title="Chat on WhatsApp"
               >
-                <MessageSquare className="w-5 h-5" />
+                <WhatsAppIcon className="w-6 h-6" />
               </a>
 
               {/* Customer Order Notification Center (Desktop) */}
@@ -1418,8 +1419,8 @@ export const Navbar: React.FC<NavbarProps> = () => {
               href={`https://wa.me/${getCleanWhatsAppNumber(siteSettings?.whatsapp)}?text=${encodeURIComponent(`Hello ${siteSettings?.siteName || 'Lapiez'}, I need quick support.`)}`}
               className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#25D366] text-white font-bold text-xs shadow-xs"
             >
-              <MessageSquare className="w-4 h-4" />
-              <span>WhatsApp Showroom Desk</span>
+              <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
+              <span>WhatsApp Support</span>
             </a>
             <a
               href={`tel:${siteSettings?.phone || STORE_INFO.phone}`}

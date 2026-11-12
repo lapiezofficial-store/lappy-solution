@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  X, Heart, ShoppingCart, MessageSquare, Star, 
+  X, Heart, ShoppingCart, Star, 
   ShieldCheck, Truck, Store, ExternalLink, Plus, Minus
 } from 'lucide-react';
+import { WhatsAppIcon } from './WhatsAppIcon';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore } from '../context/StoreContext';
 
@@ -234,14 +235,14 @@ export const ProductDetailModal: React.FC = () => {
               {isOutOfStock ? (
                 <div className="space-y-2">
                   <div className="h-10 rounded-xl bg-gray-100 border border-gray-200 text-gray-400 font-bold text-xs flex items-center justify-center gap-2 cursor-not-allowed select-none">
-                    <span>Currently Out of Stock at Garhwa Showroom</span>
+                    <span>Out of Stock</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleWhatsApp}
-                      className="flex-1 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      className="flex-1 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
+                      <WhatsAppIcon className="w-4 h-4" />
                       <span>Inquire Availability on WhatsApp</span>
                     </button>
                     <Link
@@ -298,9 +299,9 @@ export const ProductDetailModal: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleWhatsApp}
-                      className="flex-1 h-9 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      className="flex-1 h-9 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                      <WhatsAppIcon className="w-4 h-4" />
                       <span>Inquire on WhatsApp</span>
                     </button>
 

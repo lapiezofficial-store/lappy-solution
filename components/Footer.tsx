@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore } from '../context/StoreContext';
+import { WhatsAppIcon } from './WhatsAppIcon';
 
 export const Footer: React.FC = () => {
   const { setIsAccountOpen, setAccountTab, customPages, siteSettings, setIsAppModalOpen, isApp } = useStore();
@@ -79,9 +80,9 @@ export const Footer: React.FC = () => {
                   href={`https://wa.me/${getCleanWhatsAppNumber(siteSettings?.whatsapp)}?text=${encodeURIComponent(`Hello ${siteSettings?.siteName || 'Lapiez'}, I need quick assistance from the app.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 py-2 px-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
+                  className="flex-1 py-2 px-2.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
                 >
-                  <MessageSquare className="w-3.5 h-3.5" />
+                  <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
                   WhatsApp
                 </a>
                 <a
@@ -147,10 +148,10 @@ export const Footer: React.FC = () => {
                   href={`https://wa.me/${getCleanWhatsAppNumber(siteSettings?.whatsapp)}?text=${encodeURIComponent(`Hello ${siteSettings?.siteName || 'Lapiez'}, I need quick support / inquiry about hardware.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-[40px] px-4 rounded-[8px] bg-[#16A34A] hover:bg-[#15803D] text-white text-[13px] font-semibold inline-flex items-center gap-2 transition-colors shadow-2xs"
+                  className="h-[40px] px-4 rounded-[8px] bg-[#25D366] hover:bg-[#1EBE5B] text-white text-[13px] font-semibold inline-flex items-center gap-2 transition-colors shadow-2xs"
                 >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>WhatsApp Technician</span>
+                  <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
+                  <span>WhatsApp Support</span>
                 </a>
 
                 <a

@@ -2,21 +2,12 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Award, ChevronDown, ChevronUp, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { BrandLogoRenderer } from './BrandLogoRenderer';
 
-const BRAND_CATEGORIES = [
-  { id: 'all', label: 'All Brands' },
-  { id: 'laptops', label: 'Laptops & PCs', keys: ['hp', 'dell', 'lenovo', 'acer', 'asus', 'msi', 'gigabyte'] },
-  { id: 'cctv', label: 'CCTV & Security', keys: ['cpplus', 'hikvision', 'dahua', 'ezviz', 'imou', 'secureye'] },
-  { id: 'storage', label: 'Storage & Processors', keys: ['wd', 'seagate', 'kingston', 'sandisk', 'crucial', 'adata', 'consistent', 'intel', 'amd'] },
-  { id: 'peripherals', label: 'Accessories & Displays', keys: ['frontech', 'lapcare', 'lappypower', 'prodot', 'dlink', 'logitech', 'zebronics', 'epson', 'canon'] },
-];
-
 export const BrandShowcase: React.FC = () => {
   const { brands } = useStore();
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAll, setShowAll] = useState(false);
 
   const activeBrands = useMemo(() => {
@@ -25,23 +16,12 @@ export const BrandShowcase: React.FC = () => {
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   }, [brands]);
 
-  const filteredBrands = useMemo(() => {
-    if (selectedCategory === 'all') return activeBrands;
-    const cat = BRAND_CATEGORIES.find(c => c.id === selectedCategory);
-    if (!cat || !cat.keys) return activeBrands;
-    
-    return activeBrands.filter(b => {
-      const key = (b.presetKey || b.name.toLowerCase().replace(/[^a-z0-9]/g, '')).toLowerCase();
-      return cat.keys.some(k => key.includes(k) || k.includes(key));
-    });
-  }, [activeBrands, selectedCategory]);
-
   if (activeBrands.length === 0) return null;
 
   const INITIAL_LIMIT = 18;
-  const displayedBrands = showAll || filteredBrands.length <= INITIAL_LIMIT
-    ? filteredBrands
-    : filteredBrands.slice(0, INITIAL_LIMIT);
+  const displayedBrands = showAll || activeBrands.length <= INITIAL_LIMIT
+    ? activeBrands
+    : activeBrands.slice(0, INITIAL_LIMIT);
 
   return (
     <section className="w-full pt-1 pb-2">
@@ -57,33 +37,9 @@ export const BrandShowcase: React.FC = () => {
             href="/shop"
             className="text-[12px] sm:text-[13px] font-bold text-[#1A56DB] hover:text-[#1E40AF] flex items-center gap-1 group flex-shrink-0"
           >
-            <span>Explore All</span>
+            <span>View All</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </Link>
-        </div>
-
-        {/* Interactive Category Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 no-scrollbar">
-          {BRAND_CATEGORIES.map((tab) => {
-            const isSelected = selectedCategory === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  setSelectedCategory(tab.id);
-                  setShowAll(false);
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
-                  isSelected
-                    ? 'bg-[#1A56DB] text-white shadow-xs'
-                    : 'bg-white text-gray-700 border border-gray-200/90 hover:bg-gray-50'
-                }`}
-              >
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
         </div>
 
         {/* MOBILE VIEW: Smooth Horizontal Dual-Row Carousel */}
@@ -141,7 +97,7 @@ export const BrandShowcase: React.FC = () => {
         </div>
 
         {/* View All / Collapse Toggle on Desktop (if more than 18 brands) */}
-        {filteredBrands.length > INITIAL_LIMIT && (
+        {activeBrands.length > INITIAL_LIMIT && (
           <div className="hidden sm:block mt-3 text-center">
             <button
               onClick={() => setShowAll(!showAll)}
@@ -150,7 +106,7 @@ export const BrandShowcase: React.FC = () => {
               <span>
                 {showAll
                   ? 'Show Less Brands'
-                  : `View All ${filteredBrands.length} Brands`}
+                  : `View All ${activeBrands.length} Brands`}
               </span>
               {showAll ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>

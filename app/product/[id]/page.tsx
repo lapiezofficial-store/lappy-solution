@@ -12,6 +12,7 @@ import { PRODUCTS, Product } from '../../../data/products';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../../../data/storeData';
 import { useStore } from '../../../context/StoreContext';
 import { ProductCard } from '../../../components/ProductCard';
+import { WhatsAppIcon } from '../../../components/WhatsAppIcon';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -437,12 +438,12 @@ export default function ProductDetailPage() {
                 {isOutOfStock ? (
                   <div className="flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
-                    <span>Out of Stock at Garhwa Showroom</span>
+                    <span>Out of Stock</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-[#15803D] bg-green-50 border border-green-200 px-2.5 py-0.5 rounded">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#15803D]" />
-                    <span>In Stock at Garhwa ({product.stockQuantity ?? 1} units)</span>
+                    <span>In Stock ({product.stockQuantity ?? 1} units)</span>
                   </div>
                 )}
               </div>
@@ -568,14 +569,14 @@ export default function ProductDetailPage() {
 
                 <button
                   onClick={handleWhatsApp}
-                  className={`w-full h-10 px-4 rounded-lg font-bold text-xs sm:text-[13px] flex items-center justify-center gap-2 transition-all shadow-xs active:scale-[0.98] ${
+                  className={`w-full h-10 px-4 rounded-lg font-bold text-xs sm:text-[13px] flex items-center justify-center gap-2 transition-all shadow-xs active:scale-[0.98] cursor-pointer ${
                     isOutOfStock
                       ? 'bg-amber-600 hover:bg-amber-700 text-white'
                       : 'bg-[#25D366] hover:bg-[#1EBE5B] text-white'
                   }`}
                 >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>{isOutOfStock ? 'Inquire Restock Date on WhatsApp' : 'Chat with Garhwa Counter on WhatsApp'}</span>
+                  <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
+                  <span>{isOutOfStock ? 'Inquire Restock on WhatsApp' : 'Chat on WhatsApp'}</span>
                 </button>
               </div>
 
@@ -583,9 +584,9 @@ export default function ProductDetailPage() {
               <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-amber-900 text-xs flex items-start gap-2.5">
                 <Store className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
-                  <strong className="block font-semibold">Chiniya Road Showroom Pickup</strong>
+                  <strong className="block font-semibold">Showroom Pickup Available</strong>
                   <span className="text-[11px] text-amber-800">
-                    Order online and collect within 30 minutes with live hardware test and software setup.
+                    Chiniya Road, Garhwa
                   </span>
                 </div>
               </div>

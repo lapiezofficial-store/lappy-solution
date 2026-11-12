@@ -1261,11 +1261,6 @@ function AccountContent() {
                                       ₹{item.product.mrp?.toLocaleString('en-IN')}
                                     </span>
                                   )}
-                                  {itemSavings > 0 && (
-                                    <span className="text-emerald-700 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.2 rounded">
-                                      Save ₹{itemSavings.toLocaleString('en-IN')}
-                                    </span>
-                                  )}
                                 </div>
 
                                 <span className="text-[10.5px] text-gray-400 font-mono block">
@@ -1744,8 +1739,6 @@ function AccountContent() {
                               <span className="font-bold text-gray-700">{p.brand}</span>
                               <span>•</span>
                               <span>{p.category}</span>
-                              <span>•</span>
-                              <span className="text-[#15803D] font-bold">18% GST Bill</span>
                             </div>
                             <div className="flex items-center gap-2 pt-0.5">
                               <span className="text-sm sm:text-base font-extrabold text-gray-900 font-mono">

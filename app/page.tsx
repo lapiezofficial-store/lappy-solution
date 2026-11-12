@@ -77,27 +77,31 @@ export default function Home() {
     { name: 'CCTV Security', count: products.filter(p => (p.category || '').toLowerCase().includes('cctv') || (p.category || '').toLowerCase().includes('security')).length, href: '/shop?cat=CCTV%20%26%20Security' },
   ], [products]);
 
-  // Sorted list of active homepage sections (excludes hero, trust_bar, blogs_preview, faq)
+  // Sorted list of active homepage sections (Categories first right below banners, then Brands, then product sections)
   const sortedSections = useMemo(() => {
     let sectionsList: CMSSection[] = [];
-    const excludedKeys = new Set(['hero', 'trust_bar', 'blogs_preview', 'faq']);
+    const excludedKeys = new Set(['hero', 'trust_bar', 'promo', 'blogs_preview', 'catalog_cta', 'showroom', 'faq']);
+    const getPriority = (key: string, originalPos: number) => {
+      if (key === 'banners') return -30;
+      if (key === 'categories') return -20;
+      if (key === 'brands') return -10;
+      return originalPos;
+    };
+
     if (homepageSections && homepageSections.length > 0) {
       sectionsList = [...homepageSections]
         .filter((s) => s.isVisible && !excludedKeys.has(s.sectionKey))
-        .sort((a, b) => a.position - b.position);
+        .sort((a, b) => getPriority(a.sectionKey, a.position) - getPriority(b.sectionKey, b.position));
     } else {
       sectionsList = [
         { sectionKey: 'banners', title: 'Banner Slider', position: 1, isVisible: true },
-        { sectionKey: 'brands', title: 'Brands Showcase', position: 2, isVisible: true },
-        { sectionKey: 'categories', title: 'Categories', position: 3, isVisible: true },
+        { sectionKey: 'categories', title: 'Categories', position: 2, isVisible: true },
+        { sectionKey: 'brands', title: 'Brands Showcase', position: 3, isVisible: true },
         { sectionKey: 'trending', title: 'Trending Products', position: 4, isVisible: true },
         { sectionKey: 'bestsellers', title: 'Best Sellers', position: 5, isVisible: true },
         { sectionKey: 'premium', title: 'Premium Segment', position: 6, isVisible: true },
         { sectionKey: 'refurbished_laptops', title: 'Refurbished Laptops & Printers', position: 7, isVisible: true },
-        { sectionKey: 'promo', title: 'Promotional Deals', position: 8, isVisible: true },
-        { sectionKey: 'cctv_spotlight', title: 'CCTV & Security Surveillance', position: 9, isVisible: true },
-        { sectionKey: 'catalog_cta', title: 'Catalog CTA', position: 10, isVisible: true },
-        { sectionKey: 'showroom', title: 'Showroom Guarantee', position: 11, isVisible: true },
+        { sectionKey: 'cctv_spotlight', title: 'CCTV & Security Surveillance', position: 8, isVisible: true },
       ] as CMSSection[];
     }
 
@@ -163,39 +167,6 @@ export default function Home() {
                 <span>View All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
-            </div>
-
-            {/* Interactive Category Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-3 no-scrollbar">
-              {[
-                { id: 'all', label: 'All Trending', count: trendingItems.length },
-                { id: 'monitors', label: 'Frontech Displays', count: trendingMonitors.length },
-                { id: 'printers', label: 'Printers & All-In-Ones', count: trendingPrinters.length },
-                { id: 'memory', label: 'RAM & Memory', count: trendingMemory.length },
-                ...(trendingLaptops.length > 0 ? [{ id: 'laptops', label: 'Laptops', count: trendingLaptops.length }] : []),
-                ...(trendingCctv.length > 0 ? [{ id: 'cctv', label: 'CCTV Security', count: trendingCctv.length }] : []),
-              ].map((tab) => {
-                const isSelected = activeTrendingTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTrendingTab(tab.id as any)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#1A56DB] text-white shadow-xs font-bold'
-                        : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>{tab.label}</span>
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      isSelected ? 'bg-blue-800/60 text-white' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {tab.count}
-                    </span>
-                  </button>
-                );
-              })}
             </div>
 
             {/* Product Grid */}
@@ -315,51 +286,9 @@ export default function Home() {
         );
       }
 
-      // 5. PROMOTIONAL BANNERS
+      // 5. PROMOTIONAL BANNERS (Removed from Homepage)
       case 'promo':
-        return (
-          <div key="promo" className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-5">
-              
-              {/* Banner A: SSD & Memory Upgrade */}
-              <div className="rounded-xl bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] border border-[#BFDBFE] p-4 sm:p-6 flex flex-col justify-between shadow-2xs relative overflow-hidden group">
-                <div className="z-10 max-w-md">
-                  <h3 className="text-[16px] sm:text-[22px] font-extrabold text-[#111827] tracking-tight leading-snug">
-                    NVMe SSD &amp; RAM Upgrades
-                  </h3>
-                </div>
-                <div className="pt-3 sm:pt-4 z-10">
-                  <Link
-                    href="/shop?search=SSD"
-                    className="h-8 sm:h-9 px-3.5 sm:px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold inline-flex items-center gap-1.5 transition-colors shadow-2xs"
-                  >
-                    <span>Explore SSD Upgrades</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Banner B: Business & Student Laptops */}
-              <div className="rounded-xl bg-gradient-to-br from-[#F0FDF4] to-[#DCFCE7] border border-[#BBF7D0] p-4 sm:p-6 flex flex-col justify-between shadow-2xs relative overflow-hidden group">
-                <div className="z-10 max-w-md">
-                  <h3 className="text-[16px] sm:text-[22px] font-extrabold text-[#111827] tracking-tight leading-snug">
-                    Business &amp; Student Laptops
-                  </h3>
-                </div>
-                <div className="pt-3 sm:pt-4 z-10">
-                  <Link
-                    href="/shop?cat=Laptops"
-                    className="h-8 sm:h-9 px-3.5 sm:px-4 rounded-lg bg-[#15803D] hover:bg-[#166534] text-white text-[11.5px] sm:text-[12.5px] font-bold inline-flex items-center gap-1.5 transition-colors shadow-2xs"
-                  >
-                    <span>View Laptop Deals</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        );
+        return null;
 
       // 6. CCTV SPOTLIGHT
       case 'cctv_spotlight': {
@@ -399,94 +328,13 @@ export default function Home() {
       case 'brands':
         return <BrandShowcase key="brands" />;
 
-      // FULL CATALOG CTA BANNER
+      // FULL CATALOG CTA BANNER (Removed from Homepage)
       case 'catalog_cta':
-        return (
-          <div key="catalog_cta" className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="bg-gradient-to-br from-[#0A1633] via-[#0F2960] to-[#1A56DB] text-white rounded-2xl p-5 sm:p-8 shadow-md relative overflow-hidden">
-              <div className="absolute right-0 top-0 bottom-0 w-1/2 opacity-15 pointer-events-none flex items-center justify-end pr-6">
-                <div className="w-72 h-72 rounded-full border-8 border-white/30 blur-2xl" />
-              </div>
+        return null;
 
-              <div className="relative z-10 space-y-4">
-                <div className="max-w-2xl">
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-                    Browse Complete Hardware Catalog
-                  </h2>
-                </div>
-
-                {/* Quick Category Chips */}
-                <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1">
-                  {quickCategories.map((c) => (
-                    <Link
-                      key={c.name}
-                      href={c.href}
-                      className="px-2.5 sm:px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] sm:text-xs font-semibold text-white flex items-center gap-1.5 transition-colors"
-                    >
-                      <span>{c.name}</span>
-                      <span className="text-[10px] text-blue-200 opacity-80">({c.count})</span>
-                    </Link>
-                  ))}
-                </div>
-
-                {/* Primary Action Button */}
-                <div className="pt-2 flex flex-wrap items-center gap-3">
-                  <Link
-                    href="/shop"
-                    className="h-10 sm:h-11 px-5 sm:px-6 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-extrabold text-xs sm:text-[13.5px] inline-flex items-center gap-2 transition-all shadow-md active:scale-95"
-                  >
-                    <span>Open Store Catalog ({products.length || 413} Products)</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-
-                  <Link
-                    href="/shop?cat=Laptops"
-                    className="h-10 sm:h-11 px-4 sm:px-5 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-semibold text-xs sm:text-[13.5px] inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    <span>Browse Laptops</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      // SHOWROOM CONTACT
+      // SHOWROOM CONTACT (Removed from Homepage)
       case 'showroom':
-        return (
-          <div key="showroom" className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-5">
-                <div>
-                  <h3 className="text-base sm:text-xl font-extrabold text-[#111827]">
-                    Visit Lapiez Showroom, Garhwa
-                  </h3>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                  <a
-                    href={`tel:${siteSettings?.phone || STORE_INFO.phone}`}
-                    className="flex-1 sm:flex-none h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>Call Store</span>
-                  </a>
-
-                  <a
-                    href={`https://wa.me/${getCleanWhatsAppNumber(siteSettings?.whatsapp)}?text=${encodeURIComponent('Hello Lapiez Garhwa, I want to inquire about in-stock products.')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 sm:flex-none h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 fill-white" />
-                    <span>WhatsApp Store</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return null;
 
       case 'faq':
         return null;

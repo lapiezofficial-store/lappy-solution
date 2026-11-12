@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Heart, ShoppingCart, MessageSquare, Star, Truck, Check, Plus, Minus } from 'lucide-react';
+import { Heart, ShoppingCart, Star, Plus, Minus } from 'lucide-react';
+import { WhatsAppIcon } from './WhatsAppIcon';
 import { Product } from '../data/products';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore } from '../context/StoreContext';
@@ -127,7 +128,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
       <div className="pt-2 border-t border-[#F3F4F6]">
         
-        {/* Price & Savings Display */}
+        {/* Price & Stock Display */}
         <div className="mb-2 px-0.5">
           <div className="flex items-baseline gap-1.5 flex-wrap">
             <span className="text-[16px] sm:text-[18px] font-black text-[#111827] tracking-tight">
@@ -138,14 +139,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 ₹{Number(product.mrp || 0).toLocaleString('en-IN')}
               </span>
             )}
-            {savings > 0 && !isOutOfStock && (
-              <span className="text-[10px] font-bold text-[#15803D]">
-                Save ₹{Number(savings || 0).toLocaleString('en-IN')}
-              </span>
-            )}
           </div>
 
-          <div className="flex items-center justify-between text-[10px] mt-0.5">
+          <div className="flex items-center text-[10px] mt-0.5">
             {isOutOfStock ? (
               <span className="text-rose-600 font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
@@ -154,10 +150,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             ) : (
               <span className="text-[#15803D] font-medium flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#15803D]" />
-                In Stock · Garhwa
+                In Stock
               </span>
             )}
-            <span className="hidden sm:inline text-gray-400">18% GST Bill</span>
           </div>
         </div>
 
@@ -232,15 +227,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <button
             type="button"
             onClick={handleWhatsAppInquiry}
-            className={`col-span-1 h-8.5 rounded-lg border flex items-center justify-center transition-colors shadow-2xs cursor-pointer ${
-              isOutOfStock
-                ? 'border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700'
-                : 'border-[#A7F3D0] bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#15803D]'
-            }`}
+            className="col-span-1 h-8.5 rounded-lg border border-[#A7F3D0] bg-[#ECFDF5] hover:bg-[#D1FAE5] flex items-center justify-center transition-colors shadow-2xs cursor-pointer"
             title={isOutOfStock ? "Inquire availability on WhatsApp" : "Order / Inquire on WhatsApp"}
             aria-label="Order on WhatsApp"
           >
-            <MessageSquare className={`w-3.5 h-3.5 ${isOutOfStock ? 'text-amber-600' : 'text-[#16A34A]'}`} />
+            <WhatsAppIcon className="w-5 h-5" />
           </button>
         </div>
 
