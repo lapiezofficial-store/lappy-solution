@@ -184,14 +184,25 @@ export const Footer: React.FC = () => {
             {/* Column 1: Brand & Contact Info */}
             <div className="col-span-2 lg:col-span-4 space-y-5">
               <Link href="/" className="inline-flex items-center gap-2.5 group">
-                {!footerLogoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
-                  <div className="bg-white px-2 py-1 rounded-xl inline-flex items-center">
+                {!footerLogoError ? (
+                  <div className="flex items-center gap-2.5">
                     <img 
-                      src={siteSettings.logo} 
+                      src={siteSettings?.logo && siteSettings.logo.trim() !== '' ? siteSettings.logo : '/images/logo.png'} 
                       alt={siteSettings?.siteName || "Lapiez"} 
                       onError={() => setFooterLogoError(true)}
-                      className="h-8 w-auto max-w-[165px] object-contain"
+                      className="h-9 w-9 object-contain rounded-full shadow-2xs group-hover:scale-[1.04] transition-transform"
                     />
+                    <span className="font-black text-slate-900 text-xl tracking-tight">
+                      {siteSettings?.siteName ? (
+                        siteSettings.siteName.toLowerCase().includes('lapiez') ? (
+                          <>LAP<span className="text-[#1A56DB]">IEZ</span></>
+                        ) : (
+                          siteSettings.siteName
+                        )
+                      ) : (
+                        <>LAP<span className="text-[#1A56DB]">IEZ</span></>
+                      )}
+                    </span>
                   </div>
                 ) : (
                   <>

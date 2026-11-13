@@ -103,6 +103,7 @@ const FALLBACK_MEGA_MENU_COLUMNS = [
 
 export const Navbar: React.FC<NavbarProps> = () => {
   const pathname = usePathname();
+  const isShopPage = pathname === '/shop';
   const router = useRouter();
   const {
     cart,
@@ -233,13 +234,18 @@ export const Navbar: React.FC<NavbarProps> = () => {
         <div className="px-3.5 py-2.5 flex items-center justify-between">
           {/* Left: Brand Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            {!logoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
-              <img
-                src={siteSettings.logo}
-                alt={siteSettings?.siteName || "Lapiez"}
-                onError={() => setLogoError(true)}
-                className="h-7 sm:h-8 w-auto max-w-[140px] object-contain"
-              />
+            {!logoError ? (
+              <div className="flex items-center gap-2">
+                <img
+                  src={siteSettings?.logo && siteSettings.logo.trim() !== '' ? siteSettings.logo : '/images/logo.png'}
+                  alt={siteSettings?.siteName || "Lapiez"}
+                  onError={() => setLogoError(true)}
+                  className="h-8 w-8 sm:h-9 sm:w-9 object-contain rounded-full shadow-2xs"
+                />
+                <span className="text-[20px] font-black tracking-tight text-[#111827] leading-none">
+                  LAP<span className="text-[#1A56DB]">IEZ</span>
+                </span>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#1A56DB] to-[#0A2560] text-white flex items-center justify-center shadow-xs">
@@ -410,64 +416,66 @@ export const Navbar: React.FC<NavbarProps> = () => {
           </div>
         </div>
 
-        {/* LINE 3: Full-Width Curved Search Bar (Try search here.. 🔍) */}
-        <div className="px-3 pb-2.5 pt-0.5 relative">
-          <form onSubmit={handleSearchSubmit} className="relative w-full">
-            <input
-              id="mobile-header-search-input"
-              type="text"
-              placeholder="Try search here.."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setTimeout(() => setIsSearchFocused(false), 250)}
-              className="w-full h-10 pl-4 pr-10 rounded-2xl bg-[#F8FAFC] border border-[#CBD5E1] text-[13px] text-gray-900 placeholder-gray-400 focus:bg-white focus:border-[#1A56DB] focus:outline-none shadow-2xs transition-all"
-            />
-            <button
-              type="submit"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1A56DB] p-1 cursor-pointer transition-colors"
-              aria-label="Submit Search"
-            >
-              <Search className="w-4 h-4 stroke-[2]" />
-            </button>
-          </form>
+        {/* LINE 3: Full-Width Curved Search Bar (Try search here.. 🔍) - Hidden on /shop to prevent duplicate search bars */}
+        {!isShopPage && (
+          <div className="px-3 pb-2.5 pt-0.5 relative">
+            <form onSubmit={handleSearchSubmit} className="relative w-full">
+              <input
+                id="mobile-header-search-input"
+                type="text"
+                placeholder="Try search here.."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setTimeout(() => setIsSearchFocused(false), 250)}
+                className="w-full h-10 pl-4 pr-10 rounded-2xl bg-[#F8FAFC] border border-[#CBD5E1] text-[13px] text-gray-900 placeholder-gray-400 focus:bg-white focus:border-[#1A56DB] focus:outline-none shadow-2xs transition-all"
+              />
+              <button
+                type="submit"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1A56DB] p-1 cursor-pointer transition-colors"
+                aria-label="Submit Search"
+              >
+                <Search className="w-4 h-4 stroke-[2]" />
+              </button>
+            </form>
 
-          {/* Instant Search Suggestions Dropdown on Mobile */}
-          {isSearchFocused && searchResults.length > 0 && (
-            <div className="absolute left-3 right-3 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl p-2 z-50 divide-y divide-gray-50 max-h-80 overflow-y-auto">
-              {searchResults.map((p) => (
-                <div
-                  key={p.id}
-                  onClick={() => {
-                    setIsSearchFocused(false);
-                    setSearchQuery('');
-                    setSelectedProduct(null);
-                    router.push(`/product/${encodeURIComponent(p.id)}`);
-                  }}
-                  onMouseDown={(e) => e.preventDefault()}
-                  className="p-2 hover:bg-blue-50/60 rounded-lg cursor-pointer flex items-center justify-between transition-colors group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                    <div className="w-9 h-9 bg-gray-50 rounded-lg border border-gray-100 p-1 flex-shrink-0 flex items-center justify-center">
-                      <img
-                        src={p.image || '/images/product-placeholder.svg'}
-                        alt={p.name}
-                        className="max-h-full max-w-full object-contain"
-                      />
+            {/* Instant Search Suggestions Dropdown on Mobile */}
+            {isSearchFocused && searchResults.length > 0 && (
+              <div className="absolute left-3 right-3 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl p-2 z-50 divide-y divide-gray-50 max-h-80 overflow-y-auto">
+                {searchResults.map((p) => (
+                  <div
+                    key={p.id}
+                    onClick={() => {
+                      setIsSearchFocused(false);
+                      setSearchQuery('');
+                      setSelectedProduct(null);
+                      router.push(`/product/${encodeURIComponent(p.id)}`);
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                    className="p-2 hover:bg-blue-50/60 rounded-lg cursor-pointer flex items-center justify-between transition-colors group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                      <div className="w-9 h-9 bg-gray-50 rounded-lg border border-gray-100 p-1 flex-shrink-0 flex items-center justify-center">
+                        <img
+                          src={p.image || '/images/product-placeholder.svg'}
+                          alt={p.name}
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-gray-900 group-hover:text-[#1A56DB] truncate">{p.name}</div>
+                        <div className="text-[10px] text-gray-500 font-semibold truncate">{p.category} • {p.brand}</div>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-gray-900 group-hover:text-[#1A56DB] truncate">{p.name}</div>
-                      <div className="text-[10px] text-gray-500 font-semibold truncate">{p.category} • {p.brand}</div>
-                    </div>
+                    <span className="text-xs font-extrabold text-[#1A56DB] flex-shrink-0">
+                      ₹{Number(p.price || 0).toLocaleString('en-IN')}
+                    </span>
                   </div>
-                  <span className="text-xs font-extrabold text-[#1A56DB] flex-shrink-0">
-                    ₹{Number(p.price || 0).toLocaleString('en-IN')}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ========================================================= */}
@@ -521,14 +529,25 @@ export const Navbar: React.FC<NavbarProps> = () => {
             {/* LEFT: Dynamic Site Logo */}
             <div className="flex items-center flex-shrink-0">
               <Link href="/" className="flex items-center gap-2 group">
-                {!logoError && siteSettings?.logo && siteSettings.logo.trim() !== '' && siteSettings.logo !== '/images/logo.png' ? (
-                  <div className="flex items-center gap-2 py-0.5">
+                {!logoError ? (
+                  <div className="flex items-center gap-2.5 py-0.5">
                     <img
-                      src={siteSettings.logo}
+                      src={siteSettings?.logo && siteSettings.logo.trim() !== '' ? siteSettings.logo : '/images/logo.png'}
                       alt={siteSettings?.siteName || "Lapiez"}
                       onError={() => setLogoError(true)}
-                      className="h-8 sm:h-9 w-auto max-w-[150px] sm:max-w-[200px] object-contain group-hover:scale-[1.02] transition-transform"
+                      className="h-9 w-9 object-contain rounded-full shadow-2xs group-hover:scale-[1.04] transition-transform"
                     />
+                    <span className="text-[20px] sm:text-[22px] font-black tracking-tight text-[#111827] leading-none">
+                      {siteSettings?.siteName ? (
+                        siteSettings.siteName.toLowerCase().includes('lapiez') ? (
+                          <>LAP<span className="text-[#1A56DB]">IEZ</span></>
+                        ) : (
+                          <span className="text-[#111827]">{siteSettings.siteName}</span>
+                        )
+                      ) : (
+                        <>LAP<span className="text-[#1A56DB]">IEZ</span></>
+                      )}
+                    </span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
