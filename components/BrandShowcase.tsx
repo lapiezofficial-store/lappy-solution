@@ -19,12 +19,12 @@ export const BrandShowcase: React.FC = () => {
 
   if (activeBrands.length === 0) return null;
 
-  const MOBILE_LIMIT = 5;
+  const MOBILE_LIMIT = 7;
   const mobileBrands = showAllMobile || activeBrands.length <= MOBILE_LIMIT
     ? activeBrands
     : activeBrands.slice(0, MOBILE_LIMIT);
 
-  const INITIAL_LIMIT = 18;
+  const INITIAL_LIMIT = 20;
   const displayedBrands = showAll || activeBrands.length <= INITIAL_LIMIT
     ? activeBrands
     : activeBrands.slice(0, INITIAL_LIMIT);
@@ -48,9 +48,9 @@ export const BrandShowcase: React.FC = () => {
           </Link>
         </div>
 
-        {/* MOBILE VIEW: Clean 3-column Grid showing 5 Brands + View More toggle */}
+        {/* MOBILE VIEW: Circular Brand Badges (4-column grid) */}
         <div className="block sm:hidden">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2.5">
             {mobileBrands.map((b) => {
               const href = b.query?.startsWith('/')
                 ? b.query
@@ -61,28 +61,38 @@ export const BrandShowcase: React.FC = () => {
                   key={`mob-${b.id || b.name}`}
                   href={href}
                   title={`View all ${b.name} products`}
-                  className="bg-white border border-[#E5E7EB] hover:border-[#1A56DB] rounded-xl h-[54px] px-2 flex items-center justify-center shadow-2xs active:scale-95 transition-all"
+                  className="flex flex-col items-center justify-center group active:scale-95 transition-transform"
                 >
-                  <BrandLogoRenderer brand={b} className="scale-90" />
+                  <div className="w-14 h-14 rounded-full bg-white border border-slate-200/90 shadow-2xs flex items-center justify-center p-2 overflow-hidden hover:border-[#1A56DB]">
+                    <BrandLogoRenderer brand={b} className="scale-90" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-700 mt-1 text-center truncate max-w-[68px] leading-tight">
+                    {b.name}
+                  </span>
                 </Link>
               );
             })}
 
-            {/* View More card directly in 6th slot when collapsed */}
+            {/* View More circular card in 8th slot when collapsed */}
             {!showAllMobile && activeBrands.length > MOBILE_LIMIT && (
               <button
                 type="button"
                 onClick={() => setShowAllMobile(true)}
-                className="bg-blue-50/80 hover:bg-blue-100 border border-blue-200 text-[#1A56DB] rounded-xl h-[54px] px-2 flex flex-col items-center justify-center shadow-2xs active:scale-95 transition-all cursor-pointer"
+                className="flex flex-col items-center justify-center group active:scale-95 transition-transform cursor-pointer"
               >
-                <span className="text-[11px] font-black leading-tight">View More</span>
-                <span className="text-[9.5px] font-bold text-blue-600">+{activeBrands.length - MOBILE_LIMIT} Brands</span>
+                <div className="w-14 h-14 rounded-full bg-blue-50/90 border border-blue-200 shadow-2xs flex flex-col items-center justify-center p-1 text-[#1A56DB] hover:bg-blue-100">
+                  <span className="text-[10px] font-black leading-tight">More</span>
+                  <span className="text-[8.5px] font-bold text-blue-600">+{activeBrands.length - MOBILE_LIMIT}</span>
+                </div>
+                <span className="text-[10px] font-bold text-blue-700 mt-1 text-center leading-tight">
+                  View All
+                </span>
               </button>
             )}
           </div>
 
           {showAllMobile && activeBrands.length > MOBILE_LIMIT && (
-            <div className="mt-2.5 text-center">
+            <div className="mt-3 text-center">
               <button
                 type="button"
                 onClick={() => setShowAllMobile(false)}
@@ -95,8 +105,8 @@ export const BrandShowcase: React.FC = () => {
           )}
         </div>
 
-        {/* TABLET & DESKTOP VIEW: Clean Multi-Column Grid */}
-        <div className="hidden sm:grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-9 gap-2 sm:gap-2.5">
+        {/* TABLET & DESKTOP VIEW: Circular Brand Badges */}
+        <div className="hidden sm:grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
           {displayedBrands.map((b) => {
             const href = b.query?.startsWith('/')
               ? b.query
@@ -107,17 +117,20 @@ export const BrandShowcase: React.FC = () => {
                 key={b.id || b.name}
                 href={href}
                 title={`View all ${b.name} products`}
-                className="bg-white border border-[#E5E7EB] hover:border-[#1A56DB] hover:shadow-sm rounded-xl h-[58px] sm:h-[62px] px-2.5 flex items-center justify-center transition-all shadow-2xs group"
+                className="flex flex-col items-center justify-center group p-1 transition-all"
               >
-                <div className="flex items-center justify-center transform group-hover:scale-105 transition-transform duration-200 w-full overflow-hidden">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white border border-slate-200/90 group-hover:border-[#1A56DB] group-hover:shadow-md shadow-2xs flex items-center justify-center p-2.5 sm:p-3 transition-all overflow-hidden group-hover:scale-105">
                   <BrandLogoRenderer brand={b} />
                 </div>
+                <span className="text-[11px] sm:text-[12px] font-bold text-slate-700 group-hover:text-[#1A56DB] mt-1.5 text-center truncate max-w-[85px] sm:max-w-[100px] transition-colors">
+                  {b.name}
+                </span>
               </Link>
             );
           })}
         </div>
 
-        {/* View All / Collapse Toggle on Desktop (if more than 18 brands) */}
+        {/* View All / Collapse Toggle on Desktop (if more than 20 brands) */}
         {activeBrands.length > INITIAL_LIMIT && (
           <div className="hidden sm:block mt-3 text-center">
             <button

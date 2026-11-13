@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSessionCookie, createAdminSession, isAdminConfigured, verifyAndCheckAdminPassword, migrateAdminPassword } from '@/lib/adminAuth';
+import {
+  isDeviceApproved,
+  registerPendingDevice,
+  approveDevice,
+  verifyOwnerPin,
+  DEVICE_AUTH_COOKIE,
+} from '@/lib/deviceSecurity';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -81,6 +88,10 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null);
   const password = body && typeof body.password === 'string' ? body.password : '';
+  const deviceId = body && typeof body.deviceId === 'string' ? body.deviceId.trim() : '';
+  const deviceInfo = body && typeof body.deviceInfo === 'string' ? body.deviceInfo.trim() : 'Web Browser';
+  const ownerPin = body && typeof body.ownerPin === 'string' ? body.ownerPin.trim() : '';
+
   const verification = await verifyAndCheckAdminPassword(password);
 
   if (!verification.isValid) {
@@ -105,9 +116,68 @@ export async function POST(request: NextRequest) {
 
   clearRateLimit(clientIp);
 
-  const sessionToken = createAdminSession();
-  const response = NextResponse.json({ success: true, token: sessionToken });
-  response.cookies.set(adminSessionCookie.name, sessionToken, adminSessionCookie.options);
-  return response;
-}
+  // Check 256-bit Device Verification & Approval
+  const deviceCookie = request.cookies.get(DEVICE_AUTH_COOKIE.name)?.value || null;
+  const isApproved = deviceId ? isDeviceApproved(deviceId, deviceCookie) : false;
 
+  // Case 1: Owner Master PIN provided directly on login
+  if (ownerPin) {
+    if (verifyOwnerPin(ownerPin)) {
+      const { token } = approveDevice({
+        deviceId: deviceId || `dev_${Date.now()}`,
+        deviceInfo,
+        ip: clientIp,
+        approvedBy: 'Owner PIN Direct Verification',
+      });
+
+      const sessionToken = createAdminSession();
+      const response = NextResponse.json({ success: true, token: sessionToken, deviceApproved: true });
+      response.cookies.set(adminSessionCookie.name, sessionToken, adminSessionCookie.options);
+      response.cookies.set(DEVICE_AUTH_COOKIE.name, token, DEVICE_AUTH_COOKIE.options);
+      return response;
+    } else {
+      return NextResponse.json({ error: 'Incorrect Owner Master PIN.' }, { status: 403 });
+    }
+  }
+
+  // Case 2: Device is already approved
+  if (isApproved) {
+    const sessionToken = createAdminSession();
+    const response = NextResponse.json({ success: true, token: sessionToken, deviceApproved: true });
+    response.cookies.set(adminSessionCookie.name, sessionToken, adminSessionCookie.options);
+    return response;
+  }
+
+  // Case 3: Device is UNAPPROVED / NEW -> Hold in pending approval state
+  const effectiveDeviceId = deviceId || `dev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const { deviceCode } = registerPendingDevice({
+    deviceId: effectiveDeviceId,
+    deviceInfo,
+    ip: clientIp,
+  });
+
+  // Post alert to admin notifications in background
+  try {
+    const { prisma } = await import('@/lib/prisma');
+    await prisma.notification.create({
+      data: {
+        recipient: 'ADMIN',
+        type: 'SYSTEM',
+        title: 'New Device Login Approval Requested',
+        message: `Device Code ${deviceCode} (${deviceInfo}) at IP ${clientIp} requires owner approval.`,
+        link: '/admin',
+      },
+    }).catch(() => null);
+  } catch (err) {
+    // Ignore notification error
+  }
+
+  return NextResponse.json({
+    requiresDeviceApproval: true,
+    deviceId: effectiveDeviceId,
+    deviceCode,
+    deviceInfo,
+    ip: clientIp,
+    message: 'Naya Device Detect Hua Hai. Main Admin (Malik) ka approval lena aniwarya hai.',
+  });
+}

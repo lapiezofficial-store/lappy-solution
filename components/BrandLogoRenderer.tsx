@@ -19,7 +19,7 @@ export const PRESET_BRANDS_CONFIG: {
   defaultQuery: string;
 }[] = [
   // Top Laptops & PCs
-  { key: 'hp', label: 'HP (New Logo)', defaultQuery: 'HP' },
+  { key: 'hp', label: 'HP', defaultQuery: 'HP' },
   { key: 'dell', label: 'Dell', defaultQuery: 'Dell' },
   { key: 'lenovo', label: 'Lenovo', defaultQuery: 'Lenovo' },
   { key: 'acer', label: 'Acer', defaultQuery: 'Acer' },
@@ -130,31 +130,19 @@ export const BrandLogoRenderer: React.FC<{ brand: BrandData; className?: string 
 
   // 2. Preset Vector / Styled Logos
   switch (normKey) {
-    // HP - NEW OFFICIAL MINIMALIST SLASH LOGO
+    // HP - Official Circular Blue Logo provided by user
     case 'hp':
     case 'hpnew':
-      return (
-        <div className={`flex items-center justify-center gap-1.5 ${className}`}>
-          <svg viewBox="0 0 68 36" className="h-7 w-auto" fill="none">
-            <path d="M14 2L6 34" stroke="#0096D6" strokeWidth="4.2" strokeLinecap="round" />
-            <path d="M26 14L20 34" stroke="#0096D6" strokeWidth="4.2" strokeLinecap="round" />
-            <path d="M39 14L30 44" stroke="#0096D6" strokeWidth="4.2" strokeLinecap="round" />
-            <path d="M51 14L45 34" stroke="#0096D6" strokeWidth="4.2" strokeLinecap="round" />
-          </svg>
-          <span className="text-[#0096D6] font-black text-[14px] tracking-tight font-sans">hp</span>
-        </div>
-      );
-
     case 'hpclassic':
+    case 'hewlettpackard':
       return (
         <div className={`flex items-center justify-center ${className}`}>
-          <svg viewBox="0 0 100 100" className="h-8 w-auto" fill="none">
-            <circle cx="50" cy="50" r="46" fill="#0096D6" />
-            <path
-              d="M34 68L48 24h6L40 68h-6zm12-14l6-18h6l-6 18h-6zm6 14l14-44h6L58 68h-6zm12-14l6-18h6l-6 18h-6z"
-              fill="white"
-            />
-          </svg>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/brands/hp.png"
+            alt="HP"
+            className="h-8 w-8 sm:h-9 sm:w-9 object-contain rounded-full"
+          />
         </div>
       );
 

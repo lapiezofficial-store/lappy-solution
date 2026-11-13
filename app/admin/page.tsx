@@ -30,6 +30,7 @@ import OrderRiderAssignModal from '../../components/admin/OrderRiderAssignModal'
 import WarrantyManager from '../../components/admin/WarrantyManager';
 import MyBillBookCockpit from '../../components/admin/MyBillBookCockpit';
 import StaffManager from '../../components/admin/StaffManager';
+import { SecurityManager } from '../../components/admin/SecurityManager';
 import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 
 export default function AdminPage() {
@@ -139,13 +140,14 @@ export default function AdminPage() {
     | 'leads'
     | 'riders'
     | 'warranty'
-    | 'staff';
+    | 'staff'
+    | 'security';
 
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AdminTab | null;
-      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'mybillbook', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads', 'riders', 'warranty', 'staff'].includes(tabParam)) {
+      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'mybillbook', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads', 'riders', 'warranty', 'staff', 'security'].includes(tabParam)) {
         return tabParam;
       }
     }
@@ -563,6 +565,16 @@ export default function AdminPage() {
     return () => clearInterval(interval);
   }, [lockoutTimer]);
 
+  // 256-Bit Hardware & Device Security States
+  const [requiresDeviceApproval, setRequiresDeviceApproval] = useState<boolean>(false);
+  const [pendingDeviceCode, setPendingDeviceCode] = useState<string>('');
+  const [pendingDeviceId, setPendingDeviceId] = useState<string>('');
+  const [pendingDeviceInfo, setPendingDeviceInfo] = useState<string>('');
+  const [pendingDeviceIp, setPendingDeviceIp] = useState<string>('');
+  const [ownerPinInput, setOwnerPinInput] = useState<string>('');
+  const [isVerifyingPin, setIsVerifyingPin] = useState<boolean>(false);
+  const [pinError, setPinError] = useState<string>('');
+
   const handleUnlockPortal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLockedOut || isAuthenticating) return;
@@ -576,24 +588,51 @@ export default function AdminPage() {
     setIsAuthenticating(true);
     setAuthError('');
 
+    // Client device identification
+    let clientDeviceId = '';
+    if (typeof window !== 'undefined') {
+      clientDeviceId = localStorage.getItem('lapiez_admin_device_id') || '';
+      if (!clientDeviceId) {
+        clientDeviceId = 'dev_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now();
+        localStorage.setItem('lapiez_admin_device_id', clientDeviceId);
+      }
+    }
+    const clientDeviceInfo = typeof navigator !== 'undefined'
+      ? `${navigator.platform || 'Device'} • ${navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop Browser'}`
+      : 'Web Client';
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ password: trimmed }),
+        body: JSON.stringify({
+          password: trimmed,
+          deviceId: clientDeviceId,
+          deviceInfo: clientDeviceInfo,
+        }),
       });
 
+      const data = await response.json().catch(() => null);
+
       if (response.ok) {
-        const data = await response.json().catch(() => null);
+        if (data?.requiresDeviceApproval) {
+          setRequiresDeviceApproval(true);
+          setPendingDeviceCode(data.deviceCode || '');
+          setPendingDeviceId(data.deviceId || clientDeviceId);
+          setPendingDeviceInfo(data.deviceInfo || clientDeviceInfo);
+          setPendingDeviceIp(data.ip || '');
+          return;
+        }
+
         if (data?.token) {
           setAdminToken(data.token);
         }
         setIsAuthenticated(true);
+        setRequiresDeviceApproval(false);
         setAuthPassword('');
         setAuthError('');
         showToast('Welcome Store Owner! Console unlocked.');
-        // Background sync so admin dashboard opens instantly without network delay
         syncWithDatabase({ forceFresh: true }).catch(() => { });
         fetchOrders().catch(() => { });
       } else {
@@ -604,7 +643,6 @@ export default function AdminPage() {
           setLockoutTimer(30);
           setAuthError('Too many failed attempts! Portal locked for 30s.');
         } else {
-          const data = await response.json().catch(() => null);
           setAuthError(data?.error || `Invalid credentials. (${5 - attempts} attempts left)`);
         }
       }
@@ -612,6 +650,48 @@ export default function AdminPage() {
       setAuthError('Connection error. Please check internet connection.');
     } finally {
       setIsAuthenticating(false);
+    }
+  };
+
+  const handleVerifyOwnerPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ownerPinInput.trim() || isVerifyingPin) return;
+
+    setIsVerifyingPin(true);
+    setPinError('');
+
+    try {
+      const res = await fetch('/api/admin/devices/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          deviceId: pendingDeviceId,
+          pin: ownerPinInput.trim(),
+          deviceInfo: pendingDeviceInfo,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (res.ok && data?.success) {
+        if (data.token) {
+          setAdminToken(data.token);
+        }
+        setIsAuthenticated(true);
+        setRequiresDeviceApproval(false);
+        setAuthPassword('');
+        setOwnerPinInput('');
+        showToast('Device verified and approved successfully!');
+        syncWithDatabase({ forceFresh: true }).catch(() => { });
+        fetchOrders().catch(() => { });
+      } else {
+        setPinError(data?.error || 'Invalid Owner Master PIN.');
+      }
+    } catch {
+      setPinError('Connection error during PIN verification.');
+    } finally {
+      setIsVerifyingPin(false);
     }
   };
 
@@ -2939,92 +3019,186 @@ export default function AdminPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#070D1E] flex items-center justify-center p-4 relative overflow-hidden font-sans">
-        <div className="absolute w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none -top-24 -left-24" />
-        <div className="absolute w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-3xl pointer-events-none -bottom-24 -right-24" />
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+        {/* Soft Background Accents */}
+        <div className="absolute w-[600px] h-[600px] bg-blue-100/40 rounded-full blur-3xl pointer-events-none -top-32 -left-32" />
+        <div className="absolute w-[500px] h-[500px] bg-indigo-50/50 rounded-full blur-3xl pointer-events-none -bottom-24 -right-24" />
 
-        <div className="max-w-md w-full bg-[#0F1D3D] border border-blue-900/60 rounded-3xl shadow-2xl p-6 sm:p-8 relative z-10 text-white">
+        <div className="max-w-md w-full bg-white border border-slate-200/90 rounded-3xl shadow-xl p-6 sm:p-8 relative z-10 text-slate-800">
           <div className="text-center space-y-2 mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#1A56DB] to-[#0F2960] border border-blue-400/30 flex items-center justify-center mx-auto shadow-xl">
-              <ShieldCheck className="w-9 h-9 text-[#4ADE80]" />
+            <div className="w-16 h-16 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto shadow-xs p-2">
+              <img src="/images/logo.png" alt="Lapiez" className="w-full h-full object-contain rounded-full" />
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-[11px] font-bold uppercase tracking-wider">
-              <Lock className="w-3 h-3 text-blue-400" />
-              <span>Owner & Manager Clearance</span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#1A56DB] text-[11px] font-bold uppercase tracking-wider">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#1A56DB]" />
+              <span>256-Bit Hardware Protection Active</span>
             </div>
 
-            <h1 className="text-2xl font-black tracking-tight text-white">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">
               {siteSettings?.siteName || 'Lapiez'} Console
             </h1>
 
-            <p className="text-xs text-blue-200/80 leading-relaxed">
-              Showroom Inventory • 18% GST Invoicing • Order Settlement. Enter master passkey to unlock.
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Showroom Inventory • 18% GST Invoicing • Order Settlement
             </p>
           </div>
 
-          <form onSubmit={handleUnlockPortal} className="space-y-4">
-            <div>
-              <label className="block text-[11.5px] font-bold uppercase tracking-wider text-blue-200 mb-1.5">
-                Showroom Master Passkey / PIN
-              </label>
-              <div className="relative">
-                <input
-                  type={showAuthPassword ? 'text' : 'password'}
-                  placeholder="Enter master passkey..."
-                  value={authPassword}
-                  onChange={(e) => setAuthPassword(e.target.value)}
-                  disabled={isLockedOut}
-                  className="w-full bg-[#0A1633] border border-blue-800/80 rounded-xl px-4 py-3 text-sm text-white placeholder-blue-300/40 focus:outline-none focus:border-[#4ADE80] transition-colors pr-10"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowAuthPassword(!showAuthPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300/60 hover:text-white"
-                >
-                  {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+          {requiresDeviceApproval ? (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
+                <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider text-amber-800">
+                  <Lock className="w-4 h-4 text-amber-600" />
+                  <span>New Device Detected — Verification Required</span>
+                </div>
+                <p className="text-[11.5px] text-amber-800/90 leading-relaxed">
+                  Yeh device pehle se verified nahi hai. Suraksha ke liye Store Owner (Malik) ka verification aniwarya hai.
+                </p>
               </div>
 
-              {authError && (
-                <p className="text-xs text-rose-400 font-semibold mt-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>{authError}</span>
-                </p>
-              )}
+              {/* 6-Digit Device Code */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center space-y-1">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
+                  Your Device Verification Code
+                </span>
+                <div className="text-3xl font-mono font-black text-[#1A56DB] tracking-widest select-all">
+                  {pendingDeviceCode}
+                </div>
+                <div className="text-[10.5px] text-slate-400 font-mono">
+                  {pendingDeviceInfo} {pendingDeviceIp && `• IP: ${pendingDeviceIp}`}
+                </div>
+              </div>
 
-              {isLockedOut && (
-                <p className="text-xs text-amber-300 font-semibold mt-1">
-                  Retry in {lockoutTimer}s
-                </p>
-              )}
+              {/* Owner Master PIN Verification Form */}
+              <form onSubmit={handleVerifyOwnerPin} className="space-y-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Owner Master PIN (Malik Direct Approval)
+                  </label>
+                  <input
+                    type="password"
+                    maxLength={6}
+                    placeholder="Enter 6-digit Owner Master PIN..."
+                    value={ownerPinInput}
+                    onChange={(e) => setOwnerPinInput(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-blue-100 transition-all font-mono tracking-wider text-center"
+                    autoFocus
+                  />
+                  {pinError && (
+                    <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{pinError}</span>
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isVerifyingPin || !ownerPinInput.trim()}
+                  className="w-full h-11 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isVerifyingPin ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>Verifying Master PIN...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Approve & Unlock This Device</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* WhatsApp Request & Back Buttons */}
+              <div className="pt-2 border-t border-slate-100 space-y-2">
+                <a
+                  href={`https://wa.me/919608828288?text=${encodeURIComponent(
+                    `Namaste Malik ji! Lapiez Admin Console me ek naya device login request aaya hai.\nDevice Code: ${pendingDeviceCode}\nDevice: ${pendingDeviceInfo}\nIP: ${pendingDeviceIp}\nKripya is device ko approve karein.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all"
+                >
+                  <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
+                  <span>Send Code to Malik via WhatsApp</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setRequiresDeviceApproval(false)}
+                  className="w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-800 py-1 cursor-pointer"
+                >
+                  ← Back to Password Login
+                </button>
+              </div>
             </div>
+          ) : (
+            /* Regular Master Passkey Form */
+            <form onSubmit={handleUnlockPortal} className="space-y-4">
+              <div>
+                <label className="block text-[11.5px] font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Showroom Master Passkey
+                </label>
+                <div className="relative">
+                  <input
+                    type={showAuthPassword ? 'text' : 'password'}
+                    placeholder="Enter master passkey..."
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    disabled={isLockedOut}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-blue-100 transition-all pr-10"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthPassword(!showAuthPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  >
+                    {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
 
-            <button
-              type="submit"
-              disabled={isLockedOut || !authPassword.trim() || isAuthenticating}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-[#1A56DB] to-[#2563EB] hover:from-[#1E40AF] hover:to-[#1D4ED8] text-white font-extrabold text-sm shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {isAuthenticating ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                  <span>Unlocking Admin Console...</span>
-                </>
-              ) : (
-                <>
-                  <Key className="w-4 h-4" />
-                  <span>Unlock Admin Console</span>
-                </>
-              )}
-            </button>
-          </form>
+                {authError && (
+                  <p className="text-xs text-rose-600 font-semibold mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>{authError}</span>
+                  </p>
+                )}
 
-          <div className="mt-6 pt-4 border-t border-white/10 text-center space-y-1">
-            <div className="text-[11px] text-blue-300/60 font-mono">
-              Garhwa Showroom Server • IP & Hardware Verified
+                {isLockedOut && (
+                  <p className="text-xs text-amber-700 font-semibold mt-1">
+                    Retry in {lockoutTimer}s
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLockedOut || !authPassword.trim() || isAuthenticating}
+                className="w-full h-11 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-sm shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isAuthenticating ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                    <span>Verifying Security Clearance...</span>
+                  </>
+                ) : (
+                  <>
+                    <Key className="w-4 h-4" />
+                    <span>Unlock Admin Console</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          <div className="mt-6 pt-4 border-t border-slate-100 text-center space-y-1">
+            <div className="text-[11px] text-slate-400 font-mono">
+              Garhwa Showroom Server • 256-Bit Cryptographic Protection
             </div>
-            <Link href="/" className="text-xs text-blue-400 hover:text-blue-300 font-semibold inline-block pt-1">
+            <Link href="/" className="text-xs text-[#1A56DB] hover:underline font-semibold inline-block pt-1">
               ← Return to Public Storefront
             </Link>
           </div>
@@ -3034,35 +3208,33 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="bg-[#f0f0f1] min-h-screen text-[#3c434a] font-sans antialiased">
-      {/* 1. TOP WORDPRESS ADMIN BAR (Classic #1d2327) */}
-      <header className="h-9 bg-[#1d2327] text-[#c3c4c7] fixed top-0 left-0 right-0 z-50 px-2 sm:px-3 flex items-center justify-between text-xs select-none border-b border-[#3c434a]">
-        <div className="flex items-center gap-1.5 sm:gap-3">
+    <div className="bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
+      {/* 1. TOP ADMIN BAR (Clean White / Slate Theme) */}
+      <header className="h-10 bg-white text-slate-700 fixed top-0 left-0 right-0 z-50 px-2.5 sm:px-4 flex items-center justify-between text-xs select-none border-b border-slate-200/90 shadow-2xs">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Mobile Navigation Drawer Toggle */}
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-1 rounded text-gray-300 hover:text-white hover:bg-[#2c3338] transition-colors cursor-pointer"
+            className="md:hidden p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
             title="Toggle Navigation Menu"
             aria-label="Toggle Navigation Menu"
           >
-            {isMobileMenuOpen ? <X className="w-4 h-4 text-rose-400" /> : <Menu className="w-4 h-4" />}
+            {isMobileMenuOpen ? <X className="w-4 h-4 text-rose-600" /> : <Menu className="w-4 h-4" />}
           </button>
 
-          {/* WordPress WP Logo */}
+          {/* Official Lapiez Circular Logo */}
           <div
             onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}
-            className="w-5 h-5 rounded-full bg-[#2271b1] text-white flex items-center justify-center font-serif font-black text-xs cursor-pointer hover:bg-[#135e96] transition-colors"
-            title="WordPress Dashboard"
+            className="flex items-center gap-2 cursor-pointer group"
+            title="Dashboard"
           >
-            W
-          </div>
-
-          {/* Site Link & Home */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-[#2c3338] transition-colors">
-            <Store className="w-3.5 h-3.5 text-gray-300" />
-            <span className="font-semibold text-white truncate max-w-[140px] sm:max-w-none">
-              {siteSettings?.siteName || 'Lapiez IT Store'}
+            <div className="w-6 h-6 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center p-0.5 shadow-2xs">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/logo.png" alt="Lapiez" className="w-full h-full object-contain rounded-full" />
+            </div>
+            <span className="font-extrabold text-slate-900 text-xs tracking-tight hidden sm:inline">
+              {siteSettings?.siteName || 'Lapiez'} Admin
             </span>
           </div>
 
@@ -3070,107 +3242,97 @@ export default function AdminPage() {
           <Link
             href="/"
             target="_blank"
-            className="hidden sm:inline-flex items-center gap-1 text-[11px] text-[#72aee6] hover:text-white px-2 py-0.5 rounded hover:bg-[#2c3338] transition-colors"
+            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1A56DB] hover:text-[#1E40AF] px-2 py-1 rounded-md hover:bg-blue-50 transition-colors"
           >
-            <span>Visit Site</span>
-            <ExternalLink className="w-2.5 h-2.5" />
+            <span>Storefront</span>
+            <ExternalLink className="w-3 h-3" />
           </Link>
 
           {/* Leads / Inquiries */}
           <button
             onClick={() => setActiveTab('leads')}
-            className="hidden md:flex items-center gap-1 text-[11px] text-[#c3c4c7] hover:text-white px-2 py-0.5 rounded hover:bg-[#2c3338] transition-colors cursor-pointer"
+            className="hidden md:flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 px-2 py-1 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
             title="Customer Inquiries"
           >
-            <MessageSquare className="w-3 h-3 text-[#72aee6]" />
-            <span>{leads.length}</span>
+            <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+            <span>{leads.length} Leads</span>
           </button>
 
           {/* + New Dropdown Menu */}
           <div className="relative">
             <button
               onClick={() => setIsNewMenuOpen(!isNewMenuOpen)}
-              className="flex items-center gap-1 text-xs font-bold text-white bg-[#2271b1] hover:bg-[#135e96] px-2.5 py-0.5 rounded transition-colors cursor-pointer shadow-2xs"
+              className="flex items-center gap-1 text-xs font-bold text-white bg-[#1A56DB] hover:bg-[#1E40AF] px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>New</span>
               <ChevronDown className="w-3 h-3 opacity-70" />
             </button>
             {isNewMenuOpen && (
-              <div className="absolute left-0 mt-1 w-48 bg-[#2c3338] border border-[#3c434a] rounded shadow-xl py-1 z-50 text-xs text-[#c3c4c7]">
+              <div className="absolute left-0 mt-1.5 w-48 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-50 text-xs text-slate-700 divide-y divide-slate-100">
                 <button
                   onClick={handleOpenAddProduct}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#2271b1] hover:text-white flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-[#1A56DB] flex items-center gap-2 cursor-pointer transition-colors"
                 >
-                  <Package className="w-3.5 h-3.5 text-blue-300" />
+                  <Package className="w-3.5 h-3.5 text-blue-600" />
                   <span>Product</span>
                 </button>
                 <button
                   onClick={() => { handleOpenAddCategory(); setIsNewMenuOpen(false); }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#2271b1] hover:text-white flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-[#1A56DB] flex items-center gap-2 cursor-pointer transition-colors"
                 >
-                  <Layers className="w-3.5 h-3.5 text-indigo-300" />
+                  <Layers className="w-3.5 h-3.5 text-indigo-600" />
                   <span>Category</span>
                 </button>
                 <button
                   onClick={() => { setIsBrandModalOpen(true); setIsNewMenuOpen(false); }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#2271b1] hover:text-white flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-[#1A56DB] flex items-center gap-2 cursor-pointer transition-colors"
                 >
-                  <Award className="w-3.5 h-3.5 text-amber-300" />
+                  <Award className="w-3.5 h-3.5 text-amber-600" />
                   <span>Brand</span>
                 </button>
                 <button
                   onClick={() => { setActiveTab('scraper'); setIsNewMenuOpen(false); }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#2271b1] hover:text-white flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-[#1A56DB] flex items-center gap-2 cursor-pointer transition-colors"
                 >
-                  <Globe className="w-3.5 h-3.5 text-purple-300" />
+                  <Globe className="w-3.5 h-3.5 text-purple-600" />
                   <span>Live Scraper</span>
                 </button>
                 <button
                   onClick={() => { setIsAddBannerOpen(true); setIsNewMenuOpen(false); }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#2271b1] hover:text-white flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-[#1A56DB] flex items-center gap-2 cursor-pointer transition-colors"
                 >
-                  <ImageIcon className="w-3.5 h-3.5 text-emerald-300" />
+                  <ImageIcon className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Hero Banner</span>
                 </button>
                 <button
-                  onClick={() => { setActiveTab('pages'); setIsNewMenuOpen(false); }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#2271b1] hover:text-white flex items-center gap-2 cursor-pointer"
-                >
-                  <FileText className="w-3.5 h-3.5 text-cyan-300" />
-                  <span>Custom Page</span>
-                </button>
-                <button
-                  onClick={() => { setActiveTab('blogs'); setIsNewMenuOpen(false); }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#2271b1] hover:text-white flex items-center gap-2 cursor-pointer"
-                >
-                  <BookOpen className="w-3.5 h-3.5 text-rose-300" />
-                  <span>Blog Post</span>
-                </button>
-                <button
                   onClick={() => { handleOpenAddBank(); setIsNewMenuOpen(false); }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#2271b1] hover:text-white flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-[#1A56DB] flex items-center gap-2 cursor-pointer transition-colors"
                 >
-                  <Building2 className="w-3.5 h-3.5 text-emerald-300" />
+                  <Building2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Bank Account</span>
                 </button>
               </div>
             )}
           </div>
-
-          {/* Scraper Quick Button */}
-          <button
-            onClick={() => setActiveTab('scraper')}
-            className="hidden lg:flex items-center gap-1 text-[11px] font-bold text-purple-200 bg-purple-900/60 hover:bg-purple-800/80 px-2.5 py-0.5 rounded border border-purple-500/40 transition-colors cursor-pointer"
-            title="Crawl & Import Lapcare, ProDot, FINGERS"
-          >
-            <Globe className="w-3 h-3 text-purple-300" />
-            <span>Web Scraper</span>
-          </button>
         </div>
 
         {/* Top Bar Right Side */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* 256-Bit Security Shortcut */}
+          <button
+            onClick={() => setActiveTab('security')}
+            className={`hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+              activeTab === 'security'
+                ? 'bg-blue-50 text-[#1A56DB] border-blue-300 shadow-2xs'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+            }`}
+            title="256-Bit Hardware & Device Security"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>256-Bit Protection</span>
+          </button>
+
           {/* Audio Chime Mute/Unmute Toggle */}
           <button
             onClick={() => {
@@ -3179,60 +3341,60 @@ export default function AdminPage() {
               if (typeof window !== 'undefined') {
                 localStorage.setItem('ls_admin_sound_alert', String(next));
               }
-              showToast(next ? 'Order alert chime ENABLED 🔔' : 'Order alert chime MUTED 🔇');
+              showToast(next ? 'Order alert chime enabled' : 'Order alert chime muted');
             }}
-            className="p-1 rounded text-[#c3c4c7] hover:text-white hover:bg-[#2c3338] transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
             title={isSoundAlertEnabled ? 'Order sound alert ON (Click to Mute)' : 'Order sound alert MUTED (Click to Enable)'}
           >
-            {isSoundAlertEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> : <VolumeX className="w-3.5 h-3.5 text-rose-400" />}
+            {isSoundAlertEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-600" /> : <VolumeX className="w-3.5 h-3.5 text-rose-500" />}
           </button>
 
           {/* Admin Order Notifications Bell */}
           <div className="relative">
             <button
               onClick={() => setIsNotifDropdownOpen(!isNotifDropdownOpen)}
-              className="relative p-1 rounded text-[#c3c4c7] hover:text-white hover:bg-[#2c3338] transition-colors cursor-pointer"
+              className="relative p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
               title="Live Order Alerts & Notifications"
             >
               <Bell className="w-3.5 h-3.5" />
               {unreadAdminNotifCount > 0 ? (
-                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-600 text-white text-[8px] font-black items-center justify-center">
                     {unreadAdminNotifCount > 9 ? '9+' : unreadAdminNotifCount}
                   </span>
                 </span>
               ) : (
-                <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
               )}
             </button>
 
             {/* Admin Notification Dropdown */}
             {isNotifDropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-[#1d2327] border border-[#3c434a] rounded-xl shadow-2xl overflow-hidden z-50 text-[#c3c4c7] animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="bg-[#2c3338] px-3.5 py-2.5 flex items-center justify-between border-b border-[#3c434a]">
+              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50 text-slate-700 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="bg-slate-50 px-3.5 py-2.5 flex items-center justify-between border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-[#72aee6]" />
-                    <span className="font-bold text-xs text-white uppercase tracking-wider">
+                    <Bell className="w-4 h-4 text-[#1A56DB]" />
+                    <span className="font-bold text-xs text-slate-900 uppercase tracking-wider">
                       Live Order Alerts {unreadAdminNotifCount > 0 && `(${unreadAdminNotifCount})`}
                     </span>
                   </div>
                   {adminNotifications.length > 0 && (
                     <button
                       onClick={() => markAllAdminNotificationsAsRead()}
-                      className="text-[10.5px] text-[#72aee6] hover:text-white underline cursor-pointer"
+                      className="text-[10.5px] text-[#1A56DB] hover:underline cursor-pointer"
                     >
                       Mark all read
                     </button>
                   )}
                 </div>
 
-                <div className="max-h-72 overflow-y-auto divide-y divide-[#2c3338]">
+                <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
                   {adminNotifications.length === 0 ? (
-                    <div className="p-6 text-center text-[#8c8f94]">
+                    <div className="p-6 text-center text-slate-400">
                       <Bell className="w-6 h-6 mx-auto mb-1 opacity-50" />
-                      <p className="text-xs">No order notifications yet</p>
-                      <p className="text-[10px] mt-0.5">Customer orders will alert here instantly with audio sound chime.</p>
+                      <p className="text-xs font-semibold text-slate-600">No order notifications yet</p>
+                      <p className="text-[10px] mt-0.5 text-slate-400">Customer orders will alert here instantly with audio sound chime.</p>
                     </div>
                   ) : (
                     adminNotifications.map((notif: any) => {
@@ -3245,23 +3407,23 @@ export default function AdminPage() {
                             setActiveTab('orders');
                             setIsNotifDropdownOpen(false);
                           }}
-                          className={`p-3 hover:bg-[#2c3338] transition-colors cursor-pointer flex items-start gap-2.5 ${isUnread ? 'bg-[#2271b1]/15 text-white' : ''
+                          className={`p-3 hover:bg-slate-50 transition-colors cursor-pointer flex items-start gap-2.5 ${isUnread ? 'bg-blue-50/60' : ''
                             }`}
                         >
-                          <div className="w-7 h-7 rounded-lg bg-[#2271b1]/30 text-[#72aee6] flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-7 h-7 rounded-lg bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
                             <ShoppingBag className="w-3.5 h-3.5" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1">
-                              <span className="text-xs font-bold truncate text-white">{notif.title}</span>
+                              <span className="text-xs font-bold truncate text-slate-900">{notif.title}</span>
                               {isUnread && <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0" />}
                             </div>
-                            <p className="text-[11px] text-[#c3c4c7] mt-0.5 line-clamp-2 leading-tight">
+                            <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-2 leading-tight">
                               {notif.message}
                             </p>
-                            <div className="flex items-center justify-between mt-1 text-[9.5px] text-[#8c8f94]">
+                            <div className="flex items-center justify-between mt-1 text-[9.5px] text-slate-400">
                               <span>{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                              <span className="text-[#72aee6] font-bold">View Order →</span>
+                              <span className="text-[#1A56DB] font-bold">View Order →</span>
                             </div>
                           </div>
                         </div>
@@ -3270,13 +3432,13 @@ export default function AdminPage() {
                   )}
                 </div>
 
-                <div className="p-2 bg-[#2c3338] border-t border-[#3c434a] text-center">
+                <div className="p-2 bg-slate-50 border-t border-slate-100 text-center">
                   <button
                     onClick={() => {
                       setActiveTab('orders');
                       setIsNotifDropdownOpen(false);
                     }}
-                    className="text-xs font-bold text-[#72aee6] hover:text-white"
+                    className="text-xs font-bold text-[#1A56DB] hover:underline"
                   >
                     Open Orders & UTR Tab →
                   </button>
@@ -3284,9 +3446,10 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+
           {/* DB Status */}
-          <div className="hidden md:flex items-center gap-1.5 text-[11px] text-[#72aee6] bg-[#2c3338] px-2 py-0.5 rounded border border-[#3c434a]">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="hidden md:flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>DB Live</span>
           </div>
 
@@ -3295,17 +3458,17 @@ export default function AdminPage() {
               await syncWithDatabase();
               showToast('Database synchronized.');
             }}
-            className="hidden sm:flex items-center gap-1 text-[11px] text-[#c3c4c7] hover:text-white px-2 py-0.5 rounded hover:bg-[#2c3338] transition-colors cursor-pointer"
-            title="Sync SQLite Database"
+            className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 px-2 py-1 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Sync Database"
           >
-            <RefreshCw className="w-3 h-3 text-[#72aee6]" />
+            <RefreshCw className="w-3 h-3 text-[#1A56DB]" />
             <span>Sync</span>
           </button>
 
           {/* Admin User */}
-          <div className="flex items-center gap-1.5 text-xs text-[#c3c4c7]">
-            <span className="hidden lg:inline">Howdy, <strong>Admin</strong></span>
-            <div className="w-6 h-6 rounded-full bg-[#2c3338] border border-[#3c434a] flex items-center justify-center text-white">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+            <span className="hidden lg:inline">Admin: <strong>Console</strong></span>
+            <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700">
               <User className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -3318,7 +3481,7 @@ export default function AdminPage() {
               setIsAuthenticated(false);
               showToast('Admin Portal locked securely.');
             }}
-            className="px-2 py-0.5 rounded bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 border border-rose-700/40 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
             title="Lock Portal Immediately"
           >
             <Lock className="w-3 h-3" />
@@ -3337,7 +3500,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <span className="text-[10px] uppercase font-black tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
-                  🔔 NAYA ORDER MILA!
+                  NEW ORDER RECEIVED
                 </span>
                 <h4 className="text-sm font-black mt-1">
                   Order #{newOrderAlertBanner.orderId}
@@ -3391,24 +3554,25 @@ export default function AdminPage() {
             />
 
             {/* Slide-over Drawer Panel */}
-            <div className="relative w-72 max-w-[85vw] bg-[#1d2327] text-[#c3c4c7] h-full shadow-2xl flex flex-col justify-between overflow-y-auto z-10 border-r border-[#3c434a]">
+            <div className="relative w-72 max-w-[85vw] bg-white text-slate-700 h-full shadow-2xl flex flex-col justify-between overflow-y-auto z-10 border-r border-slate-200">
               <div className="p-4 space-y-4">
                 {/* Header */}
-                <div className="flex items-center justify-between pb-3 border-b border-[#2c3338]">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-[#2271b1] text-white flex items-center justify-center font-serif font-black text-xs">
-                      W
+                    <div className="w-7 h-7 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center p-0.5 shadow-2xs">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/images/logo.png" alt="Lapiez" className="w-full h-full object-contain rounded-full" />
                     </div>
                     <div>
-                      <strong className="block text-white text-xs font-bold leading-tight">
+                      <strong className="block text-slate-900 text-xs font-bold leading-tight">
                         {siteSettings?.siteName || 'Lapiez Store'}
                       </strong>
-                      <span className="text-[10px] text-[#72aee6] font-mono">Mobile Admin Portal</span>
+                      <span className="text-[10px] text-[#1A56DB] font-semibold">Admin Console</span>
                     </div>
                   </div>
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-1 rounded bg-[#2c3338] text-gray-300 hover:text-white"
+                    className="p-1 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-800"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -3418,7 +3582,7 @@ export default function AdminPage() {
                 <div className="space-y-1 text-xs">
                   <button
                     onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'dashboard' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'dashboard' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <LayoutDashboard className="w-4 h-4" />
@@ -3426,8 +3590,22 @@ export default function AdminPage() {
                   </button>
 
                   <button
+                    onClick={() => { setActiveTab('security'); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'security' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
+                      }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <span>Security & Devices</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      256-bit
+                    </span>
+                  </button>
+
+                  <button
                     onClick={() => { setActiveTab('orders'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'orders' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'orders' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <div className="flex items-center gap-3">
@@ -3435,7 +3613,7 @@ export default function AdminPage() {
                       <span>Orders & UTR</span>
                     </div>
                     {orders.length > 0 && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#3c434a] text-white">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
                         {orders.length}
                       </span>
                     )}
@@ -3443,83 +3621,83 @@ export default function AdminPage() {
 
                   <button
                     onClick={() => { setActiveTab('riders'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'riders' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-amber-300'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'riders' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Bike className="w-4 h-4 text-amber-400" />
+                      <Bike className="w-4 h-4 text-amber-500" />
                       <span>Delivery Riders</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
                       Fleet
                     </span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('warranty'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'warranty' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-emerald-300'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'warranty' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
                       <span>Warranty & Claims Desk</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                       RMA
                     </span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('staff'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'staff' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-blue-300'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'staff' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <User className="w-4 h-4 text-blue-400" />
+                      <User className="w-4 h-4 text-blue-600" />
                       <span>Staff Accounts</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
-                      ID &amp; Pass
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                      IDs
                     </span>
                   </button>
 
                   <Link
                     href="/staff"
                     target="_blank"
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold hover:bg-[#2c3338] text-blue-300 transition-all"
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold hover:bg-slate-50 text-blue-600 transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <Store className="w-4 h-4 text-blue-400" />
+                      <Store className="w-4 h-4 text-blue-600" />
                       <span>Open Staff App</span>
                     </div>
-                    <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+                    <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
                   </Link>
 
                   <button
                     onClick={() => { setActiveTab('bank'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'bank' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-emerald-300'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'bank' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Building2 className="w-4 h-4 text-emerald-400" />
+                      <Building2 className="w-4 h-4 text-emerald-600" />
                       <span className="font-bold">Bank Details</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-900/60 text-emerald-200 border border-emerald-700/40">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                       {bankAccounts.length}
                     </span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('billing'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'billing' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'billing' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Receipt className="w-4 h-4" />
+                      <Receipt className="w-4 h-4 text-slate-600" />
                       <span>GST Invoices & Billing</span>
                     </div>
                     {invoices.length > 0 && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#3c434a] text-white">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
                         {invoices.length}
                       </span>
                     )}
@@ -3527,42 +3705,42 @@ export default function AdminPage() {
 
                   <button
                     onClick={() => { setActiveTab('mybillbook'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'mybillbook' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-teal-300'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'mybillbook' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Receipt className="w-4 h-4 text-teal-400" />
+                      <Receipt className="w-4 h-4 text-teal-600" />
                       <span>Lapiez Billing & POS</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
                       POS & Tax
                     </span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('inventory'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'inventory' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'inventory' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <div className="flex items-center gap-3">
                       <Package className="w-4 h-4" />
                       <span>All Products</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#3c434a] text-white">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
                       {products.length}
                     </span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('trash'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'trash' ? 'bg-[#b32d2e] text-white shadow-xs' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'trash' ? 'bg-rose-50 text-rose-700 font-bold border border-rose-200' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Trash2 className="w-4 h-4 text-rose-400" />
+                      <Trash2 className="w-4 h-4 text-rose-500" />
                       <span>Dustbin (Trash)</span>
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${trashProducts.length > 0 ? 'bg-rose-600 text-white' : 'bg-[#3c434a] text-gray-300'
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${trashProducts.length > 0 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'
                       }`}>
                       {trashProducts.length}
                     </span>
@@ -3570,83 +3748,83 @@ export default function AdminPage() {
 
                   <button
                     onClick={() => { setActiveTab('categories'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'categories' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'categories' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <div className="flex items-center gap-3">
                       <Layers className="w-4 h-4" />
                       <span>Categories</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#3c434a] text-white">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
                       {categories.length}
                     </span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('brands'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'brands' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'brands' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <Award className="w-4 h-4" />
+                    <Award className="w-4 h-4 text-amber-500" />
                     <span>Brands</span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('coupons'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'coupons' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'coupons' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <Percent className="w-4 h-4" />
+                    <Percent className="w-4 h-4 text-emerald-600" />
                     <span>Coupons</span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('scraper'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'scraper' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-purple-300'
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'scraper' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <Globe className="w-4 h-4 text-purple-400" />
+                    <Globe className="w-4 h-4 text-purple-500" />
                     <span>Live Scraper</span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('banners'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'banners' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'banners' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <ImageIcon className="w-4 h-4" />
+                    <ImageIcon className="w-4 h-4 text-blue-500" />
                     <span>Hero Banners</span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('homepage'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'homepage' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'homepage' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <SlidersHorizontal className="w-4 h-4" />
+                    <SlidersHorizontal className="w-4 h-4 text-indigo-500" />
                     <span>Homepage Builder</span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'settings' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'settings' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <Sliders className="w-4 h-4" />
+                    <Sliders className="w-4 h-4 text-slate-600" />
                     <span>Store Settings</span>
                   </button>
 
                   <button
                     onClick={() => { setActiveTab('leads'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'leads' ? 'bg-[#2271b1] text-white' : 'hover:bg-[#2c3338] text-[#c3c4c7]'
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'leads' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <MessageSquare className="w-4 h-4" />
+                      <MessageSquare className="w-4 h-4 text-blue-600" />
                       <span>Quotes & Leads</span>
                     </div>
                     {leads.length > 0 && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-700 text-white">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                         {leads.length}
                       </span>
                     )}
@@ -3655,11 +3833,11 @@ export default function AdminPage() {
               </div>
 
               {/* Bottom Actions */}
-              <div className="p-4 border-t border-[#2c3338] space-y-2 text-xs">
+              <div className="p-4 border-t border-slate-100 space-y-2 text-xs">
                 <Link
                   href="/"
                   target="_blank"
-                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-[#2c3338] text-[#72aee6] font-bold hover:bg-[#3c434a] transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-100 text-[#1A56DB] font-bold hover:bg-slate-200 transition-colors"
                 >
                   <span>Visit Storefront</span>
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -3671,7 +3849,7 @@ export default function AdminPage() {
                     setIsAuthenticated(false);
                     showToast('Admin Portal locked securely.');
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-rose-950/60 text-rose-300 font-bold border border-rose-800/40 hover:bg-rose-900 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-rose-50 text-rose-700 font-bold border border-rose-200 hover:bg-rose-100 transition-colors cursor-pointer"
                 >
                   <Lock className="w-3.5 h-3.5" />
                   <span>Log Out</span>
@@ -3681,19 +3859,19 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* LEFT WORDPRESS NAVIGATION SIDEBAR (Desktop) */}
+        {/* LEFT WORDPRESS NAVIGATION SIDEBAR (Desktop - Clean White Theme) */}
         <aside
           className={`${isWpSidebarCollapsed ? 'w-14' : 'w-56'
-            } hidden md:flex bg-[#1d2327] text-[#c3c4c7] flex-shrink-0 transition-all duration-200 sticky top-9 h-[calc(100vh-36px)] overflow-y-auto z-30 select-none flex-col justify-between border-r border-[#2c3338]`}
+            } hidden md:flex bg-white text-slate-600 flex-shrink-0 transition-all duration-200 sticky top-10 h-[calc(100vh-40px)] overflow-y-auto z-30 select-none flex-col justify-between border-r border-slate-200/90 shadow-2xs`}
         >
           <div className="py-2 space-y-1">
             {/* CORE */}
             <div className="px-2">
               <button
                 onClick={() => setActiveTab('dashboard')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'dashboard'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'dashboard'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Dashboard"
               >
@@ -3704,19 +3882,40 @@ export default function AdminPage() {
 
             <div className="px-2">
               <button
+                onClick={() => setActiveTab('security')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'security'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                title="256-Bit Hardware & Device Security"
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                  {!isWpSidebarCollapsed && <span>Security & Devices</span>}
+                </div>
+                {!isWpSidebarCollapsed && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    256-bit
+                  </span>
+                )}
+              </button>
+            </div>
+
+            <div className="px-2">
+              <button
                 onClick={() => setActiveTab('scraper')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'scraper'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'scraper'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Live Web Scraper (Lapcare, ProDot, FINGERS)"
               >
                 <div className="flex items-center gap-2.5">
-                  <Globe className="w-4 h-4 flex-shrink-0 text-purple-400" />
+                  <Globe className="w-4 h-4 flex-shrink-0 text-purple-600" />
                   {!isWpSidebarCollapsed && <span>Live Scraper</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-purple-500/30 text-purple-200 border border-purple-400/30">
+                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
                     AUTO
                   </span>
                 )}
@@ -3725,7 +3924,7 @@ export default function AdminPage() {
 
             {/* STORE & SALES */}
             {!isWpSidebarCollapsed && (
-              <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#8c8f94]">
+              <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                 Store & Sales
               </div>
             )}
@@ -3733,18 +3932,18 @@ export default function AdminPage() {
             <div className="px-2 space-y-0.5">
               <button
                 onClick={() => setActiveTab('orders')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'orders'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'orders'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Orders & UTR Verification"
               >
                 <div className="flex items-center gap-2.5">
-                  <ShoppingBag className="w-4 h-4 flex-shrink-0" />
+                  <ShoppingBag className="w-4 h-4 flex-shrink-0 text-blue-600" />
                   {!isWpSidebarCollapsed && <span>Orders & UTR</span>}
                 </div>
                 {!isWpSidebarCollapsed && orders.length > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#3c434a] text-white">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700">
                     {orders.length}
                   </span>
                 )}
@@ -3752,18 +3951,18 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('riders')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'riders'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'riders'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Delivery Fleet & Rider Management"
               >
                 <div className="flex items-center gap-2.5">
-                  <Bike className="w-4 h-4 flex-shrink-0 text-amber-400" />
+                  <Bike className="w-4 h-4 flex-shrink-0 text-amber-500" />
                   {!isWpSidebarCollapsed && <span>Delivery Riders</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
                     Fleet
                   </span>
                 )}
@@ -3771,18 +3970,18 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('warranty')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'warranty'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'warranty'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Customer Warranty Claims & RMA Desk"
               >
                 <div className="flex items-center gap-2.5">
-                  <ShieldCheck className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+                  <ShieldCheck className="w-4 h-4 flex-shrink-0 text-emerald-600" />
                   {!isWpSidebarCollapsed && <span>Warranty & RMA</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     Claims
                   </span>
                 )}
@@ -3790,18 +3989,18 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('staff')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'staff'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-blue-300 hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'staff'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Manage Staff IDs & Passwords"
               >
                 <div className="flex items-center gap-2.5">
-                  <User className="w-4 h-4 flex-shrink-0 text-blue-400" />
+                  <User className="w-4 h-4 flex-shrink-0 text-blue-600" />
                   {!isWpSidebarCollapsed && <span>Staff Accounts</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                     IDs
                   </span>
                 )}
@@ -3810,32 +4009,32 @@ export default function AdminPage() {
               <Link
                 href="/staff"
                 target="_blank"
-                className="w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold text-blue-300 hover:bg-[#135e96] hover:text-white transition-all"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold text-blue-600 hover:bg-slate-50 transition-all"
                 title="Open Dedicated Staff App"
               >
                 <div className="flex items-center gap-2.5">
-                  <Store className="w-4 h-4 flex-shrink-0 text-blue-400" />
+                  <Store className="w-4 h-4 flex-shrink-0 text-blue-600" />
                   {!isWpSidebarCollapsed && <span>Open Staff App</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <ExternalLink className="w-3 h-3 text-blue-300/80" />
+                  <ExternalLink className="w-3 h-3 text-blue-500" />
                 )}
               </Link>
 
               <button
                 onClick={() => setActiveTab('billing')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'billing'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'billing'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="GST Invoices & Billing"
               >
                 <div className="flex items-center gap-2.5">
-                  <Receipt className="w-4 h-4 flex-shrink-0" />
+                  <Receipt className="w-4 h-4 flex-shrink-0 text-slate-600" />
                   {!isWpSidebarCollapsed && <span>GST Billing</span>}
                 </div>
                 {!isWpSidebarCollapsed && invoices.length > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#3c434a] text-white">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700">
                     {invoices.length}
                   </span>
                 )}
@@ -3843,18 +4042,18 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('mybillbook')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'mybillbook'
-                    ? 'bg-teal-600 text-white shadow-xs'
-                    : 'text-teal-300 hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'mybillbook'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Lapiez Billing System - POS & GST Invoicing Engine"
               >
                 <div className="flex items-center gap-2.5">
-                  <Receipt className="w-4 h-4 flex-shrink-0 text-teal-400" />
+                  <Receipt className="w-4 h-4 flex-shrink-0 text-teal-600" />
                   {!isWpSidebarCollapsed && <span>Lapiez Billing</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
                     POS
                   </span>
                 )}
@@ -3862,18 +4061,18 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('bank')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'bank'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'bank'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Official Bank Accounts & Settlement"
               >
                 <div className="flex items-center gap-2.5">
-                  <Building2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+                  <Building2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
                   {!isWpSidebarCollapsed && <span>Bank Details</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-900/60 text-emerald-200 border border-emerald-700/40">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     {bankAccounts.length}
                   </span>
                 )}
@@ -3881,18 +4080,18 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('coupons')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'coupons'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'coupons'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Coupons & Discounts"
               >
                 <div className="flex items-center gap-2.5">
-                  <Percent className="w-4 h-4 flex-shrink-0" />
+                  <Percent className="w-4 h-4 flex-shrink-0 text-emerald-600" />
                   {!isWpSidebarCollapsed && <span>Coupons</span>}
                 </div>
                 {!isWpSidebarCollapsed && coupons.length > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#3c434a] text-white">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700">
                     {coupons.length}
                   </span>
                 )}
@@ -3900,18 +4099,18 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('leads')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'leads'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'leads'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Customer Inquiries & Quotes"
               >
                 <div className="flex items-center gap-2.5">
-                  <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                  <MessageSquare className="w-4 h-4 flex-shrink-0 text-blue-600" />
                   {!isWpSidebarCollapsed && <span>Quotes & Leads</span>}
                 </div>
                 {!isWpSidebarCollapsed && leads.length > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-700 text-white">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     {leads.length}
                   </span>
                 )}
@@ -3920,7 +4119,7 @@ export default function AdminPage() {
 
             {/* PRODUCTS & CATALOG */}
             {!isWpSidebarCollapsed && (
-              <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#8c8f94]">
+              <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                 Products & Catalog
               </div>
             )}
@@ -3928,9 +4127,9 @@ export default function AdminPage() {
             <div className="px-2 space-y-0.5">
               <button
                 onClick={() => setActiveTab('inventory')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'inventory'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'inventory'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="All Products Inventory"
               >
@@ -3939,7 +4138,7 @@ export default function AdminPage() {
                   {!isWpSidebarCollapsed && <span>All Products</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#3c434a] text-white">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700">
                     {products.length}
                   </span>
                 )}
@@ -3947,18 +4146,18 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('trash')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'trash'
-                    ? 'bg-[#b32d2e] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#8a2424] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'trash'
+                    ? 'bg-rose-50 text-rose-700 font-bold border-l-4 border-rose-500'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Dustbin / Trash (Saved for 15 Days)"
               >
                 <div className="flex items-center gap-2.5">
-                  <Trash2 className="w-4 h-4 flex-shrink-0 text-rose-300" />
+                  <Trash2 className="w-4 h-4 flex-shrink-0 text-rose-500" />
                   {!isWpSidebarCollapsed && <span>Dustbin (Trash)</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${trashProducts.length > 0 ? 'bg-rose-600 text-white' : 'bg-[#3c434a] text-gray-300'
+                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${trashProducts.length > 0 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'
                     }`}>
                     {trashProducts.length}
                   </span>
@@ -3967,18 +4166,18 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('categories')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'categories'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'categories'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Categories & Subcategories CMS"
               >
                 <div className="flex items-center gap-2.5">
-                  <Layers className="w-4 h-4 flex-shrink-0 text-blue-300" />
+                  <Layers className="w-4 h-4 flex-shrink-0 text-indigo-600" />
                   {!isWpSidebarCollapsed && <span>Categories</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-900/60 text-blue-200 border border-blue-600/30">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700">
                     {categories.length}
                   </span>
                 )}
@@ -3986,18 +4185,18 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('brands')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'brands'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'brands'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
-                title="Top 57 Brands Showcase"
+                title="Top Brands Showcase"
               >
                 <div className="flex items-center gap-2.5">
-                  <Award className="w-4 h-4 flex-shrink-0 text-amber-300" />
+                  <Award className="w-4 h-4 flex-shrink-0 text-amber-500" />
                   {!isWpSidebarCollapsed && <span>Top Brands</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-900/60 text-amber-200 border border-amber-600/30">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
                     {brands.length}
                   </span>
                 )}
@@ -4006,7 +4205,7 @@ export default function AdminPage() {
 
             {/* APPEARANCE */}
             {!isWpSidebarCollapsed && (
-              <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#8c8f94]">
+              <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                 Appearance & Layout
               </div>
             )}
@@ -4014,9 +4213,9 @@ export default function AdminPage() {
             <div className="px-2 space-y-0.5">
               <button
                 onClick={() => setActiveTab('homepage')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'homepage'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'homepage'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Page Builder & Sections"
               >
@@ -4026,9 +4225,9 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('banners')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'banners'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'banners'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Hero Carousel Banners"
               >
@@ -4038,21 +4237,21 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('header_footer')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'header_footer'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'header_footer'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Header Announcement & Footer Controls"
               >
-                <Sliders className="w-4 h-4 flex-shrink-0 text-cyan-300" />
+                <Sliders className="w-4 h-4 flex-shrink-0 text-cyan-600" />
                 {!isWpSidebarCollapsed && <span>Header & Footer</span>}
               </button>
 
               <button
                 onClick={() => setActiveTab('theme')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'theme'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'theme'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Theme Colors & Branding"
               >
@@ -4063,7 +4262,7 @@ export default function AdminPage() {
 
             {/* CONTENT */}
             {!isWpSidebarCollapsed && (
-              <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#8c8f94]">
+              <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                 Content & Media
               </div>
             )}
@@ -4071,9 +4270,9 @@ export default function AdminPage() {
             <div className="px-2 space-y-0.5">
               <button
                 onClick={() => setActiveTab('pages')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'pages'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'pages'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Custom CMS Pages"
               >
@@ -4083,9 +4282,9 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('blogs')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'blogs'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'blogs'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Tech Blogs"
               >
@@ -4095,20 +4294,20 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('media')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'media'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'media'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Media Library"
               >
-                <FolderTree className="w-4 h-4 flex-shrink-0 text-amber-300" />
+                <FolderTree className="w-4 h-4 flex-shrink-0 text-amber-500" />
                 {!isWpSidebarCollapsed && <span>Media Library</span>}
               </button>
             </div>
 
             {/* SETTINGS & TOOLS */}
             {!isWpSidebarCollapsed && (
-              <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#8c8f94]">
+              <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                 Settings & Tools
               </div>
             )}
@@ -4116,9 +4315,9 @@ export default function AdminPage() {
             <div className="px-2 space-y-0.5 pb-4">
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'settings'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'settings'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="General Store & UPI Settings"
               >
@@ -4128,23 +4327,23 @@ export default function AdminPage() {
 
               <button
                 onClick={() => setActiveTab('tools')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${activeTab === 'tools'
-                    ? 'bg-[#2271b1] text-white shadow-xs'
-                    : 'text-[#c3c4c7] hover:bg-[#135e96] hover:text-white'
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'tools'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Tools & System Diagnostics"
               >
-                <Wrench className="w-4 h-4 flex-shrink-0 text-cyan-300" />
+                <Wrench className="w-4 h-4 flex-shrink-0 text-cyan-600" />
                 {!isWpSidebarCollapsed && <span>Tools & Backup</span>}
               </button>
             </div>
           </div>
 
           {/* SIDEBAR FOOTER: COLLAPSE BUTTON */}
-          <div className="p-2 border-t border-[#2c3338] bg-[#1d2327]">
+          <div className="p-2 border-t border-slate-200 bg-white">
             <button
               onClick={() => setIsWpSidebarCollapsed(!isWpSidebarCollapsed)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded text-xs text-[#8c8f94] hover:text-white hover:bg-[#2c3338] transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer"
               title={isWpSidebarCollapsed ? 'Expand Menu' : 'Collapse Menu'}
             >
               {isWpSidebarCollapsed ? (
@@ -4159,15 +4358,16 @@ export default function AdminPage() {
           </div>
         </aside>
 
-        {/* 3. WORDPRESS MAIN CONTENT CANVAS */}
-        <main className="flex-1 min-w-0 p-3 sm:p-6 pb-24 md:pb-6 bg-[#f0f0f1] overflow-x-hidden">
+        {/* 3. MAIN CONTENT CANVAS */}
+        <main className="flex-1 min-w-0 p-3 sm:p-6 pb-24 md:pb-6 bg-[#F8FAFC] overflow-x-hidden">
           <div className="max-w-7xl mx-auto space-y-6">
 
-            {/* WORDPRESS PAGE TITLE & ACTION BAR */}
-            <div className="mb-5 pb-3 border-b border-[#c3c4c7] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* PAGE TITLE & ACTION BAR */}
+            <div className="mb-5 pb-3 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <h1 className="text-xl sm:text-2xl font-black text-[#1d2327] tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                   {activeTab === 'dashboard' && 'Dashboard'}
+                  {activeTab === 'security' && 'Security & Approved Devices (256-Bit Hardware Whitelist)'}
                   {activeTab === 'inventory' && `All Products (${products.length} SKUs)`}
                   {activeTab === 'trash' && `Dustbin / Recycle Bin (${trashProducts.length} Items - 15 Days Retention)`}
                   {activeTab === 'categories' && `Categories & Subcategories (${categories.length})`}
@@ -6035,8 +6235,8 @@ export default function AdminPage() {
                             onChange={(e) => setInventorySort(e.target.value as any)}
                             className="h-9 px-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:border-[#1A56DB] cursor-pointer"
                           >
-                            <option value="newest">🕒 Newest Added First</option>
-                            <option value="oldest">🕒 Oldest Added First</option>
+                            <option value="newest">Newest Added First</option>
+                            <option value="oldest">Oldest Added First</option>
                             <option value="price_asc">Price: Low to High</option>
                             <option value="price_desc">Price: High to Low</option>
                             <option value="name_asc">Name: A to Z</option>
@@ -6802,16 +7002,21 @@ export default function AdminPage() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-9 gap-1.5 sm:gap-2">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-9 xl:grid-cols-10 gap-2">
                       {brands
                         .filter((b) => b.isVisible !== false)
                         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
                         .map((b) => (
                           <div
                             key={b.id}
-                            className="bg-white border border-[#E5E7EB] rounded-lg h-[48px] sm:h-[54px] px-2 flex items-center justify-center shadow-xs"
+                            className="flex flex-col items-center justify-center p-1"
                           >
-                            <BrandLogoRenderer brand={b} />
+                            <div className="w-12 h-12 rounded-full bg-white border border-[#E5E7EB] p-2 flex items-center justify-center shadow-2xs">
+                              <BrandLogoRenderer brand={b} />
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-700 mt-1 truncate max-w-[65px] text-center">
+                              {b.name}
+                            </span>
                           </div>
                         ))}
                     </div>
@@ -6894,7 +7099,7 @@ export default function AdminPage() {
 
                             {/* Middle: Logo Preview Box & Search Query */}
                             <div className="flex items-center gap-3 bg-gray-50/70 border border-gray-100 rounded-lg p-2.5">
-                              <div className="w-24 h-11 bg-white border border-gray-200 rounded-md flex items-center justify-center p-1 shadow-2xs flex-shrink-0 overflow-hidden">
+                              <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center p-2 shadow-2xs flex-shrink-0 overflow-hidden">
                                 <BrandLogoRenderer brand={b} />
                               </div>
                               <div className="min-w-0 flex-1">
@@ -10136,7 +10341,7 @@ export default function AdminPage() {
                     style={{ backgroundColor: headerAnnouncementBg }}
                     className="p-2.5 rounded-xl text-white text-xs font-bold flex items-center justify-between shadow-xs transition-colors"
                   >
-                    <span>📢 {announcementText}</span>
+                    <span>{announcementText}</span>
                     <span className="text-[10.5px] opacity-80">Helpline: {headerHelplinePhone}</span>
                   </div>
 
@@ -10542,18 +10747,25 @@ export default function AdminPage() {
               </div>
             )}
 
+            {/* 256-Bit Hardware & Device Security Manager Tab */}
+            {activeTab === 'security' && (
+              <div className="space-y-6">
+                <SecurityManager />
+              </div>
+            )}
+
           </div>
         </main>
       </div>
 
-      {/* MOBILE BOTTOM NAVIGATION BAR (Fixed at bottom on phones) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-[#1d2327]/98 backdrop-blur-md border-t border-[#3c434a] z-40 px-2 flex items-center justify-around select-none shadow-2xl">
+      {/* MOBILE BOTTOM NAVIGATION BAR (Clean White / Slate) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white/98 backdrop-blur-md border-t border-slate-200 z-40 px-2 flex items-center justify-around select-none shadow-lg text-slate-600">
         <button
           onClick={() => setActiveTab('dashboard')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${activeTab === 'dashboard' ? 'text-white' : 'text-gray-400 hover:text-gray-200'
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${activeTab === 'dashboard' ? 'text-[#1A56DB] font-bold' : 'text-slate-400 hover:text-slate-700'
             }`}
         >
-          <div className={`p-1 rounded-md ${activeTab === 'dashboard' ? 'bg-[#2271b1] text-white shadow-xs' : ''}`}>
+          <div className={`p-1 rounded-md ${activeTab === 'dashboard' ? 'bg-blue-50 text-[#1A56DB] shadow-2xs' : ''}`}>
             <LayoutDashboard className="w-4 h-4" />
           </div>
           <span className="text-[9px] font-bold tracking-tight">Home</span>
@@ -10561,10 +10773,10 @@ export default function AdminPage() {
 
         <button
           onClick={() => setActiveTab('orders')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer relative ${activeTab === 'orders' ? 'text-white' : 'text-gray-400 hover:text-gray-200'
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer relative ${activeTab === 'orders' ? 'text-[#1A56DB] font-bold' : 'text-slate-400 hover:text-slate-700'
             }`}
         >
-          <div className={`p-1 rounded-md ${activeTab === 'orders' ? 'bg-[#2271b1] text-white shadow-xs' : ''}`}>
+          <div className={`p-1 rounded-md ${activeTab === 'orders' ? 'bg-blue-50 text-[#1A56DB] shadow-2xs' : ''}`}>
             <ShoppingBag className="w-4 h-4" />
           </div>
           {orders.length > 0 && (
@@ -10577,29 +10789,29 @@ export default function AdminPage() {
 
         <button
           onClick={() => setActiveTab('inventory')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${activeTab === 'inventory' ? 'text-white' : 'text-gray-400 hover:text-gray-200'
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${activeTab === 'inventory' ? 'text-[#1A56DB] font-bold' : 'text-slate-400 hover:text-slate-700'
             }`}
         >
-          <div className={`p-1 rounded-md ${activeTab === 'inventory' ? 'bg-[#2271b1] text-white shadow-xs' : ''}`}>
+          <div className={`p-1 rounded-md ${activeTab === 'inventory' ? 'bg-blue-50 text-[#1A56DB] shadow-2xs' : ''}`}>
             <Package className="w-4 h-4" />
           </div>
           <span className="text-[9px] font-bold tracking-tight">Products</span>
         </button>
 
         <button
-          onClick={() => setActiveTab('bank')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${activeTab === 'bank' ? 'text-emerald-300' : 'text-gray-400 hover:text-gray-200'
+          onClick={() => setActiveTab('security')}
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${activeTab === 'security' ? 'text-emerald-700 font-bold' : 'text-slate-400 hover:text-slate-700'
             }`}
         >
-          <div className={`p-1 rounded-md ${activeTab === 'bank' ? 'bg-emerald-600 text-white shadow-xs' : ''}`}>
-            <Building2 className="w-4 h-4" />
+          <div className={`p-1 rounded-md ${activeTab === 'security' ? 'bg-emerald-50 text-emerald-700 shadow-2xs' : ''}`}>
+            <ShieldCheck className="w-4 h-4" />
           </div>
-          <span className="text-[9px] font-bold tracking-tight">Bank</span>
+          <span className="text-[9px] font-bold tracking-tight">Security</span>
         </button>
 
         <button
           onClick={() => setIsMobileMenuOpen(true)}
-          className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-lg text-gray-400 hover:text-gray-200 transition-colors cursor-pointer"
+          className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-lg text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
         >
           <div className="p-1 rounded-md">
             <Menu className="w-4 h-4" />
@@ -13196,7 +13408,7 @@ export default function AdminPage() {
                     .filter((c) => !c.parentId && c.id !== editingCatId)
                     .map((parent) => (
                       <option key={parent.id} value={parent.id}>
-                        📁 {parent.name}
+                        {parent.name}
                       </option>
                     ))}
                 </select>
@@ -13406,7 +13618,7 @@ export default function AdminPage() {
                     .filter((c) => !c.parentId)
                     .map((parent) => (
                       <option key={parent.id} value={parent.id}>
-                        📁 {parent.name}
+                        {parent.name}
                       </option>
                     ))}
                 </select>
