@@ -14,6 +14,7 @@ import {
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore, DEFAULT_SHOP_BY_CATEGORIES, CMSCategory } from '../context/StoreContext';
 import { WhatsAppIcon } from './WhatsAppIcon';
+import { GooglePlayIcon } from './GooglePlayIcon';
 
 interface NavbarProps {
   onOpenAccount?: () => void;
@@ -386,9 +387,9 @@ export const Navbar: React.FC<NavbarProps> = () => {
                           setIsNotificationOpen(false);
                           setIsAppModalOpen(true);
                         }}
-                        className="text-gray-500 hover:text-gray-900 flex items-center gap-1 font-medium"
+                        className="text-gray-600 hover:text-gray-900 flex items-center gap-1 font-semibold"
                       >
-                        <Smartphone className="w-3 h-3 text-emerald-600" />
+                        <GooglePlayIcon className="w-3.5 h-3.5" />
                         <span>Get App</span>
                       </button>
                     )}
@@ -487,10 +488,10 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 <button
                   type="button"
                   onClick={() => setIsAppModalOpen(true)}
-                  className="flex items-center gap-1 text-white hover:text-yellow-200 font-semibold transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 text-white hover:text-yellow-200 font-semibold transition-colors cursor-pointer"
                   title="Download Android App"
                 >
-                  <Smartphone className="w-3 h-3 text-emerald-300" />
+                  <GooglePlayIcon className="w-3.5 h-3.5" />
                   <span>Download App</span>
                 </button>
               )}
