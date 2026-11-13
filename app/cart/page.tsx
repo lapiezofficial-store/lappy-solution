@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   Trash2, ShoppingBag, ArrowRight, ShieldCheck, 
-  Truck, ArrowLeft, Tag, Check, Store, Lock
+  Truck, ArrowLeft, Tag, Check, Store, Lock,
+  MapPin, ChevronRight, SlidersHorizontal
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { PRODUCTS } from '../../data/products';
@@ -21,7 +22,10 @@ export default function CartPage() {
     couponDiscount, 
     applyCoupon, 
     removeCoupon,
-    customer
+    customer,
+    customerLocation,
+    setIsLocationModalOpen,
+    deliveryFee
   } = useStore();
 
   const [couponCode, setCouponCode] = useState('');
@@ -31,7 +35,8 @@ export default function CartPage() {
   const totalMrp = cart.reduce((sum, item) => sum + ((item.product.mrp || item.product.price) * item.quantity), 0);
   const totalSavings = totalMrp > subtotal ? totalMrp - subtotal : 0;
   
-  const finalTotal = Math.max(0, subtotal - couponDiscount);
+  const currentDeliveryFee = typeof deliveryFee === 'number' ? deliveryFee : 0;
+  const finalTotal = Math.max(0, subtotal - couponDiscount + currentDeliveryFee);
 
   const handleApplyCoupon = (e: React.FormEvent, codeToApply?: string) => {
     e.preventDefault();
@@ -111,12 +116,40 @@ export default function CartPage() {
             {/* Left Column: Items List (8 Cols) */}
             <div className="lg:col-span-8 space-y-3.5">
               
-              {/* Delivery Notification Strip */}
-              <div className="rounded-xl bg-green-50 border border-green-200 p-3.5 flex items-center gap-3 text-[#15803D] text-xs">
-                <Truck className="w-5 h-5 text-[#15803D] flex-shrink-0" />
-                <div>
-                  <strong className="block font-bold">Free Express Delivery Across Garhwa</strong>
-                  <span className="text-gray-600">Your order qualifies for same-day local delivery or immediate showroom collection.</span>
+              {/* Delivery Notification & Distance Scale Strip */}
+              <div 
+                onClick={() => setIsLocationModalOpen(true)}
+                className={`rounded-2xl border p-4 flex items-center justify-between gap-3 text-xs transition-all cursor-pointer shadow-2xs group ${
+                  currentDeliveryFee === 0 
+                    ? 'bg-gradient-to-r from-emerald-50 to-green-50/70 border-emerald-200 text-emerald-800'
+                    : 'bg-gradient-to-r from-blue-50 to-indigo-50/70 border-blue-200 text-blue-900'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-2xs ${
+                    currentDeliveryFee === 0 ? 'bg-emerald-600 text-white' : 'bg-[#1A56DB] text-white'
+                  }`}>
+                    <Truck className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <strong className="font-extrabold text-sm leading-tight">
+                        {currentDeliveryFee === 0 ? 'Free Express Delivery' : `Direct Delivery (₹${currentDeliveryFee})`}
+                      </strong>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 border border-slate-200 text-slate-700">
+                        {customerLocation?.distanceKm ?? 2} km from Showroom
+                      </span>
+                    </div>
+                    <span className="text-[11.5px] opacity-85 block truncate mt-0.5">
+                      Delivering to: <strong className="underline decoration-slate-400">{customerLocation?.area || 'Garhwa Town'}</strong> • Tap to change distance &amp; area
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 text-xs font-bold text-[#1A56DB] group-hover:translate-x-0.5 transition-transform flex-shrink-0 bg-white px-3 py-1.5 rounded-xl border border-blue-200 shadow-2xs">
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Change Distance</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </div>
               </div>
 
@@ -244,9 +277,22 @@ export default function CartPage() {
                     </div>
                   )}
 
-                  <div className="flex justify-between text-gray-600">
-                    <span>Delivery Charges</span>
-                    <span className="text-[#15803D] font-bold">FREE</span>
+                  <div className="flex justify-between items-center text-gray-600">
+                    <div className="flex items-center gap-1.5">
+                      <span>Delivery Charges</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsLocationModalOpen(true)}
+                        className="text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-0.5 cursor-pointer"
+                      >
+                        ({customerLocation ? `${customerLocation.distanceKm} km` : 'Set Distance'})
+                      </button>
+                    </div>
+                    {currentDeliveryFee === 0 ? (
+                      <span className="text-[#15803D] font-bold">FREE</span>
+                    ) : (
+                      <span className="text-gray-900 font-bold">₹{currentDeliveryFee.toLocaleString('en-IN')}</span>
+                    )}
                   </div>
 
                   <div className="flex justify-between text-gray-600">

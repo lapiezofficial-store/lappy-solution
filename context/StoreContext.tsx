@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { PRODUCTS, Product } from '../data/products';
 import { STORE_INFO, INITIAL_ORDERS, INITIAL_LEADS } from '../data/storeData';
 import { CartItem } from '../components/CartDrawer';
@@ -191,6 +191,20 @@ export interface CMSBlogPost {
   updatedAt?: string;
 }
 
+export interface CustomerDeliveryLocation {
+  area: string;
+  city: string;
+  pincode: string;
+  landmark?: string;
+  fullAddress?: string;
+  distanceKm: number;
+  distanceSlab: string;
+  deliveryFee: number;
+  lat?: number;
+  lng?: number;
+  updatedAt?: string;
+}
+
 interface StoreContextType {
   products: Product[];
   cart: CartItem[];
@@ -222,6 +236,13 @@ interface StoreContextType {
   setIsAccountOpen: (open: boolean) => void;
   isAppModalOpen: boolean;
   setIsAppModalOpen: (open: boolean) => void;
+  customerLocation: CustomerDeliveryLocation | null;
+  isLocationModalOpen: boolean;
+  setIsLocationModalOpen: (open: boolean) => void;
+  setCustomerDeliveryLocation: (location: any) => void;
+  deliverySettings: any;
+  deliveryFee: number;
+  updateDeliverySettingsInStore: (settings: any) => Promise<boolean>;
   accountTab: 'orders' | 'cart' | 'wishlist';
   setAccountTab: (tab: 'orders' | 'cart' | 'wishlist') => void;
   toast: string | null;
@@ -626,6 +647,103 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [toast, setToast] = useState<string | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [isCustomerLoading, setIsCustomerLoading] = useState(false);
+
+  const [customerLocation, setCustomerLocation] = useState<CustomerDeliveryLocation | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('lapiez_customer_location');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {
+      area: 'Garhwa Town Core',
+      city: 'Garhwa',
+      pincode: '822114',
+      distanceKm: 2,
+      distanceSlab: 'Garhwa Town Core',
+      deliveryFee: 0,
+      fullAddress: 'Garhwa Town, Garhwa - 822114',
+    };
+  });
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [deliverySettings, setDeliverySettings] = useState<any>(null);
+
+  // Fetch Delivery Settings & Slabs from Server
+  useEffect(() => {
+    fetch('/api/delivery/rates')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.settings) setDeliverySettings(data.settings);
+      })
+      .catch(() => {});
+  }, []);
+
+  // First-visit auto prompt for customer delivery location
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hasSet = localStorage.getItem('lapiez_customer_location');
+    const hasPrompted = sessionStorage.getItem('lapiez_loc_prompted');
+    if (!hasSet && !hasPrompted) {
+      sessionStorage.setItem('lapiez_loc_prompted', 'true');
+      const timer = setTimeout(() => {
+        setIsLocationModalOpen(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Realtime Delivery Fee calculation based on customer distance & cart total
+  const deliveryFee = useMemo(() => {
+    if (!customerLocation) return 0;
+    const dist = customerLocation.distanceKm ?? 2;
+    const slabs = deliverySettings?.slabs || [
+      { minKm: 0, maxKm: 5, price: 0 },
+      { minKm: 5, maxKm: 15, price: 60 },
+      { minKm: 15, maxKm: 35, price: 120 },
+      { minKm: 35, maxKm: 100, price: 200 },
+    ];
+    const subtotal = cart.reduce((acc, item) => acc + (Number(item.product.price) || 0) * item.quantity, 0);
+    const threshold = deliverySettings?.freeDeliveryAbove ?? 5000;
+    if (threshold > 0 && subtotal >= threshold) {
+      return 0;
+    }
+    const matched = slabs.find((s: any) => dist >= s.minKm && dist < s.maxKm) || slabs[slabs.length - 1];
+    return matched ? matched.price : 0;
+  }, [customerLocation, deliverySettings, cart]);
+
+  const setCustomerDeliveryLocation = useCallback((loc: CustomerDeliveryLocation) => {
+    setCustomerLocation(loc);
+    try {
+      localStorage.setItem('lapiez_customer_location', JSON.stringify(loc));
+    } catch (e) {}
+
+    // Realtime sync to backend so admin can view active customer location immediately
+    fetch('/api/customer/location', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(loc),
+    }).catch(() => {});
+  }, []);
+
+  const updateDeliverySettingsInStore = useCallback(async (newSettings: any): Promise<boolean> => {
+    try {
+      const res = await adminFetch('/api/delivery/rates', {
+        method: 'POST',
+        body: JSON.stringify(newSettings),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.settings) setDeliverySettings(data.settings);
+        setToast('Delivery rates updated successfully!');
+        setTimeout(() => setToast(null), 2800);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error('Failed to update delivery settings:', e);
+      return false;
+    }
+  }, []);
 
   // Monitor Supabase Customer Auth State
   useEffect(() => {
@@ -3526,6 +3644,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsAccountOpen,
         isAppModalOpen,
         setIsAppModalOpen,
+        customerLocation,
+        isLocationModalOpen,
+        setIsLocationModalOpen,
+        setCustomerDeliveryLocation,
+        deliverySettings,
+        deliveryFee,
+        updateDeliverySettingsInStore,
         accountTab,
         setAccountTab,
         toast,

@@ -117,6 +117,8 @@ export const Navbar: React.FC<NavbarProps> = () => {
     setIsAppModalOpen,
     signInWithGoogle,
     isApp,
+    customerLocation,
+    setIsLocationModalOpen,
     customerNotifications,
     unreadCustomerNotifCount,
     markCustomerNotificationAsRead,
@@ -216,18 +218,22 @@ export const Navbar: React.FC<NavbarProps> = () => {
       {/* MOBILE HEADER (lg:hidden) - EXACT 3 LINES FROM SCREENSHOT */}
       {/* ========================================================= */}
       <div className="lg:hidden bg-white border-b border-gray-200 shadow-2xs">
-        {/* LINE 1: Top Micro Announcement Strip */}
-        <div className="bg-[#1A56DB] text-white text-[10.5px] py-1 px-3 flex items-center justify-between">
+        {/* LINE 1: Top Micro Announcement Strip - Clean Delivery Location Pill */}
+        <div 
+          onClick={() => setIsLocationModalOpen(true)}
+          className="bg-[#1A56DB] text-white text-[10.5px] py-1.5 px-3 flex items-center justify-between cursor-pointer hover:bg-[#1545B0] transition-colors"
+        >
           <div className="flex items-center gap-1.5 truncate">
-            <MapPin className="w-3 h-3 text-[#FEF08A] flex-shrink-0" />
-            <span className="truncate font-semibold">Garhwa &amp; Palamu Delivery</span>
+            <MapPin className="w-3.5 h-3.5 text-[#FEF08A] flex-shrink-0 animate-pulse" />
+            <span className="text-blue-100 font-medium">Deliver to:</span>
+            <span className="font-bold text-white truncate max-w-[170px] sm:max-w-xs">
+              {customerLocation?.area || 'Garhwa Town (822114)'}
+            </span>
           </div>
-          <a
-            href={`tel:${siteSettings?.phone || STORE_INFO.phone}`}
-            className="text-yellow-200 font-extrabold text-[10.5px] flex-shrink-0 ml-2 hover:underline"
-          >
-            {siteSettings?.phone || STORE_INFO.phone}
-          </a>
+          <div className="flex items-center gap-1 text-[10px] font-bold text-yellow-200 bg-blue-700/60 px-2 py-0.5 rounded-full border border-blue-400/40 flex-shrink-0">
+            <span>{customerLocation ? `${customerLocation.distanceKm} km` : 'Select Area'}</span>
+            <ChevronDown className="w-3 h-3 text-yellow-200" />
+          </div>
         </div>
 
         {/* LINE 2: Brand Logo (Left) + Notification Bell & Hamburger Menu (Right) */}
@@ -485,11 +491,18 @@ export const Navbar: React.FC<NavbarProps> = () => {
         {/* 1. Top Announcement Bar */}
         <div className="bg-[#1A56DB] text-white text-[11px] sm:text-[12px] py-1 px-3 sm:px-6">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
-            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs">
-              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FEF08A] flex-shrink-0" />
-              <span className="text-blue-100 hidden sm:inline">Deliver to:</span>
-              <strong className="text-white font-semibold">Garhwa &amp; Palamu (822114)</strong>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsLocationModalOpen(true)}
+              className="flex items-center gap-1.5 text-[11px] sm:text-xs text-white hover:text-yellow-200 transition-colors cursor-pointer group"
+            >
+              <MapPin className="w-3.5 h-3.5 text-[#FEF08A] flex-shrink-0 animate-pulse" />
+              <span className="text-blue-100">Deliver to:</span>
+              <strong className="text-white font-semibold underline decoration-blue-300 underline-offset-2 group-hover:text-yellow-200">
+                {customerLocation ? `${customerLocation.area} (${customerLocation.distanceKm} km)` : 'Garhwa & Palamu (Select Location)'}
+              </strong>
+              <ChevronDown className="w-3 h-3 text-yellow-200" />
+            </button>
 
             <div className="flex items-center gap-3 sm:gap-4 text-[11px] sm:text-xs">
               {!isApp && (
@@ -503,14 +516,6 @@ export const Navbar: React.FC<NavbarProps> = () => {
                   <span>Download App</span>
                 </button>
               )}
-              <span className="hidden md:inline text-blue-300">|</span>
-              <a
-                href={`tel:${siteSettings?.phone || STORE_INFO.phone}`}
-                className="hidden md:flex items-center gap-1 text-white hover:text-yellow-200 font-medium transition-colors"
-              >
-                <Phone className="w-3 h-3 text-yellow-300" />
-                <span>{siteSettings?.phone || STORE_INFO.phone}</span>
-              </a>
               <span className="hidden sm:inline text-blue-300">|</span>
               <Link
                 href="/account"

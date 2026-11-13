@@ -31,6 +31,7 @@ import WarrantyManager from '../../components/admin/WarrantyManager';
 import MyBillBookCockpit from '../../components/admin/MyBillBookCockpit';
 import StaffManager from '../../components/admin/StaffManager';
 import { SecurityManager } from '../../components/admin/SecurityManager';
+import { DeliveryManager } from '../../components/admin/DeliveryManager';
 import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 
 export default function AdminPage() {
@@ -141,13 +142,14 @@ export default function AdminPage() {
     | 'riders'
     | 'warranty'
     | 'staff'
-    | 'security';
+    | 'security'
+    | 'delivery';
 
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AdminTab | null;
-      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'mybillbook', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads', 'riders', 'warranty', 'staff', 'security'].includes(tabParam)) {
+      if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'mybillbook', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads', 'riders', 'warranty', 'staff', 'security', 'delivery'].includes(tabParam)) {
         return tabParam;
       }
     }
@@ -3604,6 +3606,20 @@ export default function AdminPage() {
                   </button>
 
                   <button
+                    onClick={() => { setActiveTab('delivery'); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'delivery' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
+                      }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <SlidersHorizontal className="w-4 h-4 text-blue-600" />
+                      <span>Delivery &amp; Distance Rates</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                      Scale
+                    </span>
+                  </button>
+
+                  <button
                     onClick={() => { setActiveTab('orders'); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'orders' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
@@ -3896,6 +3912,27 @@ export default function AdminPage() {
                 {!isWpSidebarCollapsed && (
                   <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     256-bit
+                  </span>
+                )}
+              </button>
+            </div>
+
+            <div className="px-2">
+              <button
+                onClick={() => setActiveTab('delivery')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'delivery'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                title="Delivery Charges & Distance Scale Controller"
+              >
+                <div className="flex items-center gap-2.5">
+                  <SlidersHorizontal className="w-4 h-4 flex-shrink-0 text-blue-600" />
+                  {!isWpSidebarCollapsed && <span>Delivery &amp; Rates</span>}
+                </div>
+                {!isWpSidebarCollapsed && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    Scale
                   </span>
                 )}
               </button>
@@ -4367,6 +4404,7 @@ export default function AdminPage() {
               <div className="flex items-center gap-3">
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                   {activeTab === 'dashboard' && 'Dashboard'}
+                  {activeTab === 'delivery' && 'Delivery Charges & Distance Scale Controller'}
                   {activeTab === 'security' && 'Security & Approved Devices (256-Bit Hardware Whitelist)'}
                   {activeTab === 'inventory' && `All Products (${products.length} SKUs)`}
                   {activeTab === 'trash' && `Dustbin / Recycle Bin (${trashProducts.length} Items - 15 Days Retention)`}
@@ -10751,6 +10789,13 @@ export default function AdminPage() {
             {activeTab === 'security' && (
               <div className="space-y-6">
                 <SecurityManager />
+              </div>
+            )}
+
+            {/* Delivery Charges & Distance Scale Controller Tab */}
+            {activeTab === 'delivery' && (
+              <div className="space-y-6">
+                <DeliveryManager />
               </div>
             )}
 

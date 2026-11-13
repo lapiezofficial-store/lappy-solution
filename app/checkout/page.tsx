@@ -30,6 +30,8 @@ export default function CheckoutPage() {
     applyCoupon,
     removeCoupon,
     customer,
+    customerLocation,
+    deliveryFee,
     isCustomerLoading,
     signInWithGoogle,
     loginCustomerManually,
@@ -49,11 +51,20 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('delivery');
-  const [streetAddress, setStreetAddress] = useState('');
-  const [landmark, setLandmark] = useState('');
+  const [streetAddress, setStreetAddress] = useState(() => customerLocation?.area || '');
+  const [landmark, setLandmark] = useState(() => customerLocation?.landmark || '');
   const [city, setCity] = useState('Garhwa');
-  const [pincode, setPincode] = useState('822114');
+  const [pincode, setPincode] = useState(() => customerLocation?.pincode || '822114');
   const [orderNotes, setOrderNotes] = useState('');
+
+  // Sync if customerLocation updates
+  useEffect(() => {
+    if (customerLocation) {
+      if (!streetAddress) setStreetAddress(customerLocation.area);
+      if (!pincode && customerLocation.pincode) setPincode(customerLocation.pincode);
+      if (!landmark && customerLocation.landmark) setLandmark(customerLocation.landmark);
+    }
+  }, [customerLocation]);
 
   // GST Invoice & Purchase Order
   const [needGst, setNeedGst] = useState(false);
@@ -146,8 +157,10 @@ export default function CheckoutPage() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  const isPickupOrder = deliveryType === 'pickup' || paymentMethod === 'store_pickup';
+  const currentDeliveryFee = isPickupOrder ? 0 : (typeof deliveryFee === 'number' ? deliveryFee : 0);
   const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-  const finalTotal = Math.max(0, subtotal - (couponDiscount || 0));
+  const finalTotal = Math.max(0, subtotal - (couponDiscount || 0) + currentDeliveryFee);
 
   // Official Merchant UPI URI from CMS Database
   const upiId = paymentSettings.upiId || 'lappy.solution@ybl';
@@ -291,6 +304,9 @@ export default function CheckoutPage() {
       })),
       totalAmount: finalTotal,
       subtotalAmount: subtotal,
+      deliveryFee: currentDeliveryFee,
+      distanceKm: isPickup ? 0 : (customerLocation?.distanceKm ?? 2),
+      distanceSlab: isPickup ? 'Showroom Counter Pickup' : (customerLocation?.distanceSlab || 'Garhwa Town Core'),
       couponCode: appliedCoupon?.code || null,
       couponDiscount: couponDiscount || 0,
       paymentMethod: 
@@ -1468,9 +1484,13 @@ export default function CheckoutPage() {
                     <span>-₹{couponDiscount.toLocaleString('en-IN')}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span>Shipping & Handling</span>
-                  <span className="text-emerald-700 font-bold">FREE</span>
+                <div className="flex justify-between items-center">
+                  <span>Delivery Charges {customerLocation ? `(${customerLocation.distanceKm} km)` : ''}</span>
+                  {currentDeliveryFee === 0 ? (
+                    <span className="text-emerald-700 font-bold">FREE</span>
+                  ) : (
+                    <span className="text-slate-900 font-bold">₹{currentDeliveryFee.toLocaleString('en-IN')}</span>
+                  )}
                 </div>
                 <div className="flex justify-between">
                   <span>GST Invoice (18%)</span>

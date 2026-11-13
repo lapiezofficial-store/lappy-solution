@@ -10,6 +10,7 @@ import { CustomerAccountModal } from './CustomerAccountModal';
 import { CustomerAuthModal } from './CustomerAuthModal';
 import { MobileBottomNav } from './MobileBottomNav';
 import { AppDownloadModal } from './AppDownloadModal';
+import { LocationSelectorModal } from './LocationSelectorModal';
 import { CheckCircle2 } from 'lucide-react';
 
 import { usePathname } from 'next/navigation';
@@ -103,6 +104,7 @@ export const ClientShell: React.FC<{ children: React.ReactNode }> = ({ children 
         <ProductDetailModal />
         <CustomerAccountModal />
         <CustomerAuthModal />
+        <LocationSelectorModal />
         <AppDownloadModalContainer />
         <ToastNotification />
       </div>

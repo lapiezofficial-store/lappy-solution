@@ -19,7 +19,7 @@ export const BrandShowcase: React.FC = () => {
 
   if (activeBrands.length === 0) return null;
 
-  const MOBILE_LIMIT = 7;
+  const MOBILE_LIMIT = 8;
   const mobileBrands = showAllMobile || activeBrands.length <= MOBILE_LIMIT
     ? activeBrands
     : activeBrands.slice(0, MOBILE_LIMIT);
@@ -72,23 +72,6 @@ export const BrandShowcase: React.FC = () => {
                 </Link>
               );
             })}
-
-            {/* View More circular card in 8th slot when collapsed */}
-            {!showAllMobile && activeBrands.length > MOBILE_LIMIT && (
-              <button
-                type="button"
-                onClick={() => setShowAllMobile(true)}
-                className="flex flex-col items-center justify-center group active:scale-95 transition-transform cursor-pointer"
-              >
-                <div className="w-14 h-14 rounded-full bg-blue-50/90 border border-blue-200 shadow-2xs flex flex-col items-center justify-center p-1 text-[#1A56DB] hover:bg-blue-100">
-                  <span className="text-[10px] font-black leading-tight">More</span>
-                  <span className="text-[8.5px] font-bold text-blue-600">+{activeBrands.length - MOBILE_LIMIT}</span>
-                </div>
-                <span className="text-[10px] font-bold text-blue-700 mt-1 text-center leading-tight">
-                  View All
-                </span>
-              </button>
-            )}
           </div>
 
           {showAllMobile && activeBrands.length > MOBILE_LIMIT && (
