@@ -285,7 +285,7 @@ export default function ProductDetailPage() {
       return;
     }
     addToCart(product, quantity);
-    router.push('/checkout');
+    router.push('/cart');
   };
 
   const handleWhatsApp = () => {
@@ -315,16 +315,16 @@ export default function ProductDetailPage() {
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
         
         {/* Breadcrumb Navigation */}
-        <nav className="flex items-center gap-2 text-xs text-gray-500 mb-5 overflow-x-auto pb-1">
-          <Link href="/" className="hover:text-[#1A56DB] transition-colors">Home</Link>
-          <span className="text-gray-300">/</span>
-          <Link href="/shop" className="hover:text-[#1A56DB] transition-colors">Catalog</Link>
-          <span className="text-gray-300">/</span>
-          <Link href={`/shop?cat=${encodeURIComponent(product.category)}`} className="hover:text-[#1A56DB] transition-colors">
+        <nav className="flex items-center gap-2 text-xs text-gray-500 mb-4 overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
+          <Link href="/" className="hover:text-[#1A56DB] transition-colors flex-shrink-0">Home</Link>
+          <span className="text-gray-300 flex-shrink-0">/</span>
+          <Link href="/shop" className="hover:text-[#1A56DB] transition-colors flex-shrink-0">Catalog</Link>
+          <span className="text-gray-300 flex-shrink-0">/</span>
+          <Link href={`/shop?cat=${encodeURIComponent(product.category)}`} className="hover:text-[#1A56DB] transition-colors flex-shrink-0 font-medium">
             {product.category}
           </Link>
-          <span className="text-gray-300">/</span>
-          <span className="text-gray-900 font-semibold truncate max-w-xs">{product.name}</span>
+          <span className="text-gray-300 flex-shrink-0">/</span>
+          <span className="text-gray-900 font-semibold truncate max-w-[200px] sm:max-w-xs flex-shrink-0">{product.name}</span>
         </nav>
 
         {/* Product Hero Layout */}
@@ -389,40 +389,6 @@ export default function ProductDetailPage() {
                 ))}
               </div>
             )}
-
-            {/* Trust Assurance Pillars */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-              <div className="rounded-xl bg-white border border-[#E5E7EB] p-3.5 flex items-center gap-2.5 shadow-2xs">
-                <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-[#1A56DB] flex-shrink-0">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-900">Direct Brand Warranty</h4>
-                  <p className="text-[11px] text-gray-500">100% Authorized & Certified</p>
-                </div>
-              </div>
-
-              <div className="rounded-xl bg-white border border-[#E5E7EB] p-3.5 flex items-center gap-2.5 shadow-2xs">
-                <div className="w-9 h-9 rounded-lg bg-green-50 border border-green-100 flex items-center justify-center text-[#15803D] flex-shrink-0">
-                  <Truck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-900">Same-Day Garhwa Delivery</h4>
-                  <p className="text-[11px] text-gray-500">Free door delivery in town</p>
-                </div>
-              </div>
-
-              <div className="rounded-xl bg-white border border-[#E5E7EB] p-3.5 flex items-center gap-2.5 shadow-2xs">
-                <div className="w-9 h-9 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-[#D97706] flex-shrink-0">
-                  <Store className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-900">Showroom Inspection</h4>
-                  <p className="text-[11px] text-gray-500">Try before paying at Chiniya Rd</p>
-                </div>
-              </div>
-            </div>
-
           </div>
 
           {/* Right Column: Pricing, Specs & Purchase Actions (5 Cols Sticky) */}
@@ -448,14 +414,11 @@ export default function ProductDetailPage() {
                 )}
               </div>
 
-              {/* Title & SKU */}
+              {/* Title */}
               <div>
                 <h1 className="text-xl sm:text-2xl font-extrabold text-[#111827] tracking-tight leading-snug">
                   {product.name}
                 </h1>
-                <p className="text-xs text-gray-400 mt-1 font-mono">
-                  SKU: {product.sku} • Category: {product.category}
-                </p>
               </div>
 
               {/* Reviews Star Rating */}
@@ -598,34 +561,34 @@ export default function ProductDetailPage() {
 
         {/* Detailed Information Tabs (Specs, Description, Reviews) */}
         <div className="rounded-2xl bg-white border border-[#E5E7EB] p-5 sm:p-8 shadow-xs mb-10">
-          <div className="flex items-center gap-2 border-b border-gray-200 pb-3 mb-6 overflow-x-auto">
+          <div className="flex items-center gap-2 border-b border-gray-200 pb-3 mb-6 overflow-x-auto no-scrollbar whitespace-nowrap">
             <button
               onClick={() => setActiveTab('specs')}
-              className={`py-2 px-4 rounded-lg text-xs sm:text-[13px] font-bold transition-all ${
+              className={`py-2.5 px-4 rounded-xl text-xs sm:text-[13px] font-bold transition-all whitespace-nowrap flex-shrink-0 cursor-pointer ${
                 activeTab === 'specs'
                   ? 'bg-[#1A56DB] text-white shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 bg-gray-50 border border-gray-200/80'
               }`}
             >
-              Full Specifications
+              Overview &amp; Specifications
             </button>
             <button
               onClick={() => setActiveTab('whatsapp')}
-              className={`py-2 px-4 rounded-lg text-xs sm:text-[13px] font-bold transition-all flex items-center gap-1.5 ${
+              className={`py-2.5 px-4 rounded-xl text-xs sm:text-[13px] font-bold transition-all whitespace-nowrap flex-shrink-0 flex items-center gap-2 cursor-pointer ${
                 activeTab === 'whatsapp' || activeTab === 'warranty'
                   ? 'bg-[#25D366] text-white shadow-xs'
-                  : 'text-emerald-700 hover:text-emerald-900 bg-emerald-50/80 hover:bg-emerald-100'
+                  : 'text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
               }`}
             >
-              <WhatsAppIcon variant={activeTab === 'whatsapp' || activeTab === 'warranty' ? 'monochrome' : 'color'} className="w-4 h-4" />
-              <span>WhatsApp: +91 9608828288</span>
+              <WhatsAppIcon variant={activeTab === 'whatsapp' || activeTab === 'warranty' ? 'monochrome' : 'color'} className="w-4 h-4 flex-shrink-0" />
+              <span>WhatsApp Support</span>
             </button>
             <button
               onClick={() => setActiveTab('reviews')}
-              className={`py-2 px-4 rounded-lg text-xs sm:text-[13px] font-bold transition-all ${
+              className={`py-2.5 px-4 rounded-xl text-xs sm:text-[13px] font-bold transition-all whitespace-nowrap flex-shrink-0 cursor-pointer ${
                 activeTab === 'reviews'
                   ? 'bg-[#1A56DB] text-white shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 bg-gray-50 border border-gray-200/80'
               }`}
             >
               Customer Reviews ({product.reviews?.length || 0})
@@ -658,10 +621,6 @@ export default function ProductDetailPage() {
                     <span className="col-span-2 text-slate-900 font-medium">{product.category}</span>
                   </div>
                   <div className="grid grid-cols-3 p-3 bg-white">
-                    <span className="font-semibold text-slate-500">Stock Keeping Unit (SKU)</span>
-                    <span className="col-span-2 text-slate-900 font-mono text-xs">{product.sku}</span>
-                  </div>
-                  <div className="grid grid-cols-3 p-3 bg-slate-50">
                     <span className="font-semibold text-slate-500">Configuration</span>
                     <span className="col-span-2 text-slate-900 font-medium">{product.specs || 'Certified Genuine Box Package'}</span>
                   </div>

@@ -89,7 +89,7 @@ export const ProductDetailModal: React.FC = () => {
     if (isOutOfStock) return;
     addToCart(selectedProduct);
     setSelectedProduct(null);
-    router.push('/checkout');
+    router.push('/cart');
   };
 
   return (
@@ -157,9 +157,6 @@ export const ProductDetailModal: React.FC = () => {
                       OUT OF STOCK
                     </span>
                   )}
-                  <span className="text-[11px] font-mono text-slate-400">
-                    SKU: {selectedProduct.sku}
-                  </span>
                 </div>
               </div>
 

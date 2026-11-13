@@ -78,7 +78,7 @@ export const Hero: React.FC = () => {
 
   const handleInstantBuy = () => {
     addToCart(currentDeal as any);
-    router.push('/checkout');
+    router.push('/cart');
   };
 
   return (
