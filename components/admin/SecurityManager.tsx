@@ -32,9 +32,21 @@ interface DeviceItem {
   status?: string;
 }
 
+interface EmergencyKeyItem {
+  id: string;
+  passkey: string;
+  name: string;
+  ownerPhone: string;
+  maxUses: number;
+  usedCount: number;
+  remainingUses: number;
+  isExpired: boolean;
+}
+
 export const SecurityManager: React.FC = () => {
   const [approvedDevices, setApprovedDevices] = useState<DeviceItem[]>([]);
   const [pendingDevices, setPendingDevices] = useState<DeviceItem[]>([]);
+  const [emergencyKeys, setEmergencyKeys] = useState<EmergencyKeyItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [showOwnerPin, setShowOwnerPin] = useState<boolean>(false);
@@ -48,6 +60,9 @@ export const SecurityManager: React.FC = () => {
         const data = await res.json();
         setApprovedDevices(data.approved || []);
         setPendingDevices(data.pending || []);
+        if (data.emergencyKeys) {
+          setEmergencyKeys(data.emergencyKeys);
+        }
       }
     } catch (err) {
       console.error('Error fetching devices:', err);
@@ -156,32 +171,110 @@ export const SecurityManager: React.FC = () => {
             </div>
           </div>
 
-          {/* Owner Master PIN Box */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3 flex-shrink-0">
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                Owner Master PIN
-              </span>
-              <span className="font-mono font-bold text-sm text-slate-900 tracking-widest">
-                {showOwnerPin ? '960882' : '••••••'}
-              </span>
+          {/* Dual Master Owners PIN & Emergency Passkeys */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0">
+            {/* Owner 1 */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center gap-2.5">
+              <div>
+                <span className="text-[9.5px] uppercase font-bold text-slate-500 block tracking-wider">
+                  Owner 1 (Malik PIN)
+                </span>
+                <span className="font-mono font-bold text-xs text-slate-900 tracking-wider">
+                  {showOwnerPin ? '960882' : '••••••'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyCode('960882')}
+                className="p-1 rounded-md text-slate-400 hover:text-[#1A56DB] hover:bg-slate-200/60 transition-colors cursor-pointer ml-auto"
+                title="Copy Owner 1 PIN"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </button>
             </div>
+
+            {/* Owner 2 */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center gap-2.5">
+              <div>
+                <span className="text-[9.5px] uppercase font-bold text-slate-500 block tracking-wider">
+                  Owner 2 PIN
+                </span>
+                <span className="font-mono font-bold text-xs text-slate-900 tracking-wider">
+                  {showOwnerPin ? '822114' : '••••••'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyCode('822114')}
+                className="p-1 rounded-md text-slate-400 hover:text-[#1A56DB] hover:bg-slate-200/60 transition-colors cursor-pointer ml-auto"
+                title="Copy Owner 2 PIN"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Reveal/Hide Toggle */}
             <button
               type="button"
               onClick={() => setShowOwnerPin(!showOwnerPin)}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors cursor-pointer"
-              title={showOwnerPin ? 'Hide PIN' : 'Reveal PIN'}
+              className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer self-center"
+              title={showOwnerPin ? 'Hide PINs' : 'Reveal PINs'}
             >
               {showOwnerPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
-            <button
-              type="button"
-              onClick={() => copyCode('960882')}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-[#1A56DB] hover:bg-slate-200/60 transition-colors cursor-pointer"
-              title="Copy PIN"
-            >
-              <Copy className="w-4 h-4" />
-            </button>
+          </div>
+        </div>
+
+        {/* 2-Use Emergency Master Passkeys */}
+        <div className="mt-4 pt-3.5 border-t border-slate-100">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <Key className="w-3.5 h-3.5 text-amber-600" />
+              <span>Two-Use Emergency Master Passkeys (Strictly 2 Uses Each)</span>
+            </span>
+            <span className="text-[10px] text-slate-400">
+              Only for the 2 Master Admins to unlock in emergency
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {emergencyKeys.map((k) => (
+              <div
+                key={k.id}
+                className={`p-3 rounded-xl border flex items-center justify-between gap-2 ${
+                  k.isExpired
+                    ? 'bg-rose-50/50 border-rose-200 text-rose-800'
+                    : 'bg-emerald-50/40 border-emerald-200 text-emerald-900'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-800">{k.name}</span>
+                    <span
+                      className={`text-[9.5px] font-black px-1.5 py-0.2 rounded-full ${
+                        k.isExpired
+                          ? 'bg-rose-200 text-rose-800'
+                          : 'bg-emerald-200 text-emerald-900'
+                      }`}
+                    >
+                      {k.isExpired ? 'EXPIRED (0 Left)' : `${k.remainingUses} of ${k.maxUses} Uses Left`}
+                    </span>
+                  </div>
+                  <span className="font-mono text-xs font-black tracking-wider text-slate-900 select-all block mt-0.5">
+                    {k.passkey}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => copyCode(k.passkey)}
+                  className="p-1.5 rounded-lg border border-slate-200 hover:bg-white text-slate-600 hover:text-[#1A56DB] transition-all cursor-pointer"
+                  title={`Copy ${k.passkey}`}
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
 

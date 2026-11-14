@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  ShieldCheck, Check, X, Clock, CheckCircle2, XCircle,
+  ShieldCheck, ShieldAlert, Check, X, Clock, CheckCircle2, XCircle,
   Search, Filter, ShoppingBag, ShoppingCart, Truck, Package, User,
   Phone, MessageSquare, ExternalLink, MapPin, AlertCircle,
   RefreshCw, Plus, Edit2, ArrowRight, BarChart3, Layers,
@@ -567,6 +567,25 @@ export default function AdminPage() {
     return () => clearInterval(interval);
   }, [lockoutTimer]);
 
+  // Secret URL Cloaking States (Hides /admin from public visitors unless secret key / URL is used)
+  const [isSecretAuthorized, setIsSecretAuthorized] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get('key') || params.get('secret') || params.get('access') || params.get('hq');
+    if (key && ['lapiez2026', 'hq2026', 'lapiez9608', 'lapiez', 'master'].includes(key.toLowerCase())) {
+      localStorage.setItem('lapiez_secret_admin_authorized', 'true');
+      return true;
+    }
+    if (window.location.pathname.includes('admin-hq')) {
+      localStorage.setItem('lapiez_secret_admin_authorized', 'true');
+      return true;
+    }
+    if (localStorage.getItem('lapiez_secret_admin_authorized') === 'true') {
+      return true;
+    }
+    return false;
+  });
+
   // 256-Bit Hardware & Device Security States
   const [requiresDeviceApproval, setRequiresDeviceApproval] = useState<boolean>(false);
   const [pendingDeviceCode, setPendingDeviceCode] = useState<string>('');
@@ -576,6 +595,37 @@ export default function AdminPage() {
   const [ownerPinInput, setOwnerPinInput] = useState<string>('');
   const [isVerifyingPin, setIsVerifyingPin] = useState<boolean>(false);
   const [pinError, setPinError] = useState<string>('');
+
+  // Real-time polling for device approval from Master Admin (Owner 1 or Owner 2)
+  useEffect(() => {
+    if (!requiresDeviceApproval || !pendingDeviceId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/admin/devices/check-status?deviceId=${encodeURIComponent(pendingDeviceId)}`, {
+          credentials: 'include',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.approved) {
+            if (data.token) {
+              setAdminToken(data.token);
+            }
+            setIsAuthenticated(true);
+            setRequiresDeviceApproval(false);
+            setAuthPassword('');
+            showToast('Device approved by Store Owner! Console unlocked.');
+            syncWithDatabase({ forceFresh: true }).catch(() => { });
+            fetchOrders().catch(() => { });
+          }
+        }
+      } catch {
+        // Silently continue polling
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [requiresDeviceApproval, pendingDeviceId, syncWithDatabase, fetchOrders, showToast]);
 
   const handleUnlockPortal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -612,7 +662,6 @@ export default function AdminPage() {
           password: trimmed,
           deviceId: clientDeviceId,
           deviceInfo: clientDeviceInfo,
-          trustAsOwnerDevice: true,
         }),
       });
 
@@ -3024,6 +3073,26 @@ export default function AdminPage() {
     showToast(`${label} copied to clipboard!`);
   };
 
+  if (!isAuthenticated && !isSecretAuthorized) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mb-4 shadow-2xs">
+          <ShieldAlert className="w-8 h-8 text-slate-400" />
+        </div>
+        <h1 className="text-2xl font-black text-slate-800 tracking-tight">404 - Page Not Found</h1>
+        <p className="text-xs text-slate-500 mt-2 max-w-sm leading-relaxed">
+          The requested showroom portal or endpoint could not be found. Please check your URL or return to the main store.
+        </p>
+        <Link
+          href="/"
+          className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+        >
+          ← Return to Lapiez Store
+        </Link>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 relative overflow-hidden font-sans">
@@ -3056,10 +3125,10 @@ export default function AdminPage() {
               <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
                 <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider text-amber-800">
                   <Lock className="w-4 h-4 text-amber-600" />
-                  <span>New Device Detected — Verification Required</span>
+                  <span>Unapproved Device — Malik Approval Required</span>
                 </div>
                 <p className="text-[11.5px] text-amber-800/90 leading-relaxed">
-                  Yeh device pehle se verified nahi hai. Suraksha ke liye Store Owner (Malik) ka verification aniwarya hai.
+                  Password verify ho chuka hai, lekin yeh naya device hai. Login ke liye Master Admin (Owner 1 ya Owner 2) ka approval zaroori hai.
                 </p>
               </div>
 
@@ -3076,34 +3145,21 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* 1-Click Store Owner Instant Unlock */}
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={() => executeOwnerApproval('960882')}
-                  disabled={isVerifyingPin}
-                  className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-black text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-500"
-                >
-                  <Key className="w-4 h-4 text-white" />
-                  <span>I Am Store Owner — Instant 1-Click Unlock</span>
-                </button>
-                <div className="flex items-center gap-2 my-3">
-                  <div className="flex-1 h-px bg-slate-200"></div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">or enter pin manually</span>
-                  <div className="flex-1 h-px bg-slate-200"></div>
-                </div>
+              {/* Real-time waiting status badge */}
+              <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 text-blue-900 flex items-center justify-center gap-2 text-xs font-semibold">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#1A56DB]" />
+                <span>Waiting for Master Admin approval (Live auto-unlock)...</span>
               </div>
 
-              {/* Owner Master PIN Verification Form */}
-              <form onSubmit={handleVerifyOwnerPin} className="space-y-3">
+              {/* In-Person Owner PIN or Emergency Key Form */}
+              <form onSubmit={handleVerifyOwnerPin} className="space-y-3 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
-                    Owner Master PIN (Malik Direct Approval)
+                    In-Person Owner Approval (PIN or Emergency Key)
                   </label>
                   <input
                     type="password"
-                    maxLength={6}
-                    placeholder="Enter 6-digit Owner Master PIN..."
+                    placeholder="Enter Owner PIN (960882 / 822114) or Emergency Key..."
                     value={ownerPinInput}
                     onChange={(e) => setOwnerPinInput(e.target.value)}
                     className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-blue-100 transition-all font-mono tracking-wider text-center"
@@ -3125,7 +3181,7 @@ export default function AdminPage() {
                   {isVerifyingPin ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                      <span>Verifying Master PIN...</span>
+                      <span>Verifying Master Credentials...</span>
                     </>
                   ) : (
                     <>
@@ -3193,20 +3249,8 @@ export default function AdminPage() {
                 )}
 
                 {isLockedOut && (
-                  <div className="mt-2 flex items-center justify-between text-xs">
+                  <div className="mt-2 text-xs">
                     <span className="text-amber-700 font-semibold">Retry in {lockoutTimer}s</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLockedOut(false);
-                        setFailedAttempts(0);
-                        setAuthError('');
-                        setAuthPassword('Lapiez@2026#');
-                      }}
-                      className="text-xs text-[#1A56DB] font-bold hover:underline cursor-pointer"
-                    >
-                      Owner Reset & Auto-fill
-                    </button>
                   </div>
                 )}
               </div>
@@ -3228,21 +3272,6 @@ export default function AdminPage() {
                   </>
                 )}
               </button>
-
-              <div className="pt-1 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsLockedOut(false);
-                    setFailedAttempts(0);
-                    setAuthError('');
-                    setAuthPassword('Lapiez@2026#');
-                  }}
-                  className="text-[11.5px] font-semibold text-slate-500 hover:text-[#1A56DB] transition-colors cursor-pointer"
-                >
-                  Store Owner: Click to Auto-fill Master Passkey
-                </button>
-              </div>
             </form>
           )}
 

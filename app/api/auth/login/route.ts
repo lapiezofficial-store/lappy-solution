@@ -5,6 +5,7 @@ import {
   registerPendingDevice,
   approveDevice,
   verifyOwnerPin,
+  verifyAndConsumeEmergencyKey,
   hasAnyApprovedDevices,
   DEVICE_AUTH_COOKIE,
 } from '@/lib/deviceSecurity';
@@ -75,12 +76,33 @@ export async function POST(request: NextRequest) {
   const clientIp = getClientIp(request);
 
   const body = await request.json().catch(() => null);
-  const password = body && typeof body.password === 'string' ? body.password : '';
+  const password = body && typeof body.password === 'string' ? body.password.trim() : '';
   const deviceId = body && typeof body.deviceId === 'string' ? body.deviceId.trim() : '';
   const deviceInfo = body && typeof body.deviceInfo === 'string' ? body.deviceInfo.trim() : 'Web Browser';
   const ownerPin = body && typeof body.ownerPin === 'string' ? body.ownerPin.trim() : '';
 
-  // Check valid master credentials first (so legitimate owner is never locked out by rate limit)
+  // 1. Check if the submitted password is an Emergency Master Key (Max 2 Uses Each)
+  const emergencyCheck = verifyAndConsumeEmergencyKey(password, deviceId, clientIp);
+  if (emergencyCheck.success && emergencyCheck.token) {
+    clearRateLimit(clientIp);
+    const sessionToken = createAdminSession();
+    const response = NextResponse.json({
+      success: true,
+      token: sessionToken,
+      deviceApproved: true,
+      isEmergencyMaster: true,
+      message: `Emergency Master Passkey accepted! (${emergencyCheck.remainingUses} uses remaining).`,
+    });
+    response.cookies.set(adminSessionCookie.name, sessionToken, adminSessionCookie.options);
+    response.cookies.set(DEVICE_AUTH_COOKIE.name, emergencyCheck.token, DEVICE_AUTH_COOKIE.options);
+    return response;
+  }
+
+  if (emergencyCheck.error && password.toUpperCase().startsWith('LPZ-OWNER')) {
+    return NextResponse.json({ error: emergencyCheck.error }, { status: 403 });
+  }
+
+  // 2. Check standard admin password
   const verification = await verifyAndCheckAdminPassword(password);
 
   if (verification.isValid) {
@@ -105,37 +127,27 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Check 256-bit Device Verification & Approval
+  // 3. Check 256-bit Device Verification & Approval
   const deviceCookie = request.cookies.get(DEVICE_AUTH_COOKIE.name)?.value || null;
   const isApproved = deviceId ? isDeviceApproved(deviceId, deviceCookie) : false;
 
-  // Case 0: First Device or Direct Owner Login Auto-Whitelist
-  // If no devices are approved yet in the system, or owner requested direct unlock with valid password
-  const isDirectOwner = Boolean(body && (body.isOwnerDirectUnlock || body.trustAsOwnerDevice));
-  if (!hasAnyApprovedDevices() || isDirectOwner) {
-    const { token } = approveDevice({
-      deviceId: deviceId || `dev_owner_${Date.now()}`,
-      deviceName: 'Store Owner Primary Device',
-      deviceInfo,
-      ip: clientIp,
-      approvedBy: 'Primary Store Owner Master Passkey',
-    });
-
+  // Case 1: Device is ALREADY APPROVED by Master Admin
+  if (isApproved) {
     const sessionToken = createAdminSession();
-    const response = NextResponse.json({ success: true, token: sessionToken, deviceApproved: true, isPrimaryOwner: true });
+    const response = NextResponse.json({ success: true, token: sessionToken, deviceApproved: true });
     response.cookies.set(adminSessionCookie.name, sessionToken, adminSessionCookie.options);
-    response.cookies.set(DEVICE_AUTH_COOKIE.name, token, DEVICE_AUTH_COOKIE.options);
     return response;
   }
 
-  // Case 1: Owner Master PIN provided directly on login
+  // Case 2: Owner Master PIN provided directly on login
   if (ownerPin) {
-    if (verifyOwnerPin(ownerPin)) {
+    const pinCheck = verifyOwnerPin(ownerPin);
+    if (pinCheck.isValid) {
       const { token } = approveDevice({
         deviceId: deviceId || `dev_${Date.now()}`,
         deviceInfo,
         ip: clientIp,
-        approvedBy: 'Owner PIN Direct Verification',
+        approvedBy: `${pinCheck.ownerName} PIN Verification`,
       });
 
       const sessionToken = createAdminSession();
@@ -148,15 +160,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Case 2: Device is already approved
-  if (isApproved) {
-    const sessionToken = createAdminSession();
-    const response = NextResponse.json({ success: true, token: sessionToken, deviceApproved: true });
-    response.cookies.set(adminSessionCookie.name, sessionToken, adminSessionCookie.options);
-    return response;
-  }
-
-  // Case 3: Device is UNAPPROVED / NEW -> Hold in pending approval state
+  // Case 3: Device is UNAPPROVED -> Even with correct password, MUST be approved by Master Admin!
   const effectiveDeviceId = deviceId || `dev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   const { deviceCode } = registerPendingDevice({
     deviceId: effectiveDeviceId,
@@ -172,8 +176,8 @@ export async function POST(request: NextRequest) {
         recipient: 'ADMIN',
         type: 'SYSTEM',
         title: 'New Device Login Approval Requested',
-        message: `Device Code ${deviceCode} (${deviceInfo}) at IP ${clientIp} requires owner approval.`,
-        link: '/admin',
+        message: `Device Code ${deviceCode} (${deviceInfo}) at IP ${clientIp} requires Owner approval.`,
+        link: '/admin?tab=security',
       },
     }).catch(() => null);
   } catch (err) {
@@ -186,6 +190,6 @@ export async function POST(request: NextRequest) {
     deviceCode,
     deviceInfo,
     ip: clientIp,
-    message: 'Naya Device Detect Hua Hai. Main Admin (Malik) ka approval lena aniwarya hai.',
+    message: 'Correct password, but this device requires approval from Store Owner 1 or Store Owner 2.',
   });
 }

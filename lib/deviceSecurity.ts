@@ -24,6 +24,17 @@ export interface PendingDeviceRequest {
   expiresAt: number;
 }
 
+export interface MasterEmergencyKey {
+  id: string; // 'KEY_OWNER_1' | 'KEY_OWNER_2'
+  passkey: string;
+  name: string;
+  ownerPhone: string;
+  maxUses: number;
+  usedCount: number;
+  isExpired: boolean;
+  history: Array<{ usedAt: string; ip: string; deviceId: string }>;
+}
+
 const SECRET = process.env.DEVICE_SECURITY_SECRET || 
   process.env.ADMIN_SESSION_SECRET || 
   'lapiez-super-secure-256-bit-device-authorization-key-2026';
@@ -32,16 +43,43 @@ const OWNER_MASTER_PIN = process.env.OWNER_MASTER_PIN || '960882';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DEVICES_FILE = path.join(DATA_DIR, 'admin_devices.json');
+const EMERGENCY_KEYS_FILE = path.join(DATA_DIR, 'master_emergency_keys.json');
+
+// Default 2 Emergency Master Passkeys (strictly 2 uses each, then expire permanently)
+const DEFAULT_EMERGENCY_KEYS: Record<string, MasterEmergencyKey> = {
+  'LPZ-OWNER1-2026': {
+    id: 'KEY_OWNER_1',
+    passkey: 'LPZ-OWNER1-2026',
+    name: 'Store Owner 1 (Primary Malik)',
+    ownerPhone: '+91 96088 28288',
+    maxUses: 2,
+    usedCount: 0,
+    isExpired: false,
+    history: [],
+  },
+  'LPZ-OWNER2-2026': {
+    id: 'KEY_OWNER_2',
+    passkey: 'LPZ-OWNER2-2026',
+    name: 'Store Owner 2 (Co-Owner)',
+    ownerPhone: '+91 96088 28288',
+    maxUses: 2,
+    usedCount: 0,
+    isExpired: false,
+    history: [],
+  },
+};
 
 // In-memory cache
 interface DeviceStore {
   approvedDevices: Record<string, ApprovedDevice>;
   pendingRequests: Record<string, PendingDeviceRequest>;
+  emergencyKeys: Record<string, MasterEmergencyKey>;
 }
 
 let memoryStore: DeviceStore = {
   approvedDevices: {},
   pendingRequests: {},
+  emergencyKeys: { ...DEFAULT_EMERGENCY_KEYS },
 };
 
 let isInitialized = false;
@@ -60,6 +98,17 @@ function ensureDataFile() {
     } else {
       saveStore();
     }
+
+    if (fs.existsSync(EMERGENCY_KEYS_FILE)) {
+      const content = fs.readFileSync(EMERGENCY_KEYS_FILE, 'utf-8');
+      const parsed = JSON.parse(content);
+      memoryStore.emergencyKeys = {
+        ...DEFAULT_EMERGENCY_KEYS,
+        ...parsed,
+      };
+    } else {
+      saveEmergencyKeys();
+    }
   } catch (err) {
     console.warn('[DEVICE_SECURITY] File persistence fallback to in-memory:', err);
   }
@@ -71,10 +120,110 @@ function saveStore() {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
-    fs.writeFileSync(DEVICES_FILE, JSON.stringify(memoryStore, null, 2), 'utf-8');
+    fs.writeFileSync(
+      DEVICES_FILE, 
+      JSON.stringify({ 
+        approvedDevices: memoryStore.approvedDevices, 
+        pendingRequests: memoryStore.pendingRequests 
+      }, null, 2), 
+      'utf-8'
+    );
   } catch (err) {
     console.warn('[DEVICE_SECURITY] Could not save store to disk:', err);
   }
+}
+
+function saveEmergencyKeys() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(EMERGENCY_KEYS_FILE, JSON.stringify(memoryStore.emergencyKeys, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('[DEVICE_SECURITY] Could not save emergency keys to disk:', err);
+  }
+}
+
+/**
+ * Get emergency keys summary for security dashboard
+ */
+export function getEmergencyKeysSummary() {
+  ensureDataFile();
+  return Object.values(memoryStore.emergencyKeys).map((k) => ({
+    id: k.id,
+    passkey: k.passkey,
+    name: k.name,
+    ownerPhone: k.ownerPhone,
+    maxUses: k.maxUses,
+    usedCount: k.usedCount,
+    remainingUses: Math.max(0, k.maxUses - k.usedCount),
+    isExpired: k.isExpired || k.usedCount >= k.maxUses,
+    history: k.history,
+  }));
+}
+
+/**
+ * Verify and consume a 2-use Master Emergency Passkey
+ */
+export function verifyAndConsumeEmergencyKey(
+  submittedKey: string,
+  deviceId: string,
+  ip: string
+): { success: boolean; token?: string; remainingUses?: number; ownerName?: string; error?: string } {
+  if (!submittedKey || typeof submittedKey !== 'string') {
+    return { success: false, error: 'Empty key provided.' };
+  }
+  ensureDataFile();
+  const cleanKey = submittedKey.trim().toUpperCase();
+
+  let targetEntry: MasterEmergencyKey | null = null;
+  for (const item of Object.values(memoryStore.emergencyKeys)) {
+    if (item.passkey.toUpperCase() === cleanKey) {
+      targetEntry = item;
+      break;
+    }
+  }
+
+  if (!targetEntry) {
+    return { success: false, error: 'Invalid Emergency Passkey.' };
+  }
+
+  if (targetEntry.isExpired || targetEntry.usedCount >= targetEntry.maxUses) {
+    return {
+      success: false,
+      error: `This Emergency Master Key (${targetEntry.passkey}) has already reached its limit of ${targetEntry.maxUses} uses and is EXPIRED.`,
+    };
+  }
+
+  // Consume 1 use
+  targetEntry.usedCount += 1;
+  targetEntry.history.push({
+    usedAt: new Date().toISOString(),
+    ip: ip || 'unknown',
+    deviceId: deviceId || 'unknown',
+  });
+
+  if (targetEntry.usedCount >= targetEntry.maxUses) {
+    targetEntry.isExpired = true;
+  }
+
+  saveEmergencyKeys();
+
+  // Approve this device permanently
+  const { token } = approveDevice({
+    deviceId: deviceId || `dev_emergency_${Date.now()}`,
+    deviceName: `${targetEntry.name} Emergency Login`,
+    ip,
+    approvedBy: `Emergency Master Key: ${targetEntry.passkey} (Use ${targetEntry.usedCount}/${targetEntry.maxUses})`,
+  });
+
+  const remaining = Math.max(0, targetEntry.maxUses - targetEntry.usedCount);
+  return {
+    success: true,
+    token,
+    remainingUses: remaining,
+    ownerName: targetEntry.name,
+  };
 }
 
 /**
@@ -219,16 +368,27 @@ export function approveDevice(params: {
 }
 
 /**
- * Verify Owner PIN (Master Malik Key)
+ * Verify Owner PIN (Master Malik Key - Supports Owner 1 and Owner 2)
  */
-export function verifyOwnerPin(pin: string): boolean {
-  if (!pin || typeof pin !== 'string') return false;
+export function verifyOwnerPin(pin: string): { isValid: boolean; ownerName?: string } {
+  if (!pin || typeof pin !== 'string') return { isValid: false };
   const clean = pin.trim();
-  return clean === OWNER_MASTER_PIN || clean === '960882' || clean === '9608828288';
+
+  // Owner 1 (Primary Malik)
+  if (clean === '960882' || clean === '9608828288' || clean === OWNER_MASTER_PIN) {
+    return { isValid: true, ownerName: 'Store Owner 1 (Primary Malik)' };
+  }
+
+  // Owner 2 (Co-Owner)
+  if (clean === '822114' || clean === '82211482') {
+    return { isValid: true, ownerName: 'Store Owner 2 (Co-Owner)' };
+  }
+
+  return { isValid: false };
 }
 
 /**
- * Approve device using 6-digit code and Owner PIN
+ * Approve device using 6-digit code and Owner PIN or Emergency Key
  */
 export function verifyAndApproveWithPin(params: {
   deviceId: string;
@@ -238,15 +398,23 @@ export function verifyAndApproveWithPin(params: {
 }): { success: boolean; token?: string; error?: string } {
   const { deviceId, pin, deviceInfo, ip } = params;
 
-  if (!verifyOwnerPin(pin)) {
-    return { success: false, error: 'Invalid Owner Master PIN. Access Denied.' };
+  // First check if it's an emergency 2-use key
+  const emergencyCheck = verifyAndConsumeEmergencyKey(pin, deviceId, ip || 'direct');
+  if (emergencyCheck.success && emergencyCheck.token) {
+    return { success: true, token: emergencyCheck.token };
+  }
+
+  // Check Owner PIN (Owner 1 or Owner 2)
+  const pinVerification = verifyOwnerPin(pin);
+  if (!pinVerification.isValid) {
+    return { success: false, error: emergencyCheck.error && pin.length > 6 ? emergencyCheck.error : 'Invalid Owner Master PIN. Access Denied.' };
   }
 
   const { token } = approveDevice({
     deviceId,
     deviceInfo,
     ip,
-    approvedBy: 'Owner Master PIN (Malik Direct Verification)',
+    approvedBy: `${pinVerification.ownerName} PIN Verification`,
   });
 
   return { success: true, token };

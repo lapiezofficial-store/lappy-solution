@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hasAdminSession } from '@/lib/adminAuth';
-import { listAllDevices, approveDevice, revokeDevice, removeDevice, DEVICE_AUTH_COOKIE } from '@/lib/deviceSecurity';
+import { listAllDevices, approveDevice, revokeDevice, removeDevice, getEmergencyKeysSummary, DEVICE_AUTH_COOKIE } from '@/lib/deviceSecurity';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
   }
 
   const data = listAllDevices();
-  return NextResponse.json(data);
+  const emergencyKeys = getEmergencyKeysSummary();
+  return NextResponse.json({ ...data, emergencyKeys });
 }
 
 export async function POST(request: NextRequest) {
