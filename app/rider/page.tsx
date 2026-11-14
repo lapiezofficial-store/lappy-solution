@@ -355,36 +355,36 @@ export default function RiderApp() {
 
       {/* Main Body */}
       <main className="flex-1 max-w-lg w-full mx-auto p-4 space-y-4">
-        {/* Wallet & Today Stats Card */}
-        <div className="bg-gradient-to-br from-[#1A56DB] via-[#1E40AF] to-[#0A2560] rounded-3xl p-4 sm:p-5 shadow-lg text-white space-y-3">
+        {/* Wallet & Today Stats Card (Clean White Executive Theme) */}
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-xs text-slate-900 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-semibold text-blue-100 block">Wallet Balance</span>
-              <div className="text-3xl font-black text-white mt-0.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Wallet Balance</span>
+              <div className="text-3xl font-black text-slate-900 mt-0.5 tracking-tight">
                 ₹{Number(rider.walletBalance || 0).toLocaleString('en-IN')}
               </div>
             </div>
             <Link
               href="/rider/portal"
-              className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-xs text-white font-bold flex items-center gap-1 border border-white/20 transition-colors"
+              className="px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs text-[#1A56DB] font-extrabold flex items-center gap-1 border border-slate-200 transition-colors"
             >
               <span>Bank / Payouts</span>
               <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/15 text-center text-xs">
-            <div className="bg-black/15 rounded-xl p-2 border border-white/10">
-              <span className="text-[10px] text-blue-100/80 block">Today Done</span>
-              <strong className="text-sm font-black text-white">{stats.todayDeliveries}</strong>
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center text-xs">
+            <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Today Done</span>
+              <strong className="text-sm font-black text-slate-900">{stats.todayDeliveries}</strong>
             </div>
-            <div className="bg-black/15 rounded-xl p-2 border border-white/10">
-              <span className="text-[10px] text-blue-100/80 block">Today Earned</span>
-              <strong className="text-sm font-black text-emerald-300">₹{stats.todayEarnings}</strong>
+            <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Today Earned</span>
+              <strong className="text-sm font-black text-emerald-600">₹{stats.todayEarnings}</strong>
             </div>
-            <div className="bg-black/15 rounded-xl p-2 border border-white/10">
-              <span className="text-[10px] text-blue-100/80 block">COD Cash Today</span>
-              <strong className="text-sm font-black text-amber-200">₹{stats.codCollectedToday}</strong>
+            <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">COD Collected</span>
+              <strong className="text-sm font-black text-amber-600">₹{stats.codCollectedToday}</strong>
             </div>
           </div>
         </div>

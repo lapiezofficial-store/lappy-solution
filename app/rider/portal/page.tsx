@@ -86,7 +86,7 @@ export default function RiderPortalPage() {
 
       const data = await res.json();
       if (res.ok) {
-        alert('Bank / UPI details update ho gayi! 🎉');
+        alert('Bank and UPI details updated successfully.');
         const updated = {
           ...rider,
           bankUpi: bankUpi.trim(),

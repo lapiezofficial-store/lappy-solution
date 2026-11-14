@@ -766,8 +766,8 @@ export default function AdminPage() {
           if (isSoundAlertEnabled) {
             playOrderAlertSound();
           }
-          triggerDesktopNotification(`🔔 Naya Order #${latest.orderId}!`, {
-            body: `${latest.customerName} ne ₹${Number(latest.totalAmount).toLocaleString('en-IN')} ka order place kiya.`,
+          triggerDesktopNotification(`New Order #${latest.orderId}`, {
+            body: `${latest.customerName} placed an order for ₹${Number(latest.totalAmount).toLocaleString('en-IN')}.`,
           });
           setNewOrderAlertBanner(latest);
           setTimeout(() => setNewOrderAlertBanner(null), 12000);
@@ -804,8 +804,8 @@ export default function AdminPage() {
         if (isSoundAlertEnabled) {
           playOrderAlertSound();
         }
-        triggerDesktopNotification(`🔔 Naya Order #${payload.orderId}!`, {
-          body: `${payload.customerName} ne ₹${Number(payload.totalAmount).toLocaleString('en-IN')} ka order place kiya.`,
+        triggerDesktopNotification(`New Order #${payload.orderId}`, {
+          body: `${payload.customerName} placed an order for ₹${Number(payload.totalAmount).toLocaleString('en-IN')}.`,
         });
         setNewOrderAlertBanner(payload);
         setTimeout(() => setNewOrderAlertBanner(null), 12000);
@@ -2536,17 +2536,17 @@ export default function AdminPage() {
             : scraperCustomUrl || 'Custom Target Domain';
 
     setScraperLogs([
-      `[00:01] 🌐 Initializing headless crawler engine for target: ${targetName}...`,
-      `[00:02] 📡 Resolving DNS and establishing secure TLS handshake with target host...`,
-      `[00:03] 🔍 Crawling catalog pagination and inspecting DOM schemas...`,
+      `[00:01] Initializing crawler engine for target: ${targetName}...`,
+      `[00:02] Resolving DNS and establishing secure TLS handshake with target host...`,
+      `[00:03] Crawling catalog pagination and inspecting DOM schemas...`,
     ]);
 
     await new Promise((resolve) => setTimeout(resolve, 600));
 
     setScraperLogs((prev) => [
       ...prev,
-      `[00:04] 📦 Parsing product cards: Title, High-Res Image, MRP, Offer Price, SKU, HSN...`,
-      `[00:05] 🏷️ Auto-mapping categories (Keyboards, Mice, Audio, Power Banks, Chargers, Cartridges)...`,
+      `[00:04] Parsing product cards: Title, High-Res Image, MRP, Offer Price, SKU, HSN...`,
+      `[00:05] Auto-mapping categories (Keyboards, Mice, Audio, Power Banks, Chargers, Cartridges)...`,
     ]);
 
     await new Promise((resolve) => setTimeout(resolve, 400));
@@ -3554,7 +3554,7 @@ export default function AdminPage() {
             </button>
             <a
               href={`https://wa.me/91${(newOrderAlertBanner.phone || '').replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(
-                `Namaste ${newOrderAlertBanner.customerName} ji! 🙏\nLapiez Showroom se aapka order #${newOrderAlertBanner.orderId} receive ho gaya hai. Hum jald confirm karenge.\n- Lapiez Garhwa (9608828288)`
+                `Hello ${newOrderAlertBanner.customerName}, your Lapiez order #${newOrderAlertBanner.orderId} has been received. We will confirm it shortly.\n- Lapiez Garhwa (9608828288)`
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -4960,13 +4960,13 @@ export default function AdminPage() {
                                 <div className="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-1.5">
                                   <a
                                     href={`https://wa.me/91${(order.phone || '').replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(
-                                      `Namaste ${order.customerName} ji! 🙏\n` +
-                                      `Lapiez IT Showroom se aapka order #${order.orderId} update hua hai:\n` +
-                                      `📦 Status: ${order.orderStatus}\n` +
-                                      `💳 Payment: ${order.paymentStatus}\n` +
-                                      `💰 Total Amount: ₹${Number(order.totalAmount).toLocaleString('en-IN')}\n` +
-                                      `📍 Track Order: https://www.lapiez.com/account?tab=orders\n\n` +
-                                      `Lapiez IT Showroom, Garhwa (Ph: 9608828288)`
+                                      `Hello ${order.customerName},\n` +
+                                      `Your Lapiez order #${order.orderId} status update:\n` +
+                                      `Order Status: ${order.orderStatus}\n` +
+                                      `Payment: ${order.paymentStatus}\n` +
+                                      `Total Amount: ₹${Number(order.totalAmount).toLocaleString('en-IN')}\n` +
+                                      `Track Order: https://www.lapiez.com/account?tab=orders\n\n` +
+                                      `Lapiez Showroom, Garhwa (9608828288)`
                                     )}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -9183,7 +9183,7 @@ export default function AdminPage() {
 
                   {/* Quick Save Notice */}
                   <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                    <span>💡 Uploading a file or clicking &ldquo;Remove&rdquo; updates the database live. You can also paste direct image URLs and click &ldquo;Save Store Details to Database&rdquo; below.</span>
+                    <span>Uploading a file or clicking &ldquo;Remove&rdquo; updates the database live. You can also paste direct image URLs and click &ldquo;Save Store Details to Database&rdquo; below.</span>
                   </div>
                 </div>
 
@@ -12392,7 +12392,7 @@ export default function AdminPage() {
                 <label className="font-bold text-gray-700 block mb-1">Badge Text (Optional)</label>
                 <input
                   type="text"
-                  placeholder="e.g. 🔥 HOT TRENDING, ⭐ BESTSELLERS, 👑 PREMIUM"
+                  placeholder="e.g. HOT TRENDING, BESTSELLERS, PREMIUM"
                   value={editingSectionBadge}
                   onChange={(e) => setEditingSectionBadge(e.target.value)}
                   className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"

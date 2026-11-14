@@ -294,12 +294,14 @@ export const Navbar: React.FC<NavbarProps> = () => {
               {isNotificationOpen && (
                 <div className="fixed inset-x-2 top-16 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 text-gray-900 animate-in fade-in slide-in-from-top-2 duration-150 max-w-sm mx-auto">
                   {/* Header */}
-                  <div className="bg-gradient-to-r from-[#1A56DB] to-[#0A2560] text-white px-3.5 py-2.5 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Bell className="w-4 h-4 text-yellow-300" />
-                      <span className="font-bold text-xs">Order Notifications</span>
+                  <div className="bg-white border-b border-slate-200/90 px-3.5 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-[#1A56DB]">
+                        <Bell className="w-3.5 h-3.5 stroke-[2]" />
+                      </div>
+                      <span className="font-extrabold text-xs text-slate-900 tracking-tight">Notifications</span>
                       {unreadCustomerNotifCount > 0 && (
-                        <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full">
+                        <span className="bg-[#1A56DB] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
                           {unreadCustomerNotifCount} New
                         </span>
                       )}
@@ -309,7 +311,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                         <button
                           type="button"
                           onClick={() => markAllCustomerNotificationsAsRead()}
-                          className="text-[10.5px] text-blue-200 hover:text-white underline cursor-pointer"
+                          className="text-[11px] text-[#1A56DB] hover:text-[#1E40AF] font-bold hover:underline cursor-pointer"
                         >
                           Mark all read
                         </button>
@@ -317,7 +319,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                       <button
                         type="button"
                         onClick={() => setIsNotificationOpen(false)}
-                        className="text-white/80 hover:text-white p-0.5 rounded cursor-pointer"
+                        className="text-slate-400 hover:text-slate-700 p-0.5 rounded cursor-pointer"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -325,20 +327,32 @@ export const Navbar: React.FC<NavbarProps> = () => {
                   </div>
 
                   {/* Body: Notifications List */}
-                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
                     {customerNotifications.length === 0 ? (
-                      <div className="p-5 text-center text-gray-500">
-                        <div className="w-10 h-10 rounded-full bg-blue-50 text-[#1A56DB] flex items-center justify-center mx-auto mb-1.5">
+                      <div className="p-5 text-center text-slate-500">
+                        <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center mx-auto mb-1.5">
                           <Bell className="w-5 h-5 stroke-[1.5]" />
                         </div>
-                        <p className="text-xs font-bold text-gray-700">Koi naya notification nahi hai</p>
-                        <p className="text-[10.5px] text-gray-400 mt-0.5">
-                          Order accept, confirm ya dispatch hone par yahan turant update aayega.
+                        <p className="text-xs font-bold text-slate-700">No new notifications</p>
+                        <p className="text-[10.5px] text-slate-400 mt-0.5">
+                          Order confirmation, packing, and dispatch alerts will appear here.
                         </p>
                       </div>
                     ) : (
                       customerNotifications.map((notif: any) => {
                         const isUnread = !notif.read;
+                        const cleanTitle = (notif.title || '')
+                          .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+                          .trim();
+                        const cleanMessage = (notif.message || '')
+                          .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+                          .trim();
+
+                        const isPayment = cleanTitle.toLowerCase().includes('payment') || cleanTitle.toLowerCase().includes('paid');
+                        const isDeliver = cleanTitle.toLowerCase().includes('deliver');
+                        const isShipped = cleanTitle.toLowerCase().includes('out') || cleanTitle.toLowerCase().includes('shipped');
+                        const isPacked = cleanTitle.toLowerCase().includes('pack');
+
                         return (
                           <div
                             key={notif.id}
@@ -349,31 +363,38 @@ export const Navbar: React.FC<NavbarProps> = () => {
                                 setIsNotificationOpen(false);
                               }
                             }}
-                            className={`p-3 hover:bg-blue-50/70 transition-colors cursor-pointer flex items-start gap-2.5 ${isUnread ? 'bg-blue-50/40' : ''
-                              }`}
+                            className={`p-3 hover:bg-slate-50 transition-colors cursor-pointer flex items-start gap-2.5 ${
+                              isUnread ? 'bg-blue-50/30' : ''
+                            }`}
                           >
-                            <div className="w-7 h-7 rounded-lg bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
-                              {notif.title.includes('Deliver') ? <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> :
-                                notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-3.5 h-3.5 text-indigo-600" /> :
-                                  notif.title.includes('Pack') ? <Package className="w-3.5 h-3.5 text-blue-600" /> :
-                                    notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-3.5 h-3.5 text-amber-600" /> :
-                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border ${
+                              isPayment ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                              isDeliver ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                              isShipped ? 'bg-indigo-50 border-indigo-200 text-indigo-700' :
+                              isPacked ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                              'bg-slate-50 border-slate-200 text-slate-700'
+                            }`}>
+                              {isPayment ? <CreditCard className="w-3.5 h-3.5" /> :
+                               isDeliver ? <CheckCircle2 className="w-3.5 h-3.5" /> :
+                               isShipped ? <Truck className="w-3.5 h-3.5" /> :
+                               isPacked ? <Package className="w-3.5 h-3.5" /> :
+                               <Bell className="w-3.5 h-3.5" />}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1">
-                                <span className={`text-[11.5px] block truncate ${isUnread ? 'font-black text-gray-900' : 'font-semibold text-gray-700'}`}>
-                                  {notif.title}
+                                <span className={`text-[11.5px] block truncate ${isUnread ? 'font-black text-slate-900' : 'font-semibold text-slate-700'}`}>
+                                  {cleanTitle}
                                 </span>
                                 {isUnread && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 flex-shrink-0" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#1A56DB] flex-shrink-0" />
                                 )}
                               </div>
-                              <p className="text-[10.5px] text-gray-600 line-clamp-2 mt-0.5 leading-tight">
-                                {notif.message}
+                              <p className="text-[10.5px] text-slate-600 line-clamp-2 mt-0.5 leading-tight">
+                                {cleanMessage}
                               </p>
-                              <div className="flex items-center justify-between mt-1 text-[9.5px] text-gray-400">
+                              <div className="flex items-center justify-between mt-1 text-[9.5px] text-slate-400">
                                 <span>{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                <span className="text-[#1A56DB] font-bold">Track Order →</span>
+                                <span className="text-[#1A56DB] font-extrabold hover:underline">Track Order &rarr;</span>
                               </div>
                             </div>
                           </div>
@@ -383,28 +404,16 @@ export const Navbar: React.FC<NavbarProps> = () => {
                   </div>
 
                   {/* Footer */}
-                  <div className="p-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-[11px]">
+                  <div className="p-2.5 bg-slate-50/80 border-t border-slate-200/80 flex items-center justify-between text-[11px]">
                     <Link
                       href="/account?tab=orders"
                       onClick={() => setIsNotificationOpen(false)}
-                      className="text-[#1A56DB] font-bold hover:underline flex items-center gap-1"
+                      className="text-[#1A56DB] font-extrabold hover:underline flex items-center gap-1"
                     >
                       <ShoppingBag className="w-3 h-3" />
-                      <span>Track Orders</span>
+                      <span>View All in My Orders &rarr;</span>
                     </Link>
-                    {!isApp && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsNotificationOpen(false);
-                          setIsAppModalOpen(true);
-                        }}
-                        className="text-gray-600 hover:text-gray-900 flex items-center gap-1 font-semibold"
-                      >
-                        <GooglePlayIcon className="w-3.5 h-3.5" />
-                        <span>Get App</span>
-                      </button>
-                    )}
+                    <span className="text-[10px] text-slate-400 font-medium">Lapiez Garhwa</span>
                   </div>
                 </div>
               )}
@@ -814,14 +823,16 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
                 {/* Desktop Notification Dropdown */}
                 {isNotificationOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-88 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-50 text-gray-900 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute right-0 top-full mt-2 w-88 bg-white border border-slate-200/90 rounded-2xl shadow-2xl overflow-hidden z-50 text-slate-900 animate-in fade-in slide-in-from-top-2 duration-150">
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-[#1A56DB] to-[#0A2560] text-white px-4 py-3 flex items-center justify-between">
+                    <div className="bg-white border-b border-slate-200/90 px-4 py-3.5 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Bell className="w-4 h-4 text-yellow-300" />
-                        <span className="font-bold text-xs uppercase tracking-wider">Notifications & Updates</span>
+                        <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-[#1A56DB]">
+                          <Bell className="w-4 h-4 stroke-[2]" />
+                        </div>
+                        <span className="font-extrabold text-xs text-slate-900 uppercase tracking-wider">Notifications</span>
                         {unreadCustomerNotifCount > 0 && (
-                          <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+                          <span className="bg-[#1A56DB] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
                             {unreadCustomerNotifCount} New
                           </span>
                         )}
@@ -830,7 +841,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                         <button
                           type="button"
                           onClick={() => markAllCustomerNotificationsAsRead()}
-                          className="text-[11px] text-blue-200 hover:text-white underline cursor-pointer"
+                          className="text-[11.5px] font-bold text-[#1A56DB] hover:text-[#1E40AF] hover:underline cursor-pointer"
                         >
                           Mark all read
                         </button>
@@ -838,20 +849,32 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     </div>
 
                     {/* Body: Notifications List */}
-                    <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                    <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
                       {customerNotifications.length === 0 ? (
-                        <div className="p-6 text-center text-gray-500">
-                          <div className="w-12 h-12 rounded-full bg-blue-50 text-[#1A56DB] flex items-center justify-center mx-auto mb-2">
+                        <div className="p-6 text-center text-slate-500">
+                          <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center mx-auto mb-2">
                             <Bell className="w-6 h-6 stroke-[1.5]" />
                           </div>
-                          <p className="text-xs font-bold text-gray-800">Koi naya notification nahi hai</p>
-                          <p className="text-[11px] text-gray-400 mt-1 max-w-[240px] mx-auto leading-relaxed">
-                            Jab bhi aapka order accept, confirm, pack ya dispatch hoga, live alert yahan dikhega.
+                          <p className="text-xs font-bold text-slate-800">No new notifications</p>
+                          <p className="text-[11px] text-slate-400 mt-1 max-w-[240px] mx-auto leading-relaxed">
+                            Order confirmation, packaging, and dispatch alerts will appear here in real-time.
                           </p>
                         </div>
                       ) : (
                         customerNotifications.map((notif: any) => {
                           const isUnread = !notif.read;
+                          const cleanTitle = (notif.title || '')
+                            .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+                            .trim();
+                          const cleanMessage = (notif.message || '')
+                            .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+                            .trim();
+
+                          const isPayment = cleanTitle.toLowerCase().includes('payment') || cleanTitle.toLowerCase().includes('paid');
+                          const isDeliver = cleanTitle.toLowerCase().includes('deliver');
+                          const isShipped = cleanTitle.toLowerCase().includes('out') || cleanTitle.toLowerCase().includes('shipped');
+                          const isPacked = cleanTitle.toLowerCase().includes('pack');
+
                           return (
                             <div
                               key={notif.id}
@@ -862,32 +885,39 @@ export const Navbar: React.FC<NavbarProps> = () => {
                                   setIsNotificationOpen(false);
                                 }
                               }}
-                              className={`p-3.5 hover:bg-blue-50/70 transition-colors cursor-pointer flex items-start gap-3 ${isUnread ? 'bg-blue-50/40' : ''
-                                }`}
+                              className={`p-3.5 hover:bg-slate-50 transition-colors cursor-pointer flex items-start gap-3 ${
+                                isUnread ? 'bg-blue-50/30' : ''
+                              }`}
                             >
-                              <div className="w-8 h-8 rounded-xl bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                {notif.title.includes('Deliver') ? <Sparkles className="w-4 h-4 text-emerald-600" /> :
-                                  notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-4 h-4 text-indigo-600" /> :
-                                    notif.title.includes('Pack') ? <Package className="w-4 h-4 text-blue-600" /> :
-                                      notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-4 h-4 text-amber-600" /> :
-                                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 border ${
+                                isPayment ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                                isDeliver ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                                isShipped ? 'bg-indigo-50 border-indigo-200 text-indigo-700' :
+                                isPacked ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                'bg-slate-50 border-slate-200 text-slate-700'
+                              }`}>
+                                {isPayment ? <CreditCard className="w-4 h-4" /> :
+                                 isDeliver ? <CheckCircle2 className="w-4 h-4" /> :
+                                 isShipped ? <Truck className="w-4 h-4" /> :
+                                 isPacked ? <Package className="w-4 h-4" /> :
+                                 <Bell className="w-4 h-4" />}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-1">
-                                  <span className={`text-xs block truncate ${isUnread ? 'font-black text-gray-900' : 'font-semibold text-gray-700'}`}>
-                                    {notif.title}
+                                  <span className={`text-xs block truncate ${isUnread ? 'font-black text-slate-900' : 'font-semibold text-slate-700'}`}>
+                                    {cleanTitle}
                                   </span>
                                   {isUnread && (
-                                    <span className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" />
+                                    <span className="w-2 h-2 rounded-full bg-[#1A56DB] flex-shrink-0" />
                                   )}
                                 </div>
-                                <p className="text-[11px] text-gray-600 line-clamp-2 mt-0.5 leading-tight">
-                                  {notif.message}
+                                <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5 leading-tight">
+                                  {cleanMessage}
                                 </p>
-                                <div className="flex items-center justify-between mt-1 text-[10px] text-gray-400">
+                                <div className="flex items-center justify-between mt-1 text-[10px] text-slate-400">
                                   <span>{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                  <span className="text-[#1A56DB] font-bold hover:underline flex items-center gap-0.5">
-                                    Track Order →
+                                  <span className="text-[#1A56DB] font-extrabold hover:underline flex items-center gap-0.5">
+                                    Track Order &rarr;
                                   </span>
                                 </div>
                               </div>
@@ -898,28 +928,16 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     </div>
 
                     {/* Footer */}
-                    <div className="p-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <div className="p-3 bg-slate-50/80 border-t border-slate-200/80 flex items-center justify-between text-xs">
                       <Link
                         href="/account?tab=orders"
                         onClick={() => setIsNotificationOpen(false)}
-                        className="text-[#1A56DB] font-bold hover:underline flex items-center gap-1"
+                        className="text-[#1A56DB] font-extrabold hover:underline flex items-center gap-1.5"
                       >
                         <ShoppingBag className="w-3.5 h-3.5" />
-                        <span>Track Orders in Account</span>
+                        <span>View All in My Orders &rarr;</span>
                       </Link>
-                      {!isApp && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsNotificationOpen(false);
-                            setIsAppModalOpen(true);
-                          }}
-                          className="text-gray-500 hover:text-gray-900 flex items-center gap-1 text-[11px] font-medium cursor-pointer"
-                        >
-                          <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Get Android App</span>
-                        </button>
-                      )}
+                      <span className="text-[10.5px] text-slate-400 font-medium">Lapiez Garhwa</span>
                     </div>
                   </div>
                 )}

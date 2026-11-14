@@ -425,26 +425,26 @@ export default function WarrantyManager({
 
   const generateWhatsAppMessage = (c: WarrantyClaim) => {
     let msg = `*LAPIEZ GARHWA - WARRANTY & SERVICE UPDATE*\n\n`;
-    msg += `Namaste *${c.customerName}* ji,\n`;
-    msg += `Aapke device *${c.productName}* ka warranty claim update:\n\n`;
-    msg += `📌 *Job Sheet No:* ${c.claimId}\n`;
-    if (c.serialNumber) msg += `🔢 *Serial No:* ${c.serialNumber}\n`;
-    msg += `⚙️ *Current Status:* ${STATUS_CONFIG[c.status]?.label || c.status} (${STATUS_CONFIG[c.status]?.hindi || ''})\n`;
+    msg += `Hello *${c.customerName}*,\n`;
+    msg += `Service update regarding your device *${c.productName}*:\n\n`;
+    msg += `Job Sheet No: ${c.claimId}\n`;
+    if (c.serialNumber) msg += `Serial No: ${c.serialNumber}\n`;
+    msg += `Status: ${STATUS_CONFIG[c.status]?.label || c.status}\n`;
 
     if (c.status === 'REPAIRED_READY') {
-      msg += `\n🎉 *Good News!* Aapka device successfully repair/inspect ho gaya hai. Kripya apna Job Sheet lekar showroom se collect karein.\n`;
+      msg += `\nYour device has been repaired and verified. Please bring your Job Sheet to collect it from the showroom counter.\n`;
     } else if (c.status === 'SENT_TO_BRAND') {
-      msg += `\n🚚 Aapka device Authorized Brand Service Center dispatched ho chuka hai. Brand RMA: ${c.brandRmaNumber || 'Under Process'}.\n`;
+      msg += `\nYour device has been dispatched to Authorized Brand Service Center. RMA: ${c.brandRmaNumber || 'Under Process'}.\n`;
     } else if (c.status === 'DELIVERED_CLOSED') {
-      msg += `\n✅ Device aapko hand over kar diya gaya hai. Lapiez Garhwa ko chune ke liye dhanyawad!\n`;
+      msg += `\nDevice handed over to customer. Thank you for choosing Lapiez Garhwa!\n`;
     }
 
     if (c.estimatedReadyDate) {
-      msg += `🗓️ *Est. Ready Date:* ${c.estimatedReadyDate}\n`;
+      msg += `Est. Completion Date: ${c.estimatedReadyDate}\n`;
     }
 
-    msg += `\n📍 *Showroom Address:* In front of G P Plaza, Chiniya Road, Garhwa\n`;
-    msg += `📞 *Call / WhatsApp Desk:* +91 9608828288\n`;
+    msg += `\nShowroom: Opposite G P Plaza, Chiniya Road, Garhwa\n`;
+    msg += `Desk Contact: +91 9608828288\n`;
 
     return encodeURIComponent(msg);
   };
