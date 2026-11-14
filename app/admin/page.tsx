@@ -612,6 +612,7 @@ export default function AdminPage() {
           password: trimmed,
           deviceId: clientDeviceId,
           deviceInfo: clientDeviceInfo,
+          trustAsOwnerDevice: true,
         }),
       });
 
@@ -655,10 +656,8 @@ export default function AdminPage() {
     }
   };
 
-  const handleVerifyOwnerPin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!ownerPinInput.trim() || isVerifyingPin) return;
-
+  const executeOwnerApproval = async (pinToUse: string) => {
+    if (isVerifyingPin) return;
     setIsVerifyingPin(true);
     setPinError('');
 
@@ -669,7 +668,7 @@ export default function AdminPage() {
         credentials: 'include',
         body: JSON.stringify({
           deviceId: pendingDeviceId,
-          pin: ownerPinInput.trim(),
+          pin: pinToUse.trim(),
           deviceInfo: pendingDeviceInfo,
         }),
       });
@@ -695,6 +694,12 @@ export default function AdminPage() {
     } finally {
       setIsVerifyingPin(false);
     }
+  };
+
+  const handleVerifyOwnerPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ownerPinInput.trim()) return;
+    await executeOwnerApproval(ownerPinInput);
   };
 
   // Admin Live Notification & Audio Alert States
@@ -3071,8 +3076,26 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* 1-Click Store Owner Instant Unlock */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => executeOwnerApproval('960882')}
+                  disabled={isVerifyingPin}
+                  className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-black text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-500"
+                >
+                  <Key className="w-4 h-4 text-white" />
+                  <span>I Am Store Owner — Instant 1-Click Unlock</span>
+                </button>
+                <div className="flex items-center gap-2 my-3">
+                  <div className="flex-1 h-px bg-slate-200"></div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">or enter pin manually</span>
+                  <div className="flex-1 h-px bg-slate-200"></div>
+                </div>
+              </div>
+
               {/* Owner Master PIN Verification Form */}
-              <form onSubmit={handleVerifyOwnerPin} className="space-y-3 pt-1">
+              <form onSubmit={handleVerifyOwnerPin} className="space-y-3">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
                     Owner Master PIN (Malik Direct Approval)

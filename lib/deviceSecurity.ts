@@ -92,6 +92,14 @@ export function sign256(data: string): string {
 }
 
 /**
+ * Check if the system has any approved active devices registered
+ */
+export function hasAnyApprovedDevices(): boolean {
+  ensureDataFile();
+  return Object.values(memoryStore.approvedDevices).some((d) => d.status === 'ACTIVE');
+}
+
+/**
  * Constant-time safe string comparison
  */
 function safeEqual(a: string, b: string): boolean {

@@ -1073,6 +1073,19 @@ function AccountContent() {
                   <div className="space-y-2.5">
                     {customerNotifications.map((notif: any) => {
                       const isUnread = !notif.read;
+                      // Strip legacy emojis from titles and messages for clean executive SaaS look
+                      const cleanTitle = (notif.title || '')
+                        .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+                        .trim();
+                      const cleanMessage = (notif.message || '')
+                        .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+                        .trim();
+
+                      const isPayment = cleanTitle.toLowerCase().includes('payment') || cleanTitle.toLowerCase().includes('paid');
+                      const isDeliver = cleanTitle.toLowerCase().includes('deliver');
+                      const isShipped = cleanTitle.toLowerCase().includes('out') || cleanTitle.toLowerCase().includes('shipped');
+                      const isPacked = cleanTitle.toLowerCase().includes('pack');
+
                       return (
                         <div
                           key={notif.id}
@@ -1082,26 +1095,33 @@ function AccountContent() {
                               router.push(notif.link);
                             }
                           }}
-                          className={`bg-white border rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-start gap-3.5 ${isUnread ? 'border-blue-300 bg-blue-50/30 ring-1 ring-blue-100' : 'border-[#E5E7EB]'
-                            }`}
+                          className={`bg-white border rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-start gap-3.5 ${
+                            isUnread ? 'border-blue-300 bg-blue-50/20 ring-1 ring-blue-100' : 'border-slate-200/90'
+                          }`}
                         >
-                          <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#1A56DB] flex items-center justify-center flex-shrink-0 mt-0.5">
-                            {notif.title.includes('Deliver') ? <Sparkles className="w-5 h-5 text-emerald-600" /> :
-                              notif.title.includes('Out') || notif.title.includes('Shipped') ? <Truck className="w-5 h-5 text-indigo-600" /> :
-                                notif.title.includes('Pack') ? <Package className="w-5 h-5 text-blue-600" /> :
-                                  notif.title.includes('Paid') || notif.title.includes('Payment') ? <CreditCard className="w-5 h-5 text-amber-600" /> :
-                                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 border ${
+                            isPayment ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                            isDeliver ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                            isShipped ? 'bg-indigo-50 border-indigo-200 text-indigo-700' :
+                            isPacked ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                            'bg-slate-50 border-slate-200 text-slate-700'
+                          }`}>
+                            {isPayment ? <CreditCard className="w-5 h-5" /> :
+                             isDeliver ? <CheckCircle2 className="w-5 h-5" /> :
+                             isShipped ? <Truck className="w-5 h-5" /> :
+                             isPacked ? <Package className="w-5 h-5" /> :
+                             <Bell className="w-5 h-5" />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <h4 className={`text-sm ${isUnread ? 'font-black text-gray-900' : 'font-bold text-gray-800'}`}>
-                                {notif.title}
+                              <h4 className={`text-sm tracking-tight ${isUnread ? 'font-black text-slate-900' : 'font-bold text-slate-800'}`}>
+                                {cleanTitle}
                               </h4>
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 {isUnread && (
-                                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                                  <span className="w-2.5 h-2.5 rounded-full bg-[#1A56DB]" />
                                 )}
-                                <span className="text-[11px] text-gray-400 font-medium">
+                                <span className="text-[11px] text-slate-400 font-medium">
                                   {new Date(notif.createdAt).toLocaleDateString('en-IN', {
                                     day: 'numeric',
                                     month: 'short',
@@ -1111,16 +1131,16 @@ function AccountContent() {
                                 </span>
                               </div>
                             </div>
-                            <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                              {notif.message}
+                            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                              {cleanMessage}
                             </p>
                             {notif.orderId && (
                               <div className="mt-2.5 flex items-center gap-2">
-                                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-700 border border-gray-200">
+                                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
                                   Order #{notif.orderId}
                                 </span>
                                 <span className="text-xs text-[#1A56DB] font-extrabold hover:underline flex items-center gap-1">
-                                  Track Order →
+                                  Track Order &rarr;
                                 </span>
                               </div>
                             )}

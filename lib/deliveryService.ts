@@ -251,3 +251,4 @@ export function getRecentCustomerLocations(limit: number = 30): CustomerLocation
   cachedLocations = [];
   return [];
 }
+

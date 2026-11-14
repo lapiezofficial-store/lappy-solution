@@ -4,12 +4,12 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { PRODUCTS, Product } from '../data/products';
 import { STORE_INFO, INITIAL_ORDERS, INITIAL_LEADS } from '../data/storeData';
 import { CartItem } from '../components/CartDrawer';
-import { 
-  Invoice, 
-  InvoiceSettings, 
-  DEFAULT_INVOICE_SETTINGS, 
-  buildInvoiceFromOrder, 
-  formatInvoiceNumber 
+import {
+  Invoice,
+  InvoiceSettings,
+  DEFAULT_INVOICE_SETTINGS,
+  buildInvoiceFromOrder,
+  formatInvoiceNumber
 } from '../lib/invoiceUtils';
 import { supabase, signInWithGoogle, signOutCustomer, User } from '../lib/supabase';
 import { Coupon, INITIAL_COUPONS, calculateCouponDiscount } from '../data/coupons';
@@ -46,7 +46,7 @@ export interface CMSCategory {
   title?: string;
   shortDesc?: string;
   iconName?: string;
-  subcategories: CMSSubcategory[];
+  subcategories?: CMSSubcategory[];
 }
 
 export type { Coupon, CMSBrand };
@@ -350,7 +350,6 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
     position: 0,
     status: 'active',
     href: '/shop?cat=Laptops',
-    subcategories: [],
   },
   {
     id: 'cat-laptop-parts',
@@ -361,7 +360,6 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
     position: 1,
     status: 'active',
     href: '/shop?cat=Laptop%20Parts',
-    subcategories: [],
   },
   {
     id: 'cat-peripherals',
@@ -372,7 +370,6 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
     position: 2,
     status: 'active',
     href: '/shop?cat=Peripherals',
-    subcategories: [],
   },
   {
     id: 'cat-printers',
@@ -383,7 +380,6 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
     position: 3,
     status: 'active',
     href: '/shop?cat=Printers',
-    subcategories: [],
   },
   {
     id: 'cat-cctv',
@@ -394,7 +390,6 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
     position: 4,
     status: 'active',
     href: '/shop?cat=CCTV%20%26%20Security',
-    subcategories: [],
   },
   {
     id: 'cat-storage',
@@ -405,7 +400,6 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
     position: 5,
     status: 'active',
     href: '/shop?cat=Storage%20%26%20Memory',
-    subcategories: [],
   },
   {
     id: 'cat-software',
@@ -416,7 +410,6 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
     position: 6,
     status: 'active',
     href: '/shop?search=Antivirus',
-    subcategories: [],
   },
   {
     id: 'cat-electronics',
@@ -427,7 +420,6 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
     position: 7,
     status: 'active',
     href: '/shop?search=Speaker',
-    subcategories: [],
   },
   {
     id: 'cmvhvzqln0000l507w15zkg57',
@@ -438,7 +430,6 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
     position: 8,
     status: 'active',
     href: '/shop?search=Toner',
-    subcategories: [],
   },
 ];
 
@@ -503,7 +494,7 @@ export function normalizeProduct(p: any): Product {
     try {
       const parsed = JSON.parse(p.image);
       if (Array.isArray(parsed)) galleryImages = parsed.map((s: string) => String(s).trim()).filter(Boolean);
-    } catch (e) {}
+    } catch (e) { }
   } else if (p.image) {
     galleryImages = [String(p.image).trim()];
   }
@@ -563,7 +554,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setIsApp(true);
       try {
         localStorage.setItem('isLapiezApp', 'true');
-      } catch (e) {}
+      } catch (e) { }
     }
   }, []);
 
@@ -593,7 +584,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             return parsed.map(normalizeProduct);
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   });
@@ -611,7 +602,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const saved = localStorage.getItem('ls_payment_methods_config');
         if (saved) return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     return DEFAULT_PAYMENT_METHODS_CONFIG;
   });
@@ -624,7 +615,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return INITIAL_BANNERS;
   });
@@ -754,14 +745,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         try {
           const local = localStorage.getItem('ls_customer_session');
           if (local) setCustomer(JSON.parse(local));
-        } catch (e) {}
+        } catch (e) { }
       }
       setIsCustomerLoading(false);
     }).catch(() => {
       try {
         const local = localStorage.getItem('ls_customer_session');
         if (local) setCustomer(JSON.parse(local));
-      } catch (e) {}
+      } catch (e) { }
       setIsCustomerLoading(false);
     });
 
@@ -770,7 +761,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setCustomer(session.user);
         try {
           localStorage.setItem('ls_customer_session', JSON.stringify(session.user));
-        } catch (e) {}
+        } catch (e) { }
       }
       setIsCustomerLoading(false);
     });
@@ -797,7 +788,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           try {
             const parsed = JSON.parse(lastOrder);
             if (parsed.phone) searchParams.set('phone', parsed.phone);
-          } catch {}
+          } catch { }
         }
       }
 
@@ -827,7 +818,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           body: JSON.stringify({ id }),
         });
       }
-    } catch {}
+    } catch { }
   };
 
   const markAllCustomerNotificationsAsRead = async () => {
@@ -843,7 +834,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           body: JSON.stringify({ markAllRead: true, recipient: cleanPhone }),
         });
       }
-    } catch {}
+    } catch { }
   };
 
   // Live Realtime listener for customer order updates
@@ -862,8 +853,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const cleanTarget = (payload.phone || '').replace(/\D/g, '').slice(-10);
 
         const isMine = (cleanMy && cleanTarget && cleanMy === cleanTarget) ||
-                       (customer?.id && payload.customerId && customer.id === payload.customerId) ||
-                       (orders.some(o => o.orderId === payload.orderId));
+          (customer?.id && payload.customerId && customer.id === payload.customerId) ||
+          (orders.some(o => o.orderId === payload.orderId));
 
         if (isMine) {
           playCustomerUpdateSound();
@@ -877,12 +868,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           } : o));
         }
       }).subscribe();
-    } catch (e) {}
+    } catch (e) { }
 
     return () => {
       clearInterval(interval);
       if (channel) {
-        try { supabase.removeChannel(channel); } catch {}
+        try { supabase.removeChannel(channel); } catch { }
       }
     };
   }, [fetchCustomerNotifications, customer, orders]);
@@ -905,7 +896,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCustomer(userObj);
     try {
       localStorage.setItem('ls_customer_session', JSON.stringify(userObj));
-    } catch (e) {}
+    } catch (e) { }
     showToast(`Welcome ${userObj.user_metadata.full_name}! Account Connected.`);
   };
 
@@ -918,7 +909,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (google?.accounts?.id && !isApp) {
         google.accounts.id.prompt();
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // 2. Open dedicated CustomerAuthModal instantly for guaranteed login
     setIsCustomerAuthModalOpen(true);
@@ -926,8 +917,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const handleSignOutCustomer = async () => {
     try {
-      await signOutCustomer().catch(() => {});
-    } catch (err: any) {}
+      await signOutCustomer().catch(() => { });
+    } catch (err: any) { }
     setCustomer(null);
     try {
       localStorage.removeItem('ls_customer_session');
@@ -937,7 +928,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.removeItem('ls_customer_gst');
       localStorage.removeItem('ls_last_order');
       localStorage.removeItem('ls_last_invoice');
-    } catch (e) {}
+    } catch (e) { }
     setOrders([]);
     showToast('Signed out of customer account');
   };
@@ -987,7 +978,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setSiteSettings(site);
             try {
               localStorage.setItem('ls_site_settings', JSON.stringify(site));
-            } catch (e) {}
+            } catch (e) { }
           }
           if (initData.paymentSettings) {
             const payment = {
@@ -998,7 +989,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setPaymentSettings(payment);
             try {
               localStorage.setItem('ls_payment_settings', JSON.stringify(payment));
-            } catch (e) {}
+            } catch (e) { }
 
             if (initData.paymentSettings.bankAccountsJson) {
               try {
@@ -1017,7 +1008,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     setPaymentMethodsConfig(resolvedConfig);
                     try {
                       localStorage.setItem('ls_payment_methods_config', JSON.stringify(resolvedConfig));
-                    } catch (e) {}
+                    } catch (e) { }
                   } else if (initData.paymentSettings.codEnabled !== undefined) {
                     setPaymentMethodsConfig((prev) => ({
                       ...prev,
@@ -1029,7 +1020,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     setBankAccounts(realBanks);
                     try {
                       localStorage.setItem('ls_bank_accounts', JSON.stringify(realBanks));
-                    } catch (e) {}
+                    } catch (e) { }
                     const primary = realBanks.find((b: any) => b.isPrimary) || realBanks[0];
                     if (primary) {
                       setInvoiceSettings((prev) => ({
@@ -1043,7 +1034,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     }
                   }
                 }
-              } catch (e) {}
+              } catch (e) { }
             }
           }
 
@@ -1057,7 +1048,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setBanners(initData.banners);
             try {
               localStorage.setItem('ls_banners', JSON.stringify(initData.banners));
-            } catch (e) {}
+            } catch (e) { }
           } else {
             setBanners((prev) => (prev && prev.length > 0 ? prev : INITIAL_BANNERS));
           }
@@ -1067,7 +1058,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setHomepageSections(initData.homepageSections);
             try {
               localStorage.setItem('ls_homepage_sections', JSON.stringify(initData.homepageSections));
-            } catch (e) {}
+            } catch (e) { }
           }
 
           // 5. Categories
@@ -1075,7 +1066,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setCategories(initData.categories);
             try {
               localStorage.setItem('ls_categories', JSON.stringify(initData.categories));
-            } catch (e) {}
+            } catch (e) { }
           }
 
           // 6. Products: Database is the authoritative source of truth
@@ -1114,9 +1105,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 // Deep check to prevent re-rendering when state is already identical
                 if (
                   prev.length === nextList.length &&
-                  prev.every((item, i) => 
-                    item.id === nextList[i]?.id && 
-                    item.price === nextList[i]?.price && 
+                  prev.every((item, i) =>
+                    item.id === nextList[i]?.id &&
+                    item.price === nextList[i]?.price &&
                     item.inStock === nextList[i]?.inStock &&
                     item.stockQuantity === nextList[i]?.stockQuantity
                   )
@@ -1136,7 +1127,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setCustomPages(initData.customPages);
             try {
               localStorage.setItem('ls_custom_pages', JSON.stringify(initData.customPages));
-            } catch (e) {}
+            } catch (e) { }
           }
 
           // 8. Blog Posts
@@ -1144,7 +1135,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setBlogPosts(initData.blogPosts);
             try {
               localStorage.setItem('ls_blog_posts', JSON.stringify(initData.blogPosts));
-            } catch (e) {}
+            } catch (e) { }
           }
 
           // 9. Coupons
@@ -1164,10 +1155,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 setOrders(data.orders);
                 try {
                   localStorage.setItem('ls_orders', JSON.stringify(data.orders));
-                } catch (e) {}
+                } catch (e) { }
               }
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         // Brands (cached, only re-fetch if forceFresh is requested)
@@ -1180,10 +1171,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 setBrands(data.brands);
                 try {
                   localStorage.setItem('ls_brands', JSON.stringify(data.brands));
-                } catch (e) {}
+                } catch (e) { }
               }
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
       } catch (e) {
@@ -1193,7 +1184,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (pendingFreshSyncRef.current) {
           pendingFreshSyncRef.current = false;
           setTimeout(() => {
-            syncWithDatabase({ forceFresh: true }).catch(() => {});
+            syncWithDatabase({ forceFresh: true }).catch(() => { });
           }, 60);
         }
       }
@@ -1206,13 +1197,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Initial Load from localStorage & trigger DB sync
   useEffect(() => {
     try {
-      
+
       const savedBanners = localStorage.getItem('ls_banners');
       if (savedBanners) {
         try {
           const parsed = JSON.parse(savedBanners);
           if (Array.isArray(parsed) && parsed.length > 0) setBanners(parsed);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const savedSections = localStorage.getItem('ls_homepage_sections');
@@ -1220,7 +1211,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         try {
           const parsed = JSON.parse(savedSections);
           if (Array.isArray(parsed) && parsed.length > 0) setHomepageSections(parsed);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const savedCart = localStorage.getItem('ls_cart');
@@ -1239,7 +1230,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setBrands(DEFAULT_BRANDS);
             try {
               localStorage.setItem('ls_brands', JSON.stringify(DEFAULT_BRANDS));
-            } catch (e) {}
+            } catch (e) { }
           }
         } catch (e) {
           setBrands(DEFAULT_BRANDS);
@@ -1258,10 +1249,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               setCategories(parsed);
             } else {
               setCategories(DEFAULT_CMS_CATEGORIES);
-              try { localStorage.setItem('ls_categories', JSON.stringify(DEFAULT_CMS_CATEGORIES)); } catch (e) {}
+              try { localStorage.setItem('ls_categories', JSON.stringify(DEFAULT_CMS_CATEGORIES)); } catch (e) { }
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const savedOrders = localStorage.getItem('ls_orders');
@@ -1304,7 +1295,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (Array.isArray(parsed) && parsed.length > 0) {
             setProducts((prev) => (prev.length > 0 ? prev : parsed.filter((p: any) => !isDemoProduct(p)).map(normalizeProduct)));
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const savedInvoices = localStorage.getItem('ls_invoices');
@@ -1331,7 +1322,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             parsed.nextNumber = 1;
           }
           setInvoiceSettings(parsed);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const savedPages = localStorage.getItem('ls_custom_pages');
@@ -1350,7 +1341,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
             setSiteSettings(parsed);
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const savedPaymentSettings = localStorage.getItem('ls_payment_settings');
@@ -1358,7 +1349,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         try {
           const parsed = JSON.parse(savedPaymentSettings);
           if (parsed && typeof parsed === 'object') setPaymentSettings(parsed);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const savedBankAccounts = localStorage.getItem('ls_bank_accounts');
@@ -1402,17 +1393,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Expose global bridge hook for Native Android App (MainActivity.java)
     (window as any).__lapiezSync = () => {
-      syncWithDatabase({ forceFresh: true }).catch(() => {});
+      syncWithDatabase({ forceFresh: true }).catch(() => { });
     };
 
     const handleForegroundSync = () => {
       if (document.visibilityState === 'visible') {
-        syncWithDatabase({ forceFresh: true }).catch(() => {});
+        syncWithDatabase({ forceFresh: true }).catch(() => { });
       }
     };
 
     const unsubscribeBroadcast = subscribeToCmsUpdates(() => {
-      syncWithDatabase({ forceFresh: true }).catch(() => {});
+      syncWithDatabase({ forceFresh: true }).catch(() => { });
     });
 
     window.addEventListener('focus', handleForegroundSync);
@@ -1421,7 +1412,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 20-second background heartbeat to auto-fetch admin updates without flooding network
     const heartbeat = setInterval(() => {
       if (document.visibilityState === 'visible') {
-        syncWithDatabase({ forceFresh: true }).catch(() => {});
+        syncWithDatabase({ forceFresh: true }).catch(() => { });
       }
     }, 20000);
 
@@ -1452,7 +1443,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       try {
         localStorage.setItem('ls_cart', JSON.stringify(updated));
-      } catch (e) {}
+      } catch (e) { }
       return updated;
     });
     showToast(addCount > 1 ? `Added ${addCount}x "${product.name}" to cart!` : `Added "${product.name}" to cart!`);
@@ -1472,7 +1463,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCart(updated);
     try {
       localStorage.setItem('ls_cart', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const removeFromCart = (id: string) => {
@@ -1480,7 +1471,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCart(updated);
     try {
       localStorage.setItem('ls_cart', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
     showToast('Item removed from cart');
   };
 
@@ -1488,7 +1479,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCart([]);
     try {
       localStorage.removeItem('ls_cart');
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const toggleWishlist = (product: Product) => {
@@ -1503,7 +1494,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       try {
         localStorage.setItem('ls_wishlist', JSON.stringify(updated));
-      } catch (e) {}
+      } catch (e) { }
       return updated;
     });
   };
@@ -1523,7 +1514,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             email: guestEmail,
             phone: newOrder.phone || '',
           });
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const orderPayload = {
@@ -1554,8 +1545,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       showToast(`Order #${savedOrder.orderId} placed. Payment verification is pending.`);
       broadcastCmsUpdate('orders');
-      fetchCustomerNotifications().catch(() => {});
-      syncWithDatabase({ forceFresh: true }).catch(() => {});
+      fetchCustomerNotifications().catch(() => { });
+      syncWithDatabase({ forceFresh: true }).catch(() => { });
       return newInvoice;
     } catch (e) {
       console.error('Order save error:', e);
@@ -1572,7 +1563,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setOrders(data.orders);
           try {
             localStorage.setItem('ls_orders', JSON.stringify(data.orders));
-          } catch (e) {}
+          } catch (e) { }
           return data.orders;
         }
       }
@@ -1602,7 +1593,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setLeads(updated);
     try {
       localStorage.setItem('ls_leads', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
     showToast('Consultation request sent to Garhwa showroom!');
   };
 
@@ -1656,7 +1647,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const changes = ords.filter((order) => {
         const previous = prevOrders.find((current) => current.orderId === order.orderId);
         return previous && (
-          previous.paymentStatus !== order.paymentStatus || 
+          previous.paymentStatus !== order.paymentStatus ||
           previous.orderStatus !== order.orderStatus ||
           previous.pickupHandedBy !== order.pickupHandedBy ||
           (previous as any).approvedBy !== (order as any).approvedBy
@@ -1675,14 +1666,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const hasFailed = responses.some(r => !r.ok);
       if (hasFailed) {
         setOrders(prevOrders);
-        try { localStorage.setItem('ls_orders', JSON.stringify(prevOrders)); } catch {}
+        try { localStorage.setItem('ls_orders', JSON.stringify(prevOrders)); } catch { }
         showToast('Failed to update orders in database. Reverted.');
       } else {
         broadcastCmsUpdate('orders');
       }
     } catch (e) {
       setOrders(prevOrders);
-      try { localStorage.setItem('ls_orders', JSON.stringify(prevOrders)); } catch {}
+      try { localStorage.setItem('ls_orders', JSON.stringify(prevOrders)); } catch { }
     }
   };
 
@@ -1690,7 +1681,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setLeads(lds);
     try {
       localStorage.setItem('ls_leads', JSON.stringify(lds));
-    } catch (e) {}
+    } catch (e) { }
   };
 
   // CMS Server Update Handlers
@@ -1700,7 +1691,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSiteSettings(updated);
     try {
       localStorage.setItem('ls_site_settings', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
     try {
       const res = await adminFetch('/api/cms/settings', {
         method: 'PUT',
@@ -1715,7 +1706,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e: any) {
       console.error('Failed to update site settings in DB:', e);
       setSiteSettings(prevSite);
-      try { localStorage.setItem('ls_site_settings', JSON.stringify(prevSite)); } catch {}
+      try { localStorage.setItem('ls_site_settings', JSON.stringify(prevSite)); } catch { }
       showToast(`Database error: ${e.message || 'Failed to save settings'}. Reverted.`);
     }
   };
@@ -1744,15 +1735,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updatePaymentSettings = async (payment: Partial<PaymentSettings>) => {
     const prevPayment = paymentSettings;
-    const updated = { 
-      ...paymentSettings, 
+    const updated = {
+      ...paymentSettings,
       ...payment,
       bankAccountsJson: serializeBankAccountsWithConfig(bankAccounts, paymentMethodsConfig),
     };
     setPaymentSettings(updated);
     try {
       localStorage.setItem('ls_payment_settings', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
     try {
       const res = await adminFetch('/api/cms/settings', {
         method: 'PUT',
@@ -1767,7 +1758,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e: any) {
       console.error('Failed to update payment settings in DB:', e);
       setPaymentSettings(prevPayment);
-      try { localStorage.setItem('ls_payment_settings', JSON.stringify(prevPayment)); } catch {}
+      try { localStorage.setItem('ls_payment_settings', JSON.stringify(prevPayment)); } catch { }
       showToast(`Database error: ${e.message || 'Failed to save payment settings'}. Reverted.`);
     }
   };
@@ -1779,7 +1770,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPaymentMethodsConfig(updatedMethods);
     try {
       localStorage.setItem('ls_payment_methods_config', JSON.stringify(updatedMethods));
-    } catch (e) {}
+    } catch (e) { }
 
     const updatedPayment = {
       ...paymentSettings,
@@ -1789,7 +1780,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPaymentSettings(updatedPayment);
     try {
       localStorage.setItem('ls_payment_settings', JSON.stringify(updatedPayment));
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       const res = await adminFetch('/api/cms/settings', {
@@ -1824,11 +1815,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setPaymentMethodsConfig(updatedMethods);
       try {
         localStorage.setItem('ls_payment_methods_config', JSON.stringify(updatedMethods));
-      } catch (e) {}
+      } catch (e) { }
     }
 
-    const updatedSite = { 
-      ...siteSettings, 
+    const updatedSite = {
+      ...siteSettings,
       ...site,
       twitterUrl: site.googleMapsUrl || site.twitterUrl || siteSettings.googleMapsUrl || siteSettings.twitterUrl || STORE_INFO.mapsUrl,
       googleMapsUrl: site.googleMapsUrl || site.twitterUrl || siteSettings.googleMapsUrl || siteSettings.twitterUrl || STORE_INFO.mapsUrl,
@@ -1839,8 +1830,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       updatedMethods
     );
 
-    const updatedPayment = { 
-      ...paymentSettings, 
+    const updatedPayment = {
+      ...paymentSettings,
       ...payment,
       codEnabled: methodsConfig ? updatedMethods.enableCOD : (payment.codEnabled !== undefined ? payment.codEnabled : paymentSettings.codEnabled),
       bankAccountsJson: combinedBankJson,
@@ -1851,7 +1842,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       localStorage.setItem('ls_site_settings', JSON.stringify(updatedSite));
       localStorage.setItem('ls_payment_settings', JSON.stringify(updatedPayment));
-    } catch (e) {}
+    } catch (e) { }
     try {
       const res = await adminFetch('/api/cms/settings', {
         method: 'PUT',
@@ -1886,7 +1877,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setBankAccounts(updated);
     try {
       localStorage.setItem('ls_bank_accounts', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
 
     if (newAccount.isPrimary || updated.length === 1) {
       updateInvoiceSettings({
@@ -1911,7 +1902,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (res.ok) {
         broadcastCmsUpdate('bank_accounts');
       }
-    } catch (e) {}
+    } catch (e) { }
 
     showToast(`Bank account "${newAccount.bankName}" added!`);
     return newAccount;
@@ -1930,7 +1921,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setBankAccounts(updated);
     try {
       localStorage.setItem('ls_bank_accounts', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
 
     const primaryAcc = updated.find(a => a.isPrimary) || (updates.isPrimary ? updated.find(a => a.id === id) : null);
     if (primaryAcc) {
@@ -1956,7 +1947,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (res.ok) {
         broadcastCmsUpdate('bank_accounts');
       }
-    } catch (e) {}
+    } catch (e) { }
 
     showToast('Bank details updated successfully!');
     return true;
@@ -1982,7 +1973,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setBankAccounts(updated);
     try {
       localStorage.setItem('ls_bank_accounts', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       const res = await adminFetch('/api/cms/settings', {
@@ -1997,7 +1988,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (res.ok) {
         broadcastCmsUpdate('bank_accounts');
       }
-    } catch (e) {}
+    } catch (e) { }
 
     showToast('Bank account removed successfully!');
     return true;
@@ -2011,7 +2002,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setBankAccounts(updated);
     try {
       localStorage.setItem('ls_bank_accounts', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
 
     const primary = updated.find(a => a.id === id);
     if (primary) {
@@ -2037,7 +2028,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (res.ok) {
         broadcastCmsUpdate('bank_accounts');
       }
-    } catch (e) {}
+    } catch (e) { }
 
     showToast(`"${primary?.bankName}" set as primary bank account!`);
     return true;
@@ -2171,7 +2162,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setBanners(INITIAL_BANNERS);
         try {
           localStorage.setItem('ls_banners', JSON.stringify(INITIAL_BANNERS));
-        } catch (e) {}
+        } catch (e) { }
         broadcastCmsUpdate('banners');
         showToast('All 6 official storefront banners restored!');
         return true;
@@ -2182,7 +2173,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setBanners(INITIAL_BANNERS);
     try {
       localStorage.setItem('ls_banners', JSON.stringify(INITIAL_BANNERS));
-    } catch (e) {}
+    } catch (e) { }
     showToast('Official banners restored!');
     return true;
   };
@@ -2244,7 +2235,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           return updated;
         });
         broadcastCmsUpdate('products');
-        syncWithDatabase({ forceFresh: true }).catch(() => {});
+        syncWithDatabase({ forceFresh: true }).catch(() => { });
         showToast(`Product "${created.name}" saved to database! ✨`);
         return created;
       } else {
@@ -2255,7 +2246,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           return reverted;
         });
         const err = await res.json().catch(() => ({}));
-        const errorMessage = res.status === 401 
+        const errorMessage = res.status === 401
           ? 'Admin session expired. Please re-login to the Admin Panel.'
           : (err.error || `Server error (${res.status}): Failed to save product`);
         showToast(errorMessage);
@@ -2302,11 +2293,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (!permanent) {
         // Soft-delete: Move to Dustbin (15 Days Retention)
         setProducts((prev) => {
-          const next = prev.filter((p) => 
-            p.id !== id && 
-            p.id !== targetId && 
-            (p as any).dbId !== id && 
-            (p as any).dbId !== targetId && 
+          const next = prev.filter((p) =>
+            p.id !== id &&
+            p.id !== targetId &&
+            (p as any).dbId !== id &&
+            (p as any).dbId !== targetId &&
             (!sku || !p.sku || p.sku.toLowerCase() !== sku.toLowerCase())
           );
           safeSaveProductsToLocalStorage(next);
@@ -2327,7 +2318,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
         if (res.ok) {
           broadcastCmsUpdate('products');
-          syncWithDatabase({ forceFresh: true }).catch(() => {});
+          syncWithDatabase({ forceFresh: true }).catch(() => { });
           showToast('Product moved to Dustbin! Kept safely for 15 days.');
         } else {
           setProducts(prevProducts);
@@ -2352,9 +2343,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               const filtered = parsed.filter((p: any) => p.id !== id && p.id !== targetId);
               safeSaveProductsToLocalStorage(filtered);
             }
-          } catch (e) {}
+          } catch (e) { }
           broadcastCmsUpdate('products');
-          syncWithDatabase({ forceFresh: true }).catch(() => {});
+          syncWithDatabase({ forceFresh: true }).catch(() => { });
           showToast('Product permanently deleted from database!');
         } else {
           setProducts(prevProducts);
@@ -2401,7 +2392,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       if (res.ok) {
         broadcastCmsUpdate('products');
-        syncWithDatabase({ forceFresh: true }).catch(() => {});
+        syncWithDatabase({ forceFresh: true }).catch(() => { });
         showToast('Product restored to Active Catalog!');
       } else {
         setProducts(prevProducts);
@@ -2436,7 +2427,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       if (res.ok) {
         broadcastCmsUpdate('products');
-        syncWithDatabase({ forceFresh: true }).catch(() => {});
+        syncWithDatabase({ forceFresh: true }).catch(() => { });
         showToast('All products restored to active catalog!');
       } else {
         setProducts(prevProducts);
@@ -2482,7 +2473,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setTrashProducts([]);
       try {
         localStorage.setItem('ls_products', '[]');
-      } catch (e) {}
+      } catch (e) { }
 
       const res = await adminFetch('/api/cms/wipe-products', {
         method: 'POST',
@@ -2531,9 +2522,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 1. Instant optimistic local state update
     setProducts((prev) => {
       const next = prev.map((p) => {
-        const isMatch = p.id === id || 
+        const isMatch = p.id === id ||
           (p as any).dbId === id ||
-          (sku && p.sku && p.sku.toLowerCase() === sku.toLowerCase()) || 
+          (sku && p.sku && p.sku.toLowerCase() === sku.toLowerCase()) ||
           (name && p.name && p.name.trim().toLowerCase() === name.trim().toLowerCase());
         return isMatch ? { ...p, ...finalFields } : p;
       });
@@ -2545,11 +2536,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // 2. Persist to Prisma DB
       const res = await adminFetch('/api/cms/products', {
         method: 'PUT',
-        body: JSON.stringify({ 
-          id, 
+        body: JSON.stringify({
+          id,
           sku: sku || (id.startsWith('LS-') || id.startsWith('MON-') || id.startsWith('FT-') || id.startsWith('KB-') ? id : undefined),
-          name, 
-          ...finalFields 
+          name,
+          ...finalFields
         }),
       });
 
@@ -2564,7 +2555,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const updatedProd = normalizeProduct(data.product);
           setProducts((prev) => {
             const next = prev.map((p) => {
-              const isMatch = p.id === updatedProd.id || 
+              const isMatch = p.id === updatedProd.id ||
                 (p as any).dbId === updatedProd.id ||
                 (updatedProd.sku && p.sku && p.sku.toLowerCase() === updatedProd.sku.toLowerCase()) ||
                 (updatedProd.name && p.name && p.name.trim().toLowerCase() === updatedProd.name.trim().toLowerCase());
@@ -2575,7 +2566,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
         }
         broadcastCmsUpdate('products');
-        syncWithDatabase({ forceFresh: true }).catch(() => {});
+        syncWithDatabase({ forceFresh: true }).catch(() => { });
         return true;
       } else {
         // Granular rollback: ONLY revert this single product, leaving all other products intact
@@ -2660,7 +2651,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setHomepageSections(sections);
     try {
       localStorage.setItem('ls_homepage_sections', JSON.stringify(sections));
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       const res = await adminFetch('/api/cms/homepage-sections', {
@@ -2673,7 +2664,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setHomepageSections(data.sections);
           try {
             localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
-          } catch (e) {}
+          } catch (e) { }
         }
         broadcastCmsUpdate('homepage_sections');
         showToast('Homepage section order saved!');
@@ -2681,7 +2672,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setHomepageSections(prevSections);
         try {
           localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections));
-        } catch (e) {}
+        } catch (e) { }
         const err = await res.json().catch(() => ({}));
         showToast(err.error || 'Failed to save sections to database');
       }
@@ -2690,7 +2681,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setHomepageSections(prevSections);
       try {
         localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections));
-      } catch (e) {}
+      } catch (e) { }
       showToast('Error saving sections');
     }
   };
@@ -2699,7 +2690,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const prevSections = homepageSections;
     const optimistic = prevSections.map((s) => (s.sectionKey === sectionKey ? { ...s, ...details } : s));
     setHomepageSections(optimistic);
-    try { localStorage.setItem('ls_homepage_sections', JSON.stringify(optimistic)); } catch (e) {}
+    try { localStorage.setItem('ls_homepage_sections', JSON.stringify(optimistic)); } catch (e) { }
 
     try {
       const res = await adminFetch('/api/cms/homepage-sections', {
@@ -2712,19 +2703,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setHomepageSections(data.sections);
           try {
             localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
-          } catch (e) {}
+          } catch (e) { }
         }
         broadcastCmsUpdate('homepage_sections');
         showToast(`Section "${details.title || sectionKey}" updated!`);
       } else {
         setHomepageSections(prevSections);
-        try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) {}
+        try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) { }
         showToast('Failed to update section on server');
       }
     } catch (e) {
       console.error('Failed to update section:', e);
       setHomepageSections(prevSections);
-      try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) {}
+      try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) { }
       showToast('Error updating section');
     }
   };
@@ -2733,7 +2724,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const prevSections = homepageSections;
     const optimistic = prevSections.map((s) => (s.sectionKey === sectionKey ? { ...s, productIds } : s));
     setHomepageSections(optimistic);
-    try { localStorage.setItem('ls_homepage_sections', JSON.stringify(optimistic)); } catch (e) {}
+    try { localStorage.setItem('ls_homepage_sections', JSON.stringify(optimistic)); } catch (e) { }
 
     try {
       const res = await adminFetch('/api/cms/homepage-sections', {
@@ -2746,19 +2737,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setHomepageSections(data.sections);
           try {
             localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
-          } catch (e) {}
+          } catch (e) { }
         }
         broadcastCmsUpdate('homepage_sections');
         showToast(`Products updated for section!`);
       } else {
         setHomepageSections(prevSections);
-        try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) {}
+        try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) { }
         showToast('Failed to update section products on server');
       }
     } catch (e) {
       console.error('Failed to update section products:', e);
       setHomepageSections(prevSections);
-      try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) {}
+      try { localStorage.setItem('ls_homepage_sections', JSON.stringify(prevSections)); } catch (e) { }
       showToast('Error updating section products');
     }
   };
@@ -2775,7 +2766,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setHomepageSections(data.sections);
           try {
             localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
-          } catch (e) {}
+          } catch (e) { }
         }
         broadcastCmsUpdate('homepage_sections');
         showToast('All homepage sections reset to default layout!');
@@ -2800,7 +2791,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setHomepageSections(data.sections);
           try {
             localStorage.setItem('ls_homepage_sections', JSON.stringify(data.sections));
-          } catch (e) {}
+          } catch (e) { }
         }
         broadcastCmsUpdate('homepage_sections');
         showToast('All homepage sections are now visible!');
@@ -2976,10 +2967,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const cleanCode = code.trim().toUpperCase();
     const found = coupons.find((c) => c.code === cleanCode);
     if (!found) {
-      return { 
-        success: false, 
-        message: `Invalid or expired coupon code.`, 
-        discount: 0 
+      return {
+        success: false,
+        message: `Invalid or expired coupon code.`,
+        discount: 0
       };
     }
     const result = calculateCouponDiscount(found, orderTotal);
@@ -2989,10 +2980,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setAppliedCoupon(found);
     setCouponDiscount(result.discountAmount);
     showToast(`Coupon "${found.code}" applied! Saved ₹${result.discountAmount.toLocaleString('en-IN')}`);
-    return { 
-      success: true, 
-      message: `Applied ${found.code}! Saved ₹${result.discountAmount.toLocaleString('en-IN')}`, 
-      discount: result.discountAmount 
+    return {
+      success: true,
+      message: `Applied ${found.code}! Saved ₹${result.discountAmount.toLocaleString('en-IN')}`,
+      discount: result.discountAmount
     };
   }, [coupons]);
 
@@ -3209,10 +3200,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const data = await res.json();
         if (Array.isArray(data.categories) && data.categories.length > 0) {
           setCategories(data.categories);
-          try { localStorage.setItem('ls_categories', JSON.stringify(data.categories)); } catch (e) {}
+          try { localStorage.setItem('ls_categories', JSON.stringify(data.categories)); } catch (e) { }
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const addCategory = async (catData: Partial<CMSCategory>) => {
@@ -3234,7 +3225,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Optimistic local state update
     const updated = [...categories, newCat];
     setCategories(updated);
-    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
+    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) { }
 
     try {
       const res = await adminFetch('/api/cms/categories', {
@@ -3247,13 +3238,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         showToast(`Category "${newCat.name}" added!`);
       } else {
         setCategories(prevCategories);
-        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
         showToast('Failed to add category on server');
       }
     } catch (e) {
       console.error(e);
       setCategories(prevCategories);
-      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
       showToast('Error saving category');
     }
     return newCat;
@@ -3263,7 +3254,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const prevCategories = categories;
     const updated = categories.map((c) => (c.id === id || c.slug === id ? { ...c, ...updates } : c));
     setCategories(updated);
-    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
+    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) { }
 
     try {
       const res = await adminFetch('/api/cms/categories', {
@@ -3276,14 +3267,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return true;
       } else {
         setCategories(prevCategories);
-        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
         showToast('Failed to update category on server');
         return false;
       }
     } catch (e) {
       console.error(e);
       setCategories(prevCategories);
-      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
       showToast('Error updating category');
       return false;
     }
@@ -3293,7 +3284,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const prevCategories = categories;
     const updated = categories.filter((c) => c.id !== id && c.slug !== id).map((c, idx) => ({ ...c, position: idx }));
     setCategories(updated);
-    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
+    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) { }
 
     try {
       const res = await adminFetch(`/api/cms/categories?id=${encodeURIComponent(id)}`, {
@@ -3305,14 +3296,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return true;
       } else {
         setCategories(prevCategories);
-        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
         showToast('Failed to delete category on server');
         return false;
       }
     } catch (e) {
       console.error(e);
       setCategories(prevCategories);
-      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
       showToast('Error deleting category');
       return false;
     }
@@ -3341,7 +3332,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return c;
     });
     setCategories(updated);
-    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
+    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) { }
 
     try {
       const res = await adminFetch('/api/cms/categories', {
@@ -3354,13 +3345,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         showToast(`Subcategory "${newSub.name}" added!`);
       } else {
         setCategories(prevCategories);
-        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
         showToast('Failed to add subcategory on server');
       }
     } catch (e) {
       console.error(e);
       setCategories(prevCategories);
-      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
       showToast('Error adding subcategory');
     }
     return newSub;
@@ -3373,7 +3364,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       subcategories: (c.subcategories || []).map((s) => (s.id === id || s.slug === id ? { ...s, ...updates } : s)),
     }));
     setCategories(updated);
-    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
+    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) { }
 
     try {
       const res = await adminFetch('/api/cms/categories', {
@@ -3386,14 +3377,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return true;
       } else {
         setCategories(prevCategories);
-        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
         showToast('Failed to update subcategory on server');
         return false;
       }
     } catch (e) {
       console.error(e);
       setCategories(prevCategories);
-      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
       showToast('Error updating subcategory');
       return false;
     }
@@ -3406,7 +3397,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       subcategories: (c.subcategories || []).filter((s) => s.id !== id && s.slug !== id),
     }));
     setCategories(updated);
-    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) {}
+    try { localStorage.setItem('ls_categories', JSON.stringify(updated)); } catch (e) { }
 
     try {
       const res = await adminFetch(`/api/cms/categories?id=${encodeURIComponent(id)}`, {
@@ -3418,14 +3409,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return true;
       } else {
         setCategories(prevCategories);
-        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
         showToast('Failed to remove subcategory on server');
         return false;
       }
     } catch (e) {
       console.error(e);
       setCategories(prevCategories);
-      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
       showToast('Error removing subcategory');
       return false;
     }
@@ -3435,7 +3426,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const prevCategories = categories;
     const reindexed = newCategories.map((c, i) => ({ ...c, position: i }));
     setCategories(reindexed);
-    try { localStorage.setItem('ls_categories', JSON.stringify(reindexed)); } catch (e) {}
+    try { localStorage.setItem('ls_categories', JSON.stringify(reindexed)); } catch (e) { }
 
     try {
       const items = reindexed.map((c, i) => ({ id: c.id, position: i }));
@@ -3449,21 +3440,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return true;
       } else {
         setCategories(prevCategories);
-        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+        try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
         showToast('Failed to save category order on server');
         return false;
       }
     } catch (e) {
       console.error(e);
       setCategories(prevCategories);
-      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) {}
+      try { localStorage.setItem('ls_categories', JSON.stringify(prevCategories)); } catch (e) { }
       return false;
     }
   };
 
   const resetCategoriesToDefault = async (): Promise<boolean> => {
     setCategories(DEFAULT_CMS_CATEGORIES);
-    try { localStorage.setItem('ls_categories', JSON.stringify(DEFAULT_CMS_CATEGORIES)); } catch (e) {}
+    try { localStorage.setItem('ls_categories', JSON.stringify(DEFAULT_CMS_CATEGORIES)); } catch (e) { }
     try {
       const res = await adminFetch('/api/cms/categories', {
         method: 'PUT',
@@ -3472,7 +3463,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (res.ok) {
         broadcastCmsUpdate('categories');
       }
-    } catch (e) {}
+    } catch (e) { }
     showToast('Categories restored to 10 homepage showroom defaults!');
     return true;
   };
@@ -3488,7 +3479,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setInvoiceSettings(currentSettings);
     try {
       localStorage.setItem('ls_invoice_settings', JSON.stringify(currentSettings));
-    } catch (e) {}
+    } catch (e) { }
 
     const newInv = buildInvoiceFromOrder({
       order,
@@ -3501,7 +3492,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setInvoices(updated);
     try {
       localStorage.setItem('ls_invoices', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
 
     return newInv;
   };
@@ -3516,7 +3507,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setInvoiceSettings(currentSettings);
     try {
       localStorage.setItem('ls_invoice_settings', JSON.stringify(currentSettings));
-    } catch (e) {}
+    } catch (e) { }
 
     const invoiceNumber = formatInvoiceNumber(currentSettings.prefix, currentSettings.financialYear, nextSeq);
     const newInv: Invoice = {
@@ -3571,7 +3562,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setInvoices(updated);
     try {
       localStorage.setItem('ls_invoices', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
     showToast(`Invoice #${newInv.invoiceNumber} generated!`);
     return newInv;
   };
@@ -3581,7 +3572,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setInvoices(updated);
     try {
       localStorage.setItem('ls_invoices', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
     showToast(`Invoice #${inv.invoiceNumber} updated!`);
   };
 
@@ -3590,7 +3581,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setInvoices(updated);
     try {
       localStorage.setItem('ls_invoices', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
     showToast('Invoice deleted.');
   };
 
@@ -3599,7 +3590,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setInvoiceSettings(updated);
     try {
       localStorage.setItem('ls_invoice_settings', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
     showToast('Invoice settings saved!');
   };
 

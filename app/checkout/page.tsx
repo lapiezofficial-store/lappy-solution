@@ -7,11 +7,24 @@ import {
   ShieldCheck, Truck, Store, Check, ArrowLeft, 
   ArrowRight, QrCode, CreditCard, Banknote, Smartphone, 
   Copy, CheckCircle2, Lock, Building, UploadCloud, AlertCircle, Tag,
-  User, UserCheck, LogIn, LogOut, Clock, RotateCcw, Sparkles, ExternalLink
+  User, UserCheck, LogIn, LogOut, Clock, RotateCcw, Sparkles, ExternalLink, MapPin
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useStore } from '../../context/StoreContext';
 import { STORE_INFO } from '../../data/storeData';
+
+const POPULAR_GARHWA_HUBS = [
+  { name: 'Garhwa Town Core', area: 'Main Market / Chiniya Rd', pincode: '822114', distanceKm: 2 },
+  { name: 'Sahijana / Tandwa', area: 'Sahijana', pincode: '822114', distanceKm: 3 },
+  { name: 'Bus Stand & Dipauwa', area: 'Dipauwa', pincode: '822114', distanceKm: 4 },
+  { name: 'Meral Block', area: 'Meral Chowk', pincode: '822133', distanceKm: 11 },
+  { name: 'Bishunpur / Pipra', area: 'Bishunpur', pincode: '822114', distanceKm: 8 },
+  { name: 'Majhiaon Town', area: 'Majhiaon Bazaar', pincode: '822114', distanceKm: 19 },
+  { name: 'Ranka Raj Block', area: 'Ranka', pincode: '822125', distanceKm: 23 },
+  { name: 'Rehla / Bishrampur', area: 'Rehla', pincode: '822124', distanceKm: 22 },
+  { name: 'Nagar Untari', area: 'Shri Banshidhar Nagar', pincode: '822128', distanceKm: 33 },
+  { name: 'Daltonganj (Medininagar)', area: 'Medininagar / Daltonganj', pincode: '822101', distanceKm: 42 },
+];
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -31,6 +44,8 @@ export default function CheckoutPage() {
     removeCoupon,
     customer,
     customerLocation,
+    setCustomerDeliveryLocation,
+    deliverySettings,
     deliveryFee,
     isCustomerLoading,
     signInWithGoogle,
@@ -63,8 +78,48 @@ export default function CheckoutPage() {
       if (!streetAddress) setStreetAddress(customerLocation.area);
       if (!pincode && customerLocation.pincode) setPincode(customerLocation.pincode);
       if (!landmark && customerLocation.landmark) setLandmark(customerLocation.landmark);
+      if (customerLocation.distanceKm) setSelectedDistance(customerLocation.distanceKm);
+      if (customerLocation.area) setSelectedArea(customerLocation.area);
     }
   }, [customerLocation]);
+
+  const [selectedDistance, setSelectedDistance] = useState<number>(() => {
+    return customerLocation?.distanceKm ?? 2;
+  });
+  const [selectedArea, setSelectedArea] = useState<string>(() => {
+    return customerLocation?.area || 'Garhwa Town Core';
+  });
+
+  const handleUpdateDistance = (km: number, areaName?: string, pin?: string) => {
+    setSelectedDistance(km);
+    const area = areaName || selectedArea || 'Garhwa Area';
+    if (areaName) {
+      setSelectedArea(areaName);
+      if (!streetAddress || streetAddress === 'Garhwa Town Core') {
+        setStreetAddress(areaName);
+      }
+    }
+    if (pin) setPincode(pin);
+
+    const slabs = deliverySettings?.slabs || [
+      { minKm: 0, maxKm: 5, price: 0 },
+      { minKm: 5, maxKm: 15, price: 60 },
+      { minKm: 15, maxKm: 35, price: 120 },
+      { minKm: 35, maxKm: 100, price: 200 },
+    ];
+    const matched = slabs.find((s: any) => km >= s.minKm && km < s.maxKm) || slabs[slabs.length - 1];
+    const fee = matched ? matched.price : 0;
+
+    if (setCustomerDeliveryLocation) {
+      setCustomerDeliveryLocation({
+        area,
+        pincode: pin || pincode || '822114',
+        distanceKm: km,
+        deliveryFee: fee,
+        landmark: landmark || '',
+      });
+    }
+  };
 
   // GST Invoice & Purchase Order
   const [needGst, setNeedGst] = useState(false);
@@ -370,13 +425,9 @@ export default function CheckoutPage() {
     <div className="bg-[#F1F3F6] py-6 sm:py-10 pb-28 sm:pb-16 min-h-[85vh]">
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
         
-        {/* Header Breadcrumbs & Security Tag */}
+        {/* Header Breadcrumbs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-slate-200">
           <div>
-            <div className="flex items-center gap-2 text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">
-              <Lock className="w-3.5 h-3.5" />
-              <span>Official Garhwa 256-Bit Encrypted Checkout</span>
-            </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Express Checkout
             </h1>
@@ -584,6 +635,89 @@ export default function CheckoutPage() {
                   {/* Physical Address Fields if Delivery */}
                   {deliveryType === 'delivery' ? (
                     <div className="space-y-4 pt-2">
+
+                      {/* Interactive Delivery Distance Scale & Area Selector */}
+                      <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-[#1A56DB]" />
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                              Store Distance Scale & Delivery Rate
+                            </span>
+                          </div>
+                          <span className="text-xs font-black px-2.5 py-1 rounded-full bg-blue-50 text-[#1A56DB] border border-blue-200">
+                            {selectedDistance} km from Store
+                          </span>
+                        </div>
+
+                        {/* Distance Slider */}
+                        <div>
+                          <input
+                            type="range"
+                            min={1}
+                            max={50}
+                            step={1}
+                            value={selectedDistance}
+                            onChange={(e) => handleUpdateDistance(Number(e.target.value))}
+                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#1A56DB]"
+                          />
+                          <div className="flex justify-between text-[10.5px] text-slate-500 font-semibold mt-1.5">
+                            <span>1 km (Town Core)</span>
+                            <span>15 km (Outskirts)</span>
+                            <span>35 km (Blocks)</span>
+                            <span>50 km+ (Palamu)</span>
+                          </div>
+                        </div>
+
+                        {/* Live Delivery Fee & Speed Badge */}
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                          <div className="flex items-center gap-2.5">
+                            <Truck className="w-4 h-4 text-[#1A56DB] flex-shrink-0" />
+                            <div>
+                              <span className="text-xs font-bold text-slate-900 block">{selectedArea || 'Local Garhwa Delivery'}</span>
+                              <span className="text-[11px] text-slate-500">
+                                {selectedDistance <= 5 ? 'Est. Speed: 30 - 60 mins' : selectedDistance <= 15 ? 'Est. Speed: 2 - 4 hours' : 'Est. Speed: Same-Day Delivery'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Delivery Charge</span>
+                            <span className={`text-sm font-black ${currentDeliveryFee === 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+                              {currentDeliveryFee === 0 ? 'FREE' : `₹${currentDeliveryFee}`}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Popular Quick Area Chips */}
+                        <div>
+                          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                            Popular Local Areas (Tap to Select)
+                          </label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {POPULAR_GARHWA_HUBS.map((hub) => {
+                              const isSelected = selectedArea === hub.name;
+                              return (
+                                <button
+                                  key={hub.name}
+                                  type="button"
+                                  onClick={() => handleUpdateDistance(hub.distanceKm, hub.name, hub.pincode)}
+                                  className={`p-2.5 rounded-xl text-left border transition-all text-xs cursor-pointer ${
+                                    isSelected
+                                      ? 'border-[#1A56DB] bg-blue-50/70 font-bold text-slate-900 shadow-2xs'
+                                      : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="truncate">{hub.name}</span>
+                                    {isSelected && <Check className="w-3.5 h-3.5 text-[#1A56DB] flex-shrink-0" />}
+                                  </div>
+                                  <span className="text-[10.5px] text-slate-400 font-normal block mt-0.5">{hub.distanceKm} km</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-slate-700">Street Address / Mohalla / Village *</label>
                         <input
@@ -750,12 +884,30 @@ export default function CheckoutPage() {
                     </strong>
                   </div>
                   {deliveryType === 'delivery' && (
-                    <div className="flex justify-between text-slate-600">
-                      <span>Address:</span>
-                      <strong className="text-slate-900 text-right max-w-xs">
-                        {streetAddress}, {city} - {pincode}
-                      </strong>
-                    </div>
+                    <>
+                      <div className="flex justify-between text-slate-600">
+                        <span>Address:</span>
+                        <strong className="text-slate-900 text-right max-w-xs">
+                          {streetAddress}, {city} - {pincode}
+                        </strong>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-600 pt-1 border-t border-slate-200/80">
+                        <span>Distance & Delivery Charge:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-700">{selectedDistance} km</span>
+                          <span className={`font-bold ${currentDeliveryFee === 0 ? 'text-emerald-700' : 'text-slate-900'}`}>
+                            ({currentDeliveryFee === 0 ? 'FREE' : `₹${currentDeliveryFee}`})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setStep(1)}
+                            className="text-[11px] text-[#1A56DB] hover:underline font-bold ml-1 cursor-pointer"
+                          >
+                            Adjust
+                          </button>
+                        </div>
+                      </div>
+                    </>
                   )}
                   {needGst && (
                     <div className="flex justify-between text-slate-600 pt-2 border-t border-slate-200">
@@ -1485,7 +1637,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span>Delivery Charges {customerLocation ? `(${customerLocation.distanceKm} km)` : ''}</span>
+                  <span>Delivery Charges ({isPickupOrder ? 'Pickup' : `${customerLocation?.distanceKm || selectedDistance} km`})</span>
                   {currentDeliveryFee === 0 ? (
                     <span className="text-emerald-700 font-bold">FREE</span>
                   ) : (

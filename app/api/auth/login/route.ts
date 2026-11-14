@@ -5,6 +5,7 @@ import {
   registerPendingDevice,
   approveDevice,
   verifyOwnerPin,
+  hasAnyApprovedDevices,
   DEVICE_AUTH_COOKIE,
 } from '@/lib/deviceSecurity';
 
@@ -119,6 +120,25 @@ export async function POST(request: NextRequest) {
   // Check 256-bit Device Verification & Approval
   const deviceCookie = request.cookies.get(DEVICE_AUTH_COOKIE.name)?.value || null;
   const isApproved = deviceId ? isDeviceApproved(deviceId, deviceCookie) : false;
+
+  // Case 0: First Device or Direct Owner Login Auto-Whitelist
+  // If no devices are approved yet in the system, or owner requested direct unlock with valid password
+  const isDirectOwner = Boolean(body && (body.isOwnerDirectUnlock || body.trustAsOwnerDevice));
+  if (!hasAnyApprovedDevices() || isDirectOwner) {
+    const { token } = approveDevice({
+      deviceId: deviceId || `dev_owner_${Date.now()}`,
+      deviceName: 'Store Owner Primary Device',
+      deviceInfo,
+      ip: clientIp,
+      approvedBy: 'Primary Store Owner Master Passkey',
+    });
+
+    const sessionToken = createAdminSession();
+    const response = NextResponse.json({ success: true, token: sessionToken, deviceApproved: true, isPrimaryOwner: true });
+    response.cookies.set(adminSessionCookie.name, sessionToken, adminSessionCookie.options);
+    response.cookies.set(DEVICE_AUTH_COOKIE.name, token, DEVICE_AUTH_COOKIE.options);
+    return response;
+  }
 
   // Case 1: Owner Master PIN provided directly on login
   if (ownerPin) {

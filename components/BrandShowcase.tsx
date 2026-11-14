@@ -19,12 +19,12 @@ export const BrandShowcase: React.FC = () => {
 
   if (activeBrands.length === 0) return null;
 
-  const MOBILE_LIMIT = 8;
+  const MOBILE_LIMIT = 9;
   const mobileBrands = showAllMobile || activeBrands.length <= MOBILE_LIMIT
     ? activeBrands
     : activeBrands.slice(0, MOBILE_LIMIT);
 
-  const INITIAL_LIMIT = 20;
+  const INITIAL_LIMIT = 18;
   const displayedBrands = showAll || activeBrands.length <= INITIAL_LIMIT
     ? activeBrands
     : activeBrands.slice(0, INITIAL_LIMIT);
@@ -48,9 +48,9 @@ export const BrandShowcase: React.FC = () => {
           </Link>
         </div>
 
-        {/* MOBILE VIEW: Circular Brand Badges (4-column grid) */}
+        {/* MOBILE VIEW: Rounded Square Brand Cards (3 Logos per Line) */}
         <div className="block sm:hidden">
-          <div className="grid grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-3 gap-2.5">
             {mobileBrands.map((b) => {
               const href = b.query?.startsWith('/')
                 ? b.query
@@ -61,12 +61,12 @@ export const BrandShowcase: React.FC = () => {
                   key={`mob-${b.id || b.name}`}
                   href={href}
                   title={`View all ${b.name} products`}
-                  className="flex flex-col items-center justify-center group active:scale-95 transition-transform"
+                  className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-[#1A56DB] active:scale-95 transition-all min-h-[82px]"
                 >
-                  <div className="w-14 h-14 rounded-full bg-white border border-slate-200/90 shadow-2xs flex items-center justify-center p-2 overflow-hidden hover:border-[#1A56DB]">
-                    <BrandLogoRenderer brand={b} className="scale-90" />
+                  <div className="h-9 w-full flex items-center justify-center overflow-hidden">
+                    <BrandLogoRenderer brand={b} className="max-w-full" />
                   </div>
-                  <span className="text-[10px] font-bold text-slate-700 mt-1 text-center truncate max-w-[68px] leading-tight">
+                  <span className="text-[10.5px] font-bold text-slate-700 mt-1 text-center truncate max-w-full leading-tight">
                     {b.name}
                   </span>
                 </Link>
@@ -88,8 +88,8 @@ export const BrandShowcase: React.FC = () => {
           )}
         </div>
 
-        {/* TABLET & DESKTOP VIEW: Circular Brand Badges */}
-        <div className="hidden sm:grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+        {/* TABLET & DESKTOP VIEW: Rounded Square Brand Cards */}
+        <div className="hidden sm:grid grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-3">
           {displayedBrands.map((b) => {
             const href = b.query?.startsWith('/')
               ? b.query
@@ -100,12 +100,12 @@ export const BrandShowcase: React.FC = () => {
                 key={b.id || b.name}
                 href={href}
                 title={`View all ${b.name} products`}
-                className="flex flex-col items-center justify-center group p-1 transition-all"
+                className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-[#1A56DB] hover:shadow-md shadow-2xs transition-all group min-h-[96px]"
               >
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white border border-slate-200/90 group-hover:border-[#1A56DB] group-hover:shadow-md shadow-2xs flex items-center justify-center p-2.5 sm:p-3 transition-all overflow-hidden group-hover:scale-105">
+                <div className="h-11 w-full flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform">
                   <BrandLogoRenderer brand={b} />
                 </div>
-                <span className="text-[11px] sm:text-[12px] font-bold text-slate-700 group-hover:text-[#1A56DB] mt-1.5 text-center truncate max-w-[85px] sm:max-w-[100px] transition-colors">
+                <span className="text-[11px] sm:text-[12px] font-bold text-slate-700 group-hover:text-[#1A56DB] mt-1 text-center truncate max-w-full transition-colors">
                   {b.name}
                 </span>
               </Link>

@@ -33,8 +33,8 @@ export async function notifyAdminOnNewOrder(order: {
       }
     } catch {}
 
-    const title = `🔔 Naya Order #${order.orderId}`;
-    const message = `${order.customerName} (${order.phone}) ne ₹${order.totalAmount.toLocaleString('en-IN')} ka order place kiya (${itemCount} item${itemCount > 1 ? 's' : ''}).`;
+    const title = `New Order #${order.orderId}`;
+    const message = `${order.customerName} (${order.phone}) placed an order for ₹${order.totalAmount.toLocaleString('en-IN')} (${itemCount} item${itemCount > 1 ? 's' : ''}).`;
 
     // 1. Persist notification in database
     const notification = await prisma.notification.create({
@@ -120,51 +120,51 @@ export async function notifyCustomerOnOrderUpdate(order: {
 
     if (updateType === 'PAYMENT') {
       if (order.paymentStatus === 'Paid') {
-        title = `💳 Payment Verified #${order.orderId}`;
-        message = `Aapke order #${order.orderId} ki payment verify ho gayi hai. Official 18% GST Bill unlock ho chuka hai!`;
+        title = `Payment Verified - Order #${order.orderId}`;
+        message = `Payment for order #${order.orderId} has been verified. Official 18% GST invoice is available.`;
       } else if (order.paymentStatus === 'Rejected') {
-        title = `⚠️ Payment Unverified #${order.orderId}`;
-        message = `Order #${order.orderId} ki payment verify nahi ho saki. Kripya showroom se sampark karein ya sahi UTR submit karein.`;
+        title = `Payment Verification Failed - Order #${order.orderId}`;
+        message = `Payment for order #${order.orderId} could not be verified. Please submit correct UTR reference or contact showroom.`;
       } else {
-        title = `💳 Payment Status Updated #${order.orderId}`;
-        message = `Aapke order #${order.orderId} ka payment status: ${order.paymentStatus}.`;
+        title = `Payment Status Updated - Order #${order.orderId}`;
+        message = `Payment status for order #${order.orderId} is now ${order.paymentStatus}.`;
       }
     } else if (updateType === 'RIDER') {
-      title = `🚴 Delivery Rider Assigned #${order.orderId}`;
+      title = `Delivery Rider Assigned - Order #${order.orderId}`;
       message = order.riderName
-        ? `Rider ${order.riderName} aapka order lekar aane ke liye assign ho chuke hain.`
-        : `Aapke order #${order.orderId} ke liye delivery rider assign kar diya gaya hai.`;
+        ? `Rider ${order.riderName} has been assigned to deliver order #${order.orderId}.`
+        : `A delivery rider has been assigned for order #${order.orderId}.`;
     } else {
       // Order status updates
       switch (order.orderStatus) {
         case 'Confirmed':
-          title = `✅ Order Confirmed #${order.orderId}`;
-          message = `Aapka order #${order.orderId} Lapiez Showroom dwara confirm ho gaya hai. Packing jald shuru hogi!`;
+          title = `Order Confirmed - #${order.orderId}`;
+          message = `Your order #${order.orderId} has been confirmed by Lapiez Showroom. Packaging started.`;
           break;
         case 'Packed':
-          title = `📦 Order Packed #${order.orderId}`;
-          message = `Order #${order.orderId} pack ho chuka hai aur dispatch / showroom counter pickup ke liye taiyar hai.`;
+          title = `Order Packed - #${order.orderId}`;
+          message = `Order #${order.orderId} is packed and ready for dispatch / showroom pickup.`;
           break;
         case 'Ready':
-          title = `🏬 Ready for Pickup #${order.orderId}`;
-          message = `Order #${order.orderId} Lapiez Showroom counter par pickup ke liye ready hai!`;
+          title = `Ready for Pickup - #${order.orderId}`;
+          message = `Order #${order.orderId} is ready for collection at the Lapiez Showroom counter.`;
           break;
         case 'Shipped':
         case 'Out For Delivery':
-          title = `🚚 Out For Delivery #${order.orderId}`;
-          message = `Khushkhabari! Order #${order.orderId} delivery ke liye nikal chuka hai. Jald aap tak pahuchega.`;
+          title = `Out for Delivery - #${order.orderId}`;
+          message = `Order #${order.orderId} is out for delivery and will arrive shortly.`;
           break;
         case 'Delivered':
-          title = `🎉 Order Delivered #${order.orderId}`;
-          message = `Order #${order.orderId} safalta-purvak deliver ho gaya hai. Lapiez Garhwa chunne ke liye dhanyawad!`;
+          title = `Order Delivered - #${order.orderId}`;
+          message = `Order #${order.orderId} has been successfully delivered. Thank you for shopping with Lapiez Garhwa!`;
           break;
         case 'Cancelled':
-          title = `❌ Order Cancelled #${order.orderId}`;
-          message = `Aapka order #${order.orderId} cancel kar diya gaya hai. Sahayata ke liye showroom par call karein.`;
+          title = `Order Cancelled - #${order.orderId}`;
+          message = `Order #${order.orderId} has been cancelled. Please contact showroom for details.`;
           break;
         default:
-          title = `🔔 Order Update #${order.orderId}`;
-          message = `Order #${order.orderId} ka status update hua: ${order.orderStatus}.`;
+          title = `Order Update - #${order.orderId}`;
+          message = `Order #${order.orderId} status updated to ${order.orderStatus}.`;
       }
     }
 
