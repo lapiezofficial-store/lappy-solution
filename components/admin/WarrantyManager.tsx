@@ -165,7 +165,7 @@ export default function WarrantyManager({
   useEffect(() => {
     if (staffName) setFormStaffName(staffName);
   }, [staffName]);
-  
+
   // File uploads
   const [billFileBase64, setBillFileBase64] = useState<string | null>(null);
   const [billFileName, setBillFileName] = useState('');
@@ -489,25 +489,22 @@ export default function WarrantyManager({
 
       {/* Channel & Purchase Type Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-        
+
         {/* All Claims */}
         <div
           onClick={() => { setChannelFilter('ALL'); setStatusFilter('ALL'); }}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${
-            channelFilter === 'ALL' && statusFilter === 'ALL'
-              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-slate-300'
-          }`}
+          className={`p-4 rounded-xl border transition-all cursor-pointer ${channelFilter === 'ALL' && statusFilter === 'ALL'
+            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+            : 'bg-white border-slate-200 hover:border-slate-300'
+            }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider ${
-            channelFilter === 'ALL' && statusFilter === 'ALL' ? 'text-blue-100' : 'text-slate-500'
-          }`}>
+          <div className={`text-[11px] font-bold uppercase tracking-wider ${channelFilter === 'ALL' && statusFilter === 'ALL' ? 'text-blue-100' : 'text-slate-500'
+            }`}>
             Total Claims
           </div>
           <div className="text-2xl font-black mt-1">{metrics.total}</div>
-          <div className={`text-[10px] mt-0.5 ${
-            channelFilter === 'ALL' && statusFilter === 'ALL' ? 'text-blue-200' : 'text-slate-400'
-          }`}>
+          <div className={`text-[10px] mt-0.5 ${channelFilter === 'ALL' && statusFilter === 'ALL' ? 'text-blue-200' : 'text-slate-400'
+            }`}>
             All channels combined
           </div>
         </div>
@@ -515,22 +512,19 @@ export default function WarrantyManager({
         {/* 1. Showroom Offline Purchases */}
         <div
           onClick={() => setChannelFilter('OFFLINE_STORE')}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${
-            channelFilter === 'OFFLINE_STORE'
-              ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-purple-300'
-          }`}
+          className={`p-4 rounded-xl border transition-all cursor-pointer ${channelFilter === 'OFFLINE_STORE'
+            ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+            : 'bg-white border-slate-200 hover:border-purple-300'
+            }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-            channelFilter === 'OFFLINE_STORE' ? 'text-purple-100' : 'text-purple-700'
-          }`}>
+          <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${channelFilter === 'OFFLINE_STORE' ? 'text-purple-100' : 'text-purple-700'
+            }`}>
             <Store className="w-3.5 h-3.5" />
             <span>Showroom Shop Bill</span>
           </div>
           <div className="text-2xl font-black mt-1">{metrics.offlineCount}</div>
-          <div className={`text-[10px] mt-0.5 ${
-            channelFilter === 'OFFLINE_STORE' ? 'text-purple-200' : 'text-purple-600'
-          }`}>
+          <div className={`text-[10px] mt-0.5 ${channelFilter === 'OFFLINE_STORE' ? 'text-purple-200' : 'text-purple-600'
+            }`}>
             दुकान से खरीदा हुआ
           </div>
         </div>
@@ -538,22 +532,19 @@ export default function WarrantyManager({
         {/* 2. Online Website Orders */}
         <div
           onClick={() => setChannelFilter('ONLINE_WEBSITE')}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${
-            channelFilter === 'ONLINE_WEBSITE'
-              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-blue-300'
-          }`}
+          className={`p-4 rounded-xl border transition-all cursor-pointer ${channelFilter === 'ONLINE_WEBSITE'
+            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+            : 'bg-white border-slate-200 hover:border-blue-300'
+            }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-            channelFilter === 'ONLINE_WEBSITE' ? 'text-blue-100' : 'text-blue-700'
-          }`}>
+          <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${channelFilter === 'ONLINE_WEBSITE' ? 'text-blue-100' : 'text-blue-700'
+            }`}>
             <Globe className="w-3.5 h-3.5" />
             <span>Online Orders</span>
           </div>
           <div className="text-2xl font-black mt-1">{metrics.onlineCount}</div>
-          <div className={`text-[10px] mt-0.5 ${
-            channelFilter === 'ONLINE_WEBSITE' ? 'text-blue-200' : 'text-blue-600'
-          }`}>
+          <div className={`text-[10px] mt-0.5 ${channelFilter === 'ONLINE_WEBSITE' ? 'text-blue-200' : 'text-blue-600'
+            }`}>
             वेबसाइट से आर्डर
           </div>
         </div>
@@ -561,22 +552,19 @@ export default function WarrantyManager({
         {/* 3. Past Legacy Customers */}
         <div
           onClick={() => setChannelFilter('PAST_LEGACY')}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${
-            channelFilter === 'PAST_LEGACY'
-              ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-amber-300'
-          }`}
+          className={`p-4 rounded-xl border transition-all cursor-pointer ${channelFilter === 'PAST_LEGACY'
+            ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+            : 'bg-white border-slate-200 hover:border-amber-300'
+            }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-            channelFilter === 'PAST_LEGACY' ? 'text-amber-100' : 'text-amber-700'
-          }`}>
+          <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${channelFilter === 'PAST_LEGACY' ? 'text-amber-100' : 'text-amber-700'
+            }`}>
             <History className="w-3.5 h-3.5" />
             <span>Past Customers</span>
           </div>
           <div className="text-2xl font-black mt-1">{metrics.pastCount}</div>
-          <div className={`text-[10px] mt-0.5 ${
-            channelFilter === 'PAST_LEGACY' ? 'text-amber-200' : 'text-amber-600'
-          }`}>
+          <div className={`text-[10px] mt-0.5 ${channelFilter === 'PAST_LEGACY' ? 'text-amber-200' : 'text-amber-600'
+            }`}>
             पुराने बिल व ग्राहक
           </div>
         </div>
@@ -598,7 +586,7 @@ export default function WarrantyManager({
 
       {/* Search & Channel Filter Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
-        
+
         {/* Search */}
         <div className="relative w-full md:w-96">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -630,11 +618,10 @@ export default function WarrantyManager({
             <button
               key={pill.id}
               onClick={() => setChannelFilter(pill.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                channelFilter === pill.id
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${channelFilter === pill.id
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
             >
               {pill.label}
             </button>
@@ -654,11 +641,10 @@ export default function WarrantyManager({
             <button
               key={pill.id}
               onClick={() => setStatusFilter(pill.id)}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                statusFilter === pill.id
-                  ? 'bg-blue-600 text-white shadow-xs font-bold'
-                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${statusFilter === pill.id
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
+                : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }`}
             >
               {pill.label}
             </button>
@@ -907,7 +893,7 @@ export default function WarrantyManager({
       {isNewModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto">
-            
+
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -931,11 +917,10 @@ export default function WarrantyManager({
               <button
                 type="button"
                 onClick={() => setPurchaseChannel('OFFLINE_STORE')}
-                className={`py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  purchaseChannel === 'OFFLINE_STORE'
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${purchaseChannel === 'OFFLINE_STORE'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <Store className="w-4 h-4" />
                 <span>1. Showroom Shop Purchase (दुकान से खरीदा)</span>
@@ -944,11 +929,10 @@ export default function WarrantyManager({
               <button
                 type="button"
                 onClick={() => setPurchaseChannel('ONLINE_WEBSITE')}
-                className={`py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  purchaseChannel === 'ONLINE_WEBSITE'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${purchaseChannel === 'ONLINE_WEBSITE'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <Globe className="w-4 h-4" />
                 <span>2. Online Website Order (ऑनलाइन आर्डर)</span>
@@ -957,11 +941,10 @@ export default function WarrantyManager({
               <button
                 type="button"
                 onClick={() => setPurchaseChannel('PAST_LEGACY')}
-                className={`py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  purchaseChannel === 'PAST_LEGACY'
-                    ? 'bg-amber-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${purchaseChannel === 'PAST_LEGACY'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <History className="w-4 h-4" />
                 <span>3. Past Customer (पुराना ग्राहक)</span>
@@ -993,14 +976,14 @@ export default function WarrantyManager({
             )}
 
             <form onSubmit={handleCreateClaim} className="space-y-5">
-              
+
               {/* Section 1: Customer Info */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-blue-600" />
                   <span>Customer Contact Details (ग्राहक की जानकारी)</span>
                 </h4>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -1550,7 +1533,7 @@ export default function WarrantyManager({
       {isPrintModalOpen && selectedClaim && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 print:shadow-none print:border-none print:p-0 print:m-0">
-            
+
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 print:hidden">
               <span className="text-xs font-bold text-slate-500 uppercase">Customer Job Sheet Preview</span>
               <div className="flex items-center gap-2">
@@ -1572,7 +1555,7 @@ export default function WarrantyManager({
 
             {/* Printable Body */}
             <div className="border border-slate-300 p-6 rounded-2xl font-sans text-slate-900 space-y-4 print:border-slate-800">
-              
+
               <div className="flex items-start justify-between border-b pb-4">
                 <div>
                   <h2 className="text-xl font-black text-blue-900 tracking-tight">LAPIEZ SOLUTIONS</h2>

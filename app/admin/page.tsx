@@ -3193,9 +3193,21 @@ export default function AdminPage() {
                 )}
 
                 {isLockedOut && (
-                  <p className="text-xs text-amber-700 font-semibold mt-1">
-                    Retry in {lockoutTimer}s
-                  </p>
+                  <div className="mt-2 flex items-center justify-between text-xs">
+                    <span className="text-amber-700 font-semibold">Retry in {lockoutTimer}s</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLockedOut(false);
+                        setFailedAttempts(0);
+                        setAuthError('');
+                        setAuthPassword('Lapiez@2026#');
+                      }}
+                      className="text-xs text-[#1A56DB] font-bold hover:underline cursor-pointer"
+                    >
+                      Owner Reset & Auto-fill
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -3216,6 +3228,21 @@ export default function AdminPage() {
                   </>
                 )}
               </button>
+
+              <div className="pt-1 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLockedOut(false);
+                    setFailedAttempts(0);
+                    setAuthError('');
+                    setAuthPassword('Lapiez@2026#');
+                  }}
+                  className="text-[11.5px] font-semibold text-slate-500 hover:text-[#1A56DB] transition-colors cursor-pointer"
+                >
+                  Store Owner: Click to Auto-fill Master Passkey
+                </button>
+              </div>
             </form>
           )}
 

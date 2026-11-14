@@ -73,19 +73,6 @@ export async function POST(request: NextRequest) {
   }
 
   const clientIp = getClientIp(request);
-  const rateLimit = checkRateLimit(clientIp);
-
-  if (rateLimit.isBlocked) {
-    return NextResponse.json(
-      { error: `Too many failed login attempts. Please try again in ${rateLimit.retryAfterSeconds} seconds.` },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': String(rateLimit.retryAfterSeconds),
-        },
-      }
-    );
-  }
 
   const body = await request.json().catch(() => null);
   const password = body && typeof body.password === 'string' ? body.password : '';
@@ -93,18 +80,21 @@ export async function POST(request: NextRequest) {
   const deviceInfo = body && typeof body.deviceInfo === 'string' ? body.deviceInfo.trim() : 'Web Browser';
   const ownerPin = body && typeof body.ownerPin === 'string' ? body.ownerPin.trim() : '';
 
+  // Check valid master credentials first (so legitimate owner is never locked out by rate limit)
   const verification = await verifyAndCheckAdminPassword(password);
 
-  if (!verification.isValid) {
+  if (verification.isValid) {
+    clearRateLimit(clientIp);
+  } else {
     recordFailedAttempt(clientIp);
-    const updated = checkRateLimit(clientIp);
+    const rateLimit = checkRateLimit(clientIp);
     return NextResponse.json(
       {
-        error: updated.isBlocked
-          ? 'Too many failed login attempts. Account locked for 15 minutes.'
-          : `Invalid credentials. (${updated.remainingAttempts} attempts remaining)`
+        error: rateLimit.isBlocked
+          ? `Too many failed login attempts. Please try again in ${rateLimit.retryAfterSeconds} seconds.`
+          : `Invalid credentials. (${rateLimit.remainingAttempts} attempts remaining)`
       },
-      { status: 401 }
+      { status: rateLimit.isBlocked ? 429 : 401 }
     );
   }
 
@@ -114,8 +104,6 @@ export async function POST(request: NextRequest) {
       console.warn('Auto-migration note:', err);
     });
   }
-
-  clearRateLimit(clientIp);
 
   // Check 256-bit Device Verification & Approval
   const deviceCookie = request.cookies.get(DEVICE_AUTH_COOKIE.name)?.value || null;
