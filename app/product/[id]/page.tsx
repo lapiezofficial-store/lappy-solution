@@ -314,28 +314,29 @@ export default function ProductDetailPage() {
     <div className="bg-[#F1F3F6] py-6 sm:py-10">
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
         
-        {/* Mobile Compact Back Link */}
-        <div className="sm:hidden mb-2.5">
-          <Link
-            href="/shop"
-            className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#1A56DB] font-semibold transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-gray-400" />
-            <span>Back to Catalog</span>
+        {/* Responsive Breadcrumb Navigation (Mobile & Desktop) */}
+        <nav 
+          aria-label="Breadcrumb"
+          className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-slate-500 mb-3 sm:mb-4 overflow-x-auto scrollbar-none whitespace-nowrap py-1"
+        >
+          <Link href="/" className="hover:text-[#1A56DB] transition-colors flex-shrink-0 font-medium">
+            Home
           </Link>
-        </div>
-
-        {/* Desktop Breadcrumb Navigation */}
-        <nav className="hidden sm:flex items-center gap-2 text-xs text-gray-500 mb-4 overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
-          <Link href="/" className="hover:text-[#1A56DB] transition-colors flex-shrink-0">Home</Link>
-          <span className="text-gray-300 flex-shrink-0">/</span>
-          <Link href="/shop" className="hover:text-[#1A56DB] transition-colors flex-shrink-0">Catalog</Link>
-          <span className="text-gray-300 flex-shrink-0">/</span>
-          <Link href={`/shop?cat=${encodeURIComponent(product.category)}`} className="hover:text-[#1A56DB] transition-colors flex-shrink-0 font-medium">
+          <span className="text-slate-300 flex-shrink-0 select-none">/</span>
+          <Link href="/shop" className="hover:text-[#1A56DB] transition-colors flex-shrink-0 font-medium">
+            Catalog
+          </Link>
+          <span className="text-slate-300 flex-shrink-0 select-none">/</span>
+          <Link 
+            href={`/shop?cat=${encodeURIComponent(product.category)}`} 
+            className="hover:text-[#1A56DB] transition-colors flex-shrink-0 font-medium text-slate-600"
+          >
             {product.category}
           </Link>
-          <span className="text-gray-300 flex-shrink-0">/</span>
-          <span className="text-gray-900 font-semibold truncate max-w-xs flex-shrink-0">{product.name}</span>
+          <span className="text-slate-300 flex-shrink-0 select-none">/</span>
+          <span className="text-slate-900 font-semibold truncate max-w-[150px] sm:max-w-xs flex-shrink-0" title={product.name}>
+            {product.name}
+          </span>
         </nav>
 
         {/* Product Hero Layout */}

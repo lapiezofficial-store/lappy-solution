@@ -241,21 +241,19 @@ export const SecurityManager: React.FC = () => {
             {emergencyKeys.map((k) => (
               <div
                 key={k.id}
-                className={`p-3 rounded-xl border flex items-center justify-between gap-2 ${
-                  k.isExpired
+                className={`p-3 rounded-xl border flex items-center justify-between gap-2 ${k.isExpired
                     ? 'bg-rose-50/50 border-rose-200 text-rose-800'
                     : 'bg-emerald-50/40 border-emerald-200 text-emerald-900'
-                }`}
+                  }`}
               >
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-800">{k.name}</span>
                     <span
-                      className={`text-[9.5px] font-black px-1.5 py-0.2 rounded-full ${
-                        k.isExpired
+                      className={`text-[9.5px] font-black px-1.5 py-0.2 rounded-full ${k.isExpired
                           ? 'bg-rose-200 text-rose-800'
                           : 'bg-emerald-200 text-emerald-900'
-                      }`}
+                        }`}
                     >
                       {k.isExpired ? 'EXPIRED (0 Left)' : `${k.remainingUses} of ${k.maxUses} Uses Left`}
                     </span>

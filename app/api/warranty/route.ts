@@ -136,30 +136,30 @@ export async function POST(request: NextRequest) {
     const orderId = typeof body.orderId === 'string' ? body.orderId.trim() : null;
 
     if (!customerName || customerName.length < 2) {
-      return NextResponse.json({ error: 'Please enter customer name (नाम भरें)' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter customer name' }, { status: 400 });
     }
     if (!customerPhone || customerPhone.length !== 10) {
       return NextResponse.json({ error: 'Please enter a valid 10-digit mobile number' }, { status: 400 });
     }
     if (!productName) {
-      return NextResponse.json({ error: 'Please enter product name (सामान का नाम)' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter product name' }, { status: 400 });
     }
     if (!issueDescription) {
-      return NextResponse.json({ error: 'Please describe the fault or issue (समस्या लिखें)' }, { status: 400 });
+      return NextResponse.json({ error: 'Please describe the fault or issue' }, { status: 400 });
     }
 
     // Required Proof Rules:
     // For Offline Showroom Purchase: Needs Invoice Number OR Uploaded Bill Copy
     if (purchaseChannel === 'OFFLINE_STORE' && !invoiceNumber && !body.billDocumentUrl) {
       return NextResponse.json({
-        error: 'Showroom purchase requires Bill / Invoice Number or Bill Copy photo. (दुकान का बिल नंबर या बिल की फोटो आवश्यक है)'
+        error: 'Showroom purchase requires Bill / Invoice Number or Bill Copy photo.'
       }, { status: 400 });
     }
 
     // For Past Customers: Needs Old Bill / Serial sticker photo OR Bill Number
     if (purchaseChannel === 'PAST_LEGACY' && !invoiceNumber && !body.billDocumentUrl && !serialNumber) {
       return NextResponse.json({
-        error: 'Past customer claim requires Old Bill / Cash Memo photo or Device Serial Number. (पुराने बिल की फोटो या सीरियल नंबर आवश्यक है)'
+        error: 'Past customer claim requires Old Bill / Cash Memo photo or Device Serial Number.'
       }, { status: 400 });
     }
 

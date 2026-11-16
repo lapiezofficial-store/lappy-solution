@@ -13,6 +13,52 @@ export interface NotificationPayload {
 }
 
 /**
+ * Strips legacy emojis and converts legacy Hinglish notification messages to crisp enterprise English.
+ */
+export function formatEnterpriseNotification(title: string, message: string): { title: string; message: string } {
+  // 1. Strip emojis
+  let cleanTitle = (title || '')
+    .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+    .replace(/[💳📦✅🚚🎉✨🔒]/g, '')
+    .trim();
+
+  let cleanMsg = (message || '')
+    .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+    .replace(/[💳📦✅🚚🎉✨🔒]/g, '')
+    .trim();
+
+  // 2. Translate legacy Hinglish messages
+  if (/payment verify ho gayi hai/i.test(cleanMsg) || /payment verified/i.test(cleanTitle)) {
+    const orderMatch = cleanMsg.match(/#(LPZ-\S+|\d+)/i) || cleanTitle.match(/#(LPZ-\S+|\d+)/i);
+    const orderTag = orderMatch ? `Order ${orderMatch[0]}` : 'your order';
+    cleanTitle = orderMatch ? `Payment Verified ${orderMatch[0]}` : 'Payment Verified';
+    cleanMsg = `Payment for ${orderTag} has been successfully verified. Official 18% GST Tax Invoice is available for download.`;
+  } else if (/pack ho chuka hai/i.test(cleanMsg) || /order packed/i.test(cleanTitle)) {
+    const orderMatch = cleanMsg.match(/#(LPZ-\S+|\d+)/i) || cleanTitle.match(/#(LPZ-\S+|\d+)/i);
+    const orderTag = orderMatch ? `Order ${orderMatch[0]}` : 'Your order';
+    cleanTitle = orderMatch ? `Order Packed ${orderMatch[0]}` : 'Order Packed';
+    cleanMsg = `${orderTag} has been securely packed and is ready for dispatch or showroom counter pickup.`;
+  } else if (/confirm ho gaya hai/i.test(cleanMsg) || /order confirmed/i.test(cleanTitle)) {
+    const orderMatch = cleanMsg.match(/#(LPZ-\S+|\d+)/i) || cleanTitle.match(/#(LPZ-\S+|\d+)/i);
+    const orderTag = orderMatch ? `Order ${orderMatch[0]}` : 'Your order';
+    cleanTitle = orderMatch ? `Order Confirmed ${orderMatch[0]}` : 'Order Confirmed';
+    cleanMsg = `${orderTag} has been confirmed by Lapiez Showroom. Item inspection and fulfillment is in progress.`;
+  } else if (/dispatch ho gaya/i.test(cleanMsg) || /nikal chuka/i.test(cleanMsg) || /shipped/i.test(cleanTitle)) {
+    const orderMatch = cleanMsg.match(/#(LPZ-\S+|\d+)/i) || cleanTitle.match(/#(LPZ-\S+|\d+)/i);
+    const orderTag = orderMatch ? `Order ${orderMatch[0]}` : 'Your order';
+    cleanTitle = orderMatch ? `Order Dispatched ${orderMatch[0]}` : 'Order Dispatched';
+    cleanMsg = `${orderTag} has been dispatched from Garhwa showroom with our delivery partner.`;
+  } else if (/deliver ho gaya/i.test(cleanMsg) || /delivered/i.test(cleanTitle)) {
+    const orderMatch = cleanMsg.match(/#(LPZ-\S+|\d+)/i) || cleanTitle.match(/#(LPZ-\S+|\d+)/i);
+    const orderTag = orderMatch ? `Order ${orderMatch[0]}` : 'Your order';
+    cleanTitle = orderMatch ? `Order Delivered ${orderMatch[0]}` : 'Order Delivered';
+    cleanMsg = `${orderTag} has been successfully delivered. Thank you for shopping with Lapiez.`;
+  }
+
+  return { title: cleanTitle, message: cleanMsg };
+}
+
+/**
  * Creates and broadcasts an order notification to the Admin.
  */
 export async function notifyAdminOnNewOrder(order: {

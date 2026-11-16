@@ -193,7 +193,7 @@ export default function StaffPage() {
         hasFetchedOnceRef.current = false;
         showToast(`Welcome ${name}! Staff App unlocked.`);
       } else {
-        setAuthError(data.error || 'Login failed. Details check karein.');
+        setAuthError(data.error || 'Login failed. Please verify your credentials.');
       }
     } catch {
       setAuthError('Connection error. Please try again.');
@@ -277,11 +277,11 @@ export default function StaffPage() {
   const sendWhatsAppReadyMessage = (order: StaffOrder) => {
     const text = encodeURIComponent(
       `*LAPIEZ GARHWA - ORDER READY FOR PICKUP*\n\n` +
-      `Namaste *${order.customerName}* ji,\n` +
-      `Aapka order *#${order.orderId}* pack ho gaya hai aur showroom counter pe pickup ke liye ready hai!\n\n` +
+      `Hello *${order.customerName}*,\n` +
+      `Your order *#${order.orderId}* is packed and ready for pickup at our showroom counter!\n\n` +
       `Items: ${order.items.map((i) => `${i.name} (x${i.quantity})`).join(', ')}\n` +
       `Total: ₹${order.totalAmount.toLocaleString('en-IN')}\n` +
-      `Address: In front of G P Plaza, Chiniya Road, Garhwa\n` +
+      `Showroom Address: In front of G P Plaza, Chiniya Road, Garhwa\n` +
       `Lapiez Team Garhwa`
     );
     window.open(`https://wa.me/91${order.phone.replace(/\D/g, '').slice(-10)}?text=${text}`, '_blank');
@@ -290,10 +290,10 @@ export default function StaffPage() {
   const sendWhatsAppDispatchMessage = (order: StaffOrder) => {
     const text = encodeURIComponent(
       `*LAPIEZ GARHWA - ORDER DISPATCHED*\n\n` +
-      `Namaste *${order.customerName}* ji,\n` +
-      `Aapka order *#${order.orderId}* delivery ke liye nikal chuka hai!\n` +
-      (order.rider ? `Rider: ${order.rider.name} (${order.rider.phone})\n` : '') +
-      `Amount: ₹${order.totalAmount.toLocaleString('en-IN')} (${order.paymentStatus})\n\n` +
+      `Hello *${order.customerName}*,\n` +
+      `Your order *#${order.orderId}* has been dispatched for delivery!\n` +
+      (order.rider ? `Delivery Rider: ${order.rider.name} (${order.rider.phone})\n` : '') +
+      `Total Payable: ₹${order.totalAmount.toLocaleString('en-IN')} (${order.paymentStatus})\n\n` +
       `Help: +91 9608828288 • Lapiez Garhwa`
     );
     window.open(`https://wa.me/91${order.phone.replace(/\D/g, '').slice(-10)}?text=${text}`, '_blank');
@@ -627,7 +627,7 @@ export default function StaffPage() {
                   activeTab === 'aaya' ? 'text-blue-100' : 'text-blue-600'
                 }`}>
                   <ArrowDownLeft className="w-4 h-4" />
-                  <span>ऑर्डर आया</span>
+                  <span>Incoming Orders</span>
                 </span>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   activeTab === 'aaya' ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'
@@ -651,7 +651,7 @@ export default function StaffPage() {
                   activeTab === 'gya' ? 'text-emerald-100' : 'text-emerald-600'
                 }`}>
                   <ArrowUpRight className="w-4 h-4" />
-                  <span>ऑर्डर गया</span>
+                  <span>Dispatched Orders</span>
                 </span>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   activeTab === 'gya' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'

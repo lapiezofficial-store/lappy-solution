@@ -1343,7 +1343,7 @@ export default function CheckoutPage() {
                     {/* Choose Payment Mode: Cash vs Online */}
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-900 block uppercase tracking-wider">
-                        Choose Counter Payment Mode (भुगतान का प्रकार चुनें)
+                        Choose Counter Payment Mode
                       </label>
                       <div className="grid grid-cols-2 gap-3">
                         <button
@@ -1453,7 +1453,7 @@ export default function CheckoutPage() {
                       <div className="flex items-center gap-2">
                         <UserCheck className="w-4 h-4 text-purple-700 flex-shrink-0" />
                         <label htmlFor="pickup-handed-by" className="text-xs font-extrabold text-slate-900">
-                          Handed Over By / Staff Name (सामान देने वाले स्टाफ / काउंटर व्यक्ति का नाम)
+                          Handed Over By / Staff Name
                         </label>
                       </div>
                       <input

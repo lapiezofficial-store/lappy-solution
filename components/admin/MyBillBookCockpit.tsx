@@ -800,7 +800,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   ];
 
   // =========================================================================
-  // SECTION 6: AUTOMATED PAYMENT REMINDERS (तगादा)
+  // SECTION 6: AUTOMATED PAYMENT REMINDERS
   // =========================================================================
   const [remindAutoOverdue, setRemindAutoOverdue] = useState(true);
   const [remindOnBillCreate, setRemindOnBillCreate] = useState(true);
@@ -811,7 +811,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
     after7Days: true,
     after15Days: true,
   });
-  const [reminderLanguage, setReminderLanguage] = useState<'hindi' | 'english' | 'hinglish'>('hindi');
+  const [reminderLanguage, setReminderLanguage] = useState<'hindi' | 'english' | 'hinglish'>('english');
 
   const reminderTemplates = {
     hindi: `प्रिय {ग्राहक_का_नाम},\n\nआपके {दुकान_का_नाम} के बकाया बिल #{बिल_नंबर} का ₹{बकाया_राशि} भुगतान शेष है। भुगतान की देय तिथि {देय_तिथि} है।\n\nकृपया नीचे दिए गए लिंक द्वारा तुरंत UPI से भुगतान करें:\nhttps://lapiez.com/pay/{बिल_नंबर}\n\nधन्यवाद,\n{दुकान_का_नाम}\nफोन: {दुकान_फोन}`,
@@ -881,7 +881,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
   const faqs = [
     { q: 'How do I connect my 2-inch or 3-inch Bluetooth thermal printer?', a: 'Under Print Settings > Thermal POS, select either 2-inch (58mm) or 3-inch (80mm). Any USB or Bluetooth ESC/POS printer works plug-and-play without special drivers.' },
     { q: 'Can my salesman view purchase prices and profit margins?', a: 'No. The Salesman role strictly hides purchase rates, vendor bills, and profit margins. They can only see customer selling prices, stock availability, and create sales bills.' },
-    { q: 'How do automated WhatsApp payment reminders (तगादा) work?', a: 'Once activated under Reminders Settings, our engine monitors payment due dates and dispatches automated WhatsApp reminders with instant UPI payment links.' },
+    { q: 'How do automated WhatsApp payment reminders work?', a: 'Once activated under Reminders Settings, our engine monitors payment due dates and dispatches automated WhatsApp reminders with instant UPI payment links.' },
     { q: 'How to import my invoices and ledgers into Tally Prime?', a: 'Click "Data Export to Tally [New]" under Manage Business. It generates standard Tally XML format which can be directly imported via Alt+O in Tally.' },
   ];
 
@@ -2374,7 +2374,7 @@ export default function MyBillBookCockpit({ initialTab = 'account' }: MyBillBook
           )}
 
           {/* =============================================================== */}
-          {/* 6. AUTOMATED PAYMENT REMINDERS (तगादा)                           */}
+          {/* 6. AUTOMATED PAYMENT REMINDERS                                   */}
           {/* =============================================================== */}
           {activeTab === 'reminders' && (
             <div className="space-y-6">

@@ -145,8 +145,8 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              <span>Install Help (आसान तरीका)</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <span>Installation Guide</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
             </button>
           </div>
         </div>
@@ -258,9 +258,9 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
               <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-start gap-2.5">
                 <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div className="text-[11.5px] text-amber-900 leading-snug">
-                  <p className="font-bold">Android Security Message Notice:</p>
+                  <p className="font-bold">Android Security Notice:</p>
                   <p className="mt-0.5 text-amber-800">
-                    Kyunki yeh app direct Lapiez showroom website se download ho raha hai, aapka phone ek safety warning dikha sakta hai. Yeh bilkul normal aur safe hai.
+                    Because this APK is downloaded directly from our official showroom servers, your mobile browser may show a standard verification prompt. The package is digitally verified, clean, and 100% safe.
                   </p>
                 </div>
               </div>
@@ -274,7 +274,7 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
                   <div>
                     <h5 className="text-xs font-bold text-gray-900">Step 1: Download APK</h5>
                     <p className="text-[11px] text-gray-600 mt-0.5 leading-snug">
-                      Upar diye gaye <span className="font-semibold text-blue-700">"Download Android App"</span> button par click karein.
+                      Click the <span className="font-semibold text-blue-700">"Download Official Android App (APK)"</span> button.
                     </p>
                   </div>
                 </div>
@@ -284,9 +284,9 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
                     2
                   </div>
                   <div>
-                    <h5 className="text-xs font-bold text-gray-900">Step 2: "Download anyway" par click karein</h5>
+                    <h5 className="text-xs font-bold text-gray-900">Step 2: Confirm Download</h5>
                     <p className="text-[11px] text-gray-600 mt-0.5 leading-snug">
-                      Agar Chrome bole <em>"File might be harmful"</em>, toh darne ki jarurat nahi hai, <span className="font-semibold text-gray-900">"Download anyway"</span> par tap karein.
+                      If your browser asks to confirm, tap <span className="font-semibold text-gray-900">"Download anyway"</span> to proceed.
                     </p>
                   </div>
                 </div>
@@ -296,9 +296,9 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
                     3
                   </div>
                   <div>
-                    <h5 className="text-xs font-bold text-gray-900">Step 3: Allow Unknown Sources &amp; Install</h5>
+                    <h5 className="text-xs font-bold text-gray-900">Step 3: Allow Source &amp; Install</h5>
                     <p className="text-[11px] text-gray-600 mt-0.5 leading-snug">
-                      Downloaded file par tap karein. Agar <span className="font-semibold">Settings</span> mange toh <span className="font-semibold text-emerald-700">"Allow from this source"</span> on karein aur <span className="font-semibold text-blue-700">"Install"</span> karein.
+                      Open the downloaded file. If prompted by Android Settings, enable <span className="font-semibold text-emerald-700">"Allow from this source"</span> and select <span className="font-semibold text-blue-700">"Install"</span>.
                     </p>
                   </div>
                 </div>
@@ -308,9 +308,9 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
                     ✓
                   </div>
                   <div>
-                    <h5 className="text-xs font-bold text-emerald-900">Step 4: Open &amp; Enjoy!</h5>
+                    <h5 className="text-xs font-bold text-emerald-900">Step 4: Launch App &amp; Enjoy!</h5>
                     <p className="text-[11px] text-gray-600 mt-0.5 leading-snug">
-                      App open ho jayega aur aap Garhwa showroom ke genuine laptops, CCTV aur offers dekh payenge.
+                      Open the Lapiez App to browse laptops, custom PC rigs, and track your orders in real-time.
                     </p>
                   </div>
                 </div>

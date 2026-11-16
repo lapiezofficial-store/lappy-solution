@@ -34,11 +34,11 @@ interface ClaimResult {
 }
 
 const STATUS_STEPS = [
-  { key: 'RECEIVED', label: '1. Received at Desk', hindi: 'दुकान में जमा' },
-  { key: 'UNDER_INSPECTION', label: '2. Under Diagnosis', hindi: 'जाँच और टेस्टिंग चालू' },
-  { key: 'SENT_TO_BRAND', label: '3. Brand Service Center', hindi: 'कंपनी सर्विस सेंटर भेजा गया' },
-  { key: 'REPAIRED_READY', label: '4. Repaired & Ready', hindi: 'कलेक्शन के लिए तैयार है' },
-  { key: 'DELIVERED_CLOSED', label: '5. Delivered', hindi: 'कस्टमर को दे दिया गया' },
+  { key: 'RECEIVED', label: '1. Received at Desk' },
+  { key: 'UNDER_INSPECTION', label: '2. Under Diagnosis' },
+  { key: 'SENT_TO_BRAND', label: '3. Brand Service Center' },
+  { key: 'REPAIRED_READY', label: '4. Repaired & Ready' },
+  { key: 'DELIVERED_CLOSED', label: '5. Delivered' },
 ];
 
 export default function WarrantyPage() {
@@ -218,7 +218,7 @@ export default function WarrantyPage() {
           </h1>
 
           <p className="text-xs sm:text-sm text-blue-100/90 max-w-2xl mx-auto leading-relaxed">
-            Aapne <strong>दुकान से खरीदा हो (Showroom Shop Bill)</strong>, <strong>वेबसाइट से ऑनलाइन ऑर्डर किया हो</strong>, ya <strong>पहले कभी पुराना सामान खरीदा हो</strong> — yahan apna bill aur serial number daal kar warranty claim karein.
+            Whether purchased at our Garhwa Showroom, ordered online on Lapiez.com, or an existing device — enter your invoice or serial number to register and track warranty claims.
           </p>
 
           {/* Dual Main Mode Selector */}
@@ -231,7 +231,7 @@ export default function WarrantyPage() {
                   : 'bg-white/10 text-blue-200 hover:bg-white/20'
               }`}
             >
-              + Register Claim (नया क्लेम करें)
+              + Register Claim
             </button>
 
             <button
@@ -242,7 +242,7 @@ export default function WarrantyPage() {
                   : 'bg-white/10 text-blue-200 hover:bg-white/20'
               }`}
             >
-              🔍 Track Status (स्टेटस चेक करें)
+              🔍 Track Status
             </button>
           </div>
 
@@ -303,7 +303,7 @@ export default function WarrantyPage() {
                 {/* 3 Purchase Channels Selector */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Step 1: Choose Where You Purchased (आपने कहाँ से खरीदा था?)
+                    Step 1: Choose Purchase Channel
                   </label>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -322,7 +322,7 @@ export default function WarrantyPage() {
                         <span className="font-extrabold text-xs text-purple-950">Showroom Purchase</span>
                       </div>
                       <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        Garhwa showroom se bill lekar kharida hua
+                        Purchased in-person at Garhwa showroom
                       </p>
                     </button>
 
@@ -341,7 +341,7 @@ export default function WarrantyPage() {
                         <span className="font-extrabold text-xs text-blue-950">Online Website Order</span>
                       </div>
                       <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        Lapiez.com website se order kiya hua
+                        Purchased online on Lapiez.com storefront
                       </p>
                     </button>
 
@@ -360,7 +360,7 @@ export default function WarrantyPage() {
                         <span className="font-extrabold text-xs text-amber-950">Past / Old Customer</span>
                       </div>
                       <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        Pehle kharida hua purana bill ya slip
+                        Prior offline purchase, legacy bill, or receipt
                       </p>
                     </button>
                   </div>
@@ -376,7 +376,7 @@ export default function WarrantyPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Your Full Name (आपका पूरा नाम) *
+                        Your Full Name *
                       </label>
                       <input
                         type="text"
@@ -390,7 +390,7 @@ export default function WarrantyPage() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        10-Digit Mobile Number (मोबाइल नंबर) *
+                        10-Digit Mobile Number *
                       </label>
                       <input
                         type="tel"
@@ -406,7 +406,7 @@ export default function WarrantyPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      City / Area Address (शहर / पता)
+                      City / Area Address
                     </label>
                     <input
                       type="text"
@@ -423,14 +423,14 @@ export default function WarrantyPage() {
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                     <FileText className="w-4 h-4 text-purple-600" />
                     <span>
-                      Step 3: {purchaseChannel === 'ONLINE_WEBSITE' ? 'Online Order Details' : 'Showroom Bill & Purchase Proof (बिल की जानकारी)'}
+                      Step 3: {purchaseChannel === 'ONLINE_WEBSITE' ? 'Online Order Details' : 'Showroom Bill & Purchase Proof'}
                     </span>
                   </h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        {purchaseChannel === 'ONLINE_WEBSITE' ? 'Website Order ID (e.g. LPZ-2601-921)' : 'Bill / Invoice Number (बिल नंबर)'} *
+                        {purchaseChannel === 'ONLINE_WEBSITE' ? 'Website Order ID (e.g. LPZ-2601-921)' : 'Bill / Invoice Number'} *
                       </label>
                       <input
                         type="text"
@@ -446,7 +446,7 @@ export default function WarrantyPage() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Purchase Date (खरीदने की तारीख)
+                        Purchase Date
                       </label>
                       <input
                         type="date"
@@ -462,7 +462,7 @@ export default function WarrantyPage() {
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-black text-purple-900 flex items-center gap-2">
                         <Upload className="w-4 h-4 text-purple-700" />
-                        <span>Upload Showroom Bill Photo / PDF (दुकान के बिल की फोटो अपलोड करें)</span>
+                        <span>Upload Showroom Bill Photo / PDF</span>
                       </label>
                       {billFileName && (
                         <span className="text-[11px] text-emerald-700 font-bold">
@@ -477,7 +477,7 @@ export default function WarrantyPage() {
                       className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer"
                     />
                     <p className="text-[11px] text-purple-800/80">
-                      Apne physical bill, invoice ya cash memo ki clear photo kheench kar yahan upload karein.
+                      Upload a clear photo or PDF of your physical bill, tax invoice, or cash memo.
                     </p>
                   </div>
                 </div>
@@ -486,7 +486,7 @@ export default function WarrantyPage() {
                 <div className="space-y-3 pt-3 border-t border-slate-100">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                     <Laptop className="w-4 h-4 text-blue-600" />
-                    <span>Step 4: Device Identification (डिवाइस की जानकारी)</span>
+                    <span>Step 4: Device Identification</span>
                   </h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -497,7 +497,7 @@ export default function WarrantyPage() {
                         onChange={(e) => setCategory(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none"
                       >
-                        <option value="Laptop">Laptop (लैपटॉप)</option>
+                        <option value="Laptop">Laptop</option>
                         <option value="Desktop">Desktop / All-in-One PC</option>
                         <option value="CCTV">CCTV Camera / DVR</option>
                         <option value="Printer">Printer / Scanner</option>
@@ -543,7 +543,7 @@ export default function WarrantyPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Product Name & Model (मॉडल व नाम) *
+                      Product Name & Model *
                     </label>
                     <input
                       type="text"
@@ -560,7 +560,7 @@ export default function WarrantyPage() {
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                         <Camera className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Upload Device / Serial Sticker Photo (सीरियल नंबर स्टिकर की फोटो)</span>
+                        <span>Upload Device / Serial Sticker Photo</span>
                       </label>
                       {deviceFileName && (
                         <span className="text-[11px] text-emerald-700 font-bold">
@@ -581,7 +581,7 @@ export default function WarrantyPage() {
                 <div className="space-y-3 pt-3 border-t border-slate-100">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                     <Wrench className="w-4 h-4 text-blue-600" />
-                    <span>Step 5: Problem Description (समस्या क्या आ रही है?)</span>
+                    <span>Step 5: Problem Description</span>
                   </h3>
 
                   <div>
@@ -600,7 +600,7 @@ export default function WarrantyPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Accessories you will provide with device (सामान क्या साथ देंगे)
+                      Accessories provided with device
                     </label>
                     <input
                       type="text"
@@ -627,7 +627,7 @@ export default function WarrantyPage() {
                     ) : (
                       <>
                         <ShieldCheck className="w-4 h-4" />
-                        <span>Submit Warranty Claim (क्लेम दर्ज करें)</span>
+                        <span>Submit Warranty Claim</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -730,7 +730,6 @@ export default function WarrantyPage() {
                               }`}
                             >
                               <div className="text-xs">{step.label}</div>
-                              <div className="text-[9.5px] mt-0.5">{step.hindi}</div>
                             </div>
                           );
                         })}

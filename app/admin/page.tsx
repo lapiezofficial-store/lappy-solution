@@ -2329,7 +2329,7 @@ export default function AdminPage() {
   };
 
   const handleResetCategories = async () => {
-    if (confirm('Kya aap Homepage "Shop by Category" ke 10 original showroom categories restore karna chahte hain?')) {
+    if (confirm('Are you sure you want to restore the 10 original showroom categories for "Shop by Category"?')) {
       await resetCategoriesToDefault();
       showToast('10 original showroom categories restored!');
     }
@@ -2713,7 +2713,7 @@ export default function AdminPage() {
   };
 
   const handleAutoCleanDuplicates = async () => {
-    if (!confirm('Kya aap sabhi duplicate products ko auto-clean karna chahte hain? Har duplicate group ka pehla product secure rahega aur extra copies delete ho jayengi.')) {
+    if (!confirm('Are you sure you want to auto-clean duplicate products? The first product in each duplicate group will be preserved and redundant copies removed.')) {
       return;
     }
     const toDelete: string[] = [];
@@ -3125,10 +3125,10 @@ export default function AdminPage() {
               <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
                 <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider text-amber-800">
                   <Lock className="w-4 h-4 text-amber-600" />
-                  <span>Unapproved Device — Malik Approval Required</span>
+                  <span>Unapproved Device — Administrator Approval Required</span>
                 </div>
                 <p className="text-[11.5px] text-amber-800/90 leading-relaxed">
-                  Password verify ho chuka hai, lekin yeh naya device hai. Login ke liye Master Admin (Owner 1 ya Owner 2) ka approval zaroori hai.
+                  Password verified. As this is an unrecognized device, authorization from Master Admin is required to complete login.
                 </p>
               </div>
 
@@ -3196,14 +3196,14 @@ export default function AdminPage() {
               <div className="pt-2 border-t border-slate-100 space-y-2">
                 <a
                   href={`https://wa.me/919608828288?text=${encodeURIComponent(
-                    `Namaste Malik ji! Lapiez Admin Console me ek naya device login request aaya hai.\nDevice Code: ${pendingDeviceCode}\nDevice: ${pendingDeviceInfo}\nIP: ${pendingDeviceIp}\nKripya is device ko approve karein.`
+                    `Hello Administrator, a login authorization request has been initiated for Lapiez Admin Console.\nDevice Code: ${pendingDeviceCode}\nDevice: ${pendingDeviceInfo}\nIP: ${pendingDeviceIp}\nPlease review and approve this device.`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all"
                 >
                   <WhatsAppIcon variant="monochrome" className="w-4 h-4" />
-                  <span>Send Code to Malik via WhatsApp</span>
+                  <span>Send Code to Administrator via WhatsApp</span>
                 </a>
 
                 <button
@@ -3666,7 +3666,7 @@ export default function AdminPage() {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'dashboard' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <LayoutDashboard className="w-4 h-4" />
+                    <LayoutDashboard className="w-4 h-4 text-slate-500" />
                     <span>Dashboard</span>
                   </button>
 
@@ -3676,12 +3676,9 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <ShieldCheck className="w-4 h-4 text-slate-500" />
                       <span>Security & Devices</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      256-bit
-                    </span>
                   </button>
 
                   <button
@@ -3690,12 +3687,9 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <SlidersHorizontal className="w-4 h-4 text-blue-600" />
+                      <SlidersHorizontal className="w-4 h-4 text-slate-500" />
                       <span>Delivery &amp; Distance Rates</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                      Scale
-                    </span>
                   </button>
 
                   <button
@@ -3704,7 +3698,7 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <ShoppingBag className="w-4 h-4" />
+                      <ShoppingBag className="w-4 h-4 text-slate-500" />
                       <span>Orders & UTR</span>
                     </div>
                     {orders.length > 0 && (
@@ -3720,12 +3714,9 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Bike className="w-4 h-4 text-amber-500" />
+                      <Bike className="w-4 h-4 text-slate-500" />
                       <span>Delivery Riders</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                      Fleet
-                    </span>
                   </button>
 
                   <button
@@ -3734,12 +3725,9 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <ShieldCheck className="w-4 h-4 text-slate-500" />
                       <span>Warranty & Claims Desk</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      RMA
-                    </span>
                   </button>
 
                   <button
@@ -3748,24 +3736,21 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <User className="w-4 h-4 text-blue-600" />
+                      <User className="w-4 h-4 text-slate-500" />
                       <span>Staff Accounts</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                      IDs
-                    </span>
                   </button>
 
                   <Link
                     href="/staff"
                     target="_blank"
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold hover:bg-slate-50 text-blue-600 transition-all"
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <Store className="w-4 h-4 text-blue-600" />
+                      <Store className="w-4 h-4 text-slate-500" />
                       <span>Open Staff App</span>
                     </div>
-                    <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                   </Link>
 
                   <button
@@ -3774,12 +3759,9 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Building2 className="w-4 h-4 text-emerald-600" />
-                      <span className="font-bold">Bank Details</span>
+                      <Building2 className="w-4 h-4 text-slate-500" />
+                      <span>Bank Details</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      {bankAccounts.length}
-                    </span>
                   </button>
 
                   <button
@@ -3788,14 +3770,9 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Receipt className="w-4 h-4 text-slate-600" />
+                      <Receipt className="w-4 h-4 text-slate-500" />
                       <span>GST Invoices & Billing</span>
                     </div>
-                    {invoices.length > 0 && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                        {invoices.length}
-                      </span>
-                    )}
                   </button>
 
                   <button
@@ -3804,12 +3781,9 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Receipt className="w-4 h-4 text-teal-600" />
+                      <Receipt className="w-4 h-4 text-slate-500" />
                       <span>Lapiez Billing & POS</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
-                      POS & Tax
-                    </span>
                   </button>
 
                   <button
@@ -3818,12 +3792,9 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Package className="w-4 h-4" />
+                      <Package className="w-4 h-4 text-slate-500" />
                       <span>All Products</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                      {products.length}
-                    </span>
                   </button>
 
                   <button
@@ -3832,13 +3803,14 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Trash2 className="w-4 h-4 text-rose-500" />
-                      <span>Dustbin (Trash)</span>
+                      <Trash2 className="w-4 h-4 text-slate-500" />
+                      <span>Recycle Bin</span>
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${trashProducts.length > 0 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'
-                      }`}>
-                      {trashProducts.length}
-                    </span>
+                    {trashProducts.length > 0 && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white">
+                        {trashProducts.length}
+                      </span>
+                    )}
                   </button>
 
                   <button
@@ -3847,12 +3819,9 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Layers className="w-4 h-4" />
+                      <Layers className="w-4 h-4 text-slate-500" />
                       <span>Categories</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                      {categories.length}
-                    </span>
                   </button>
 
                   <button
@@ -3860,7 +3829,7 @@ export default function AdminPage() {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'brands' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <Award className="w-4 h-4 text-amber-500" />
+                    <Award className="w-4 h-4 text-slate-500" />
                     <span>Brands</span>
                   </button>
 
@@ -3869,7 +3838,7 @@ export default function AdminPage() {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'coupons' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <Percent className="w-4 h-4 text-emerald-600" />
+                    <Percent className="w-4 h-4 text-slate-500" />
                     <span>Coupons</span>
                   </button>
 
@@ -3878,7 +3847,7 @@ export default function AdminPage() {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'scraper' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <Globe className="w-4 h-4 text-purple-500" />
+                    <Globe className="w-4 h-4 text-slate-500" />
                     <span>Live Scraper</span>
                   </button>
 
@@ -3887,7 +3856,7 @@ export default function AdminPage() {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'banners' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <ImageIcon className="w-4 h-4 text-blue-500" />
+                    <ImageIcon className="w-4 h-4 text-slate-500" />
                     <span>Hero Banners</span>
                   </button>
 
@@ -3896,7 +3865,7 @@ export default function AdminPage() {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'homepage' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <SlidersHorizontal className="w-4 h-4 text-indigo-500" />
+                    <SlidersHorizontal className="w-4 h-4 text-slate-500" />
                     <span>Homepage Builder</span>
                   </button>
 
@@ -3905,7 +3874,7 @@ export default function AdminPage() {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'settings' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <Sliders className="w-4 h-4 text-slate-600" />
+                    <Sliders className="w-4 h-4 text-slate-500" />
                     <span>Store Settings</span>
                   </button>
 
@@ -3915,14 +3884,9 @@ export default function AdminPage() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <MessageSquare className="w-4 h-4 text-blue-600" />
+                      <MessageSquare className="w-4 h-4 text-slate-500" />
                       <span>Quotes & Leads</span>
                     </div>
-                    {leads.length > 0 && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {leads.length}
-                      </span>
-                    )}
                   </button>
                 </div>
               </div>
@@ -3982,17 +3946,12 @@ export default function AdminPage() {
                     ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
-                title="256-Bit Hardware & Device Security"
+                title="Hardware & Device Security"
               >
                 <div className="flex items-center gap-2.5">
-                  <ShieldCheck className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                  <ShieldCheck className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Security & Devices</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    256-bit
-                  </span>
-                )}
               </button>
             </div>
 
@@ -4006,14 +3965,9 @@ export default function AdminPage() {
                 title="Delivery Charges & Distance Scale Controller"
               >
                 <div className="flex items-center gap-2.5">
-                  <SlidersHorizontal className="w-4 h-4 flex-shrink-0 text-blue-600" />
+                  <SlidersHorizontal className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Delivery &amp; Rates</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                    Scale
-                  </span>
-                )}
               </button>
             </div>
 
@@ -4027,14 +3981,9 @@ export default function AdminPage() {
                 title="Live Web Scraper (Lapcare, ProDot, FINGERS)"
               >
                 <div className="flex items-center gap-2.5">
-                  <Globe className="w-4 h-4 flex-shrink-0 text-purple-600" />
+                  <Globe className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Live Scraper</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
-                    AUTO
-                  </span>
-                )}
               </button>
             </div>
 
@@ -4055,7 +4004,7 @@ export default function AdminPage() {
                 title="Orders & UTR Verification"
               >
                 <div className="flex items-center gap-2.5">
-                  <ShoppingBag className="w-4 h-4 flex-shrink-0 text-blue-600" />
+                  <ShoppingBag className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Orders & UTR</span>}
                 </div>
                 {!isWpSidebarCollapsed && orders.length > 0 && (
@@ -4074,14 +4023,9 @@ export default function AdminPage() {
                 title="Delivery Fleet & Rider Management"
               >
                 <div className="flex items-center gap-2.5">
-                  <Bike className="w-4 h-4 flex-shrink-0 text-amber-500" />
+                  <Bike className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Delivery Riders</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                    Fleet
-                  </span>
-                )}
               </button>
 
               <button
@@ -4093,14 +4037,9 @@ export default function AdminPage() {
                 title="Customer Warranty Claims & RMA Desk"
               >
                 <div className="flex items-center gap-2.5">
-                  <ShieldCheck className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                  <ShieldCheck className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Warranty & RMA</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Claims
-                  </span>
-                )}
               </button>
 
               <button
@@ -4112,28 +4051,23 @@ export default function AdminPage() {
                 title="Manage Staff IDs & Passwords"
               >
                 <div className="flex items-center gap-2.5">
-                  <User className="w-4 h-4 flex-shrink-0 text-blue-600" />
+                  <User className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Staff Accounts</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                    IDs
-                  </span>
-                )}
               </button>
 
               <Link
                 href="/staff"
                 target="_blank"
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold text-blue-600 hover:bg-slate-50 transition-all"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all"
                 title="Open Dedicated Staff App"
               >
                 <div className="flex items-center gap-2.5">
-                  <Store className="w-4 h-4 flex-shrink-0 text-blue-600" />
+                  <Store className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Open Staff App</span>}
                 </div>
                 {!isWpSidebarCollapsed && (
-                  <ExternalLink className="w-3 h-3 text-blue-500" />
+                  <ExternalLink className="w-3 h-3 text-slate-400" />
                 )}
               </Link>
 
@@ -4146,14 +4080,9 @@ export default function AdminPage() {
                 title="GST Invoices & Billing"
               >
                 <div className="flex items-center gap-2.5">
-                  <Receipt className="w-4 h-4 flex-shrink-0 text-slate-600" />
+                  <Receipt className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>GST Billing</span>}
                 </div>
-                {!isWpSidebarCollapsed && invoices.length > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700">
-                    {invoices.length}
-                  </span>
-                )}
               </button>
 
               <button
@@ -4165,14 +4094,9 @@ export default function AdminPage() {
                 title="Lapiez Billing System - POS & GST Invoicing Engine"
               >
                 <div className="flex items-center gap-2.5">
-                  <Receipt className="w-4 h-4 flex-shrink-0 text-teal-600" />
+                  <Receipt className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Lapiez Billing</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
-                    POS
-                  </span>
-                )}
               </button>
 
               <button
@@ -4184,14 +4108,9 @@ export default function AdminPage() {
                 title="Official Bank Accounts & Settlement"
               >
                 <div className="flex items-center gap-2.5">
-                  <Building2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                  <Building2 className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Bank Details</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    {bankAccounts.length}
-                  </span>
-                )}
               </button>
 
               <button
@@ -4203,14 +4122,9 @@ export default function AdminPage() {
                 title="Coupons & Discounts"
               >
                 <div className="flex items-center gap-2.5">
-                  <Percent className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                  <Percent className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Coupons</span>}
                 </div>
-                {!isWpSidebarCollapsed && coupons.length > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700">
-                    {coupons.length}
-                  </span>
-                )}
               </button>
 
               <button
@@ -4222,14 +4136,9 @@ export default function AdminPage() {
                 title="Customer Inquiries & Quotes"
               >
                 <div className="flex items-center gap-2.5">
-                  <MessageSquare className="w-4 h-4 flex-shrink-0 text-blue-600" />
+                  <MessageSquare className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Quotes & Leads</span>}
                 </div>
-                {!isWpSidebarCollapsed && leads.length > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    {leads.length}
-                  </span>
-                )}
               </button>
             </div>
 
@@ -4250,14 +4159,9 @@ export default function AdminPage() {
                 title="All Products Inventory"
               >
                 <div className="flex items-center gap-2.5">
-                  <Package className="w-4 h-4 flex-shrink-0" />
+                  <Package className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>All Products</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700">
-                    {products.length}
-                  </span>
-                )}
               </button>
 
               <button
@@ -4266,15 +4170,14 @@ export default function AdminPage() {
                     ? 'bg-rose-50 text-rose-700 font-bold border-l-4 border-rose-500'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
-                title="Dustbin / Trash (Saved for 15 Days)"
+                title="Recycle Bin (Saved for 15 Days)"
               >
                 <div className="flex items-center gap-2.5">
-                  <Trash2 className="w-4 h-4 flex-shrink-0 text-rose-500" />
-                  {!isWpSidebarCollapsed && <span>Dustbin (Trash)</span>}
+                  <Trash2 className="w-4 h-4 flex-shrink-0 text-slate-500" />
+                  {!isWpSidebarCollapsed && <span>Recycle Bin</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${trashProducts.length > 0 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'
-                    }`}>
+                {!isWpSidebarCollapsed && trashProducts.length > 0 && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-rose-600 text-white">
                     {trashProducts.length}
                   </span>
                 )}
@@ -4289,14 +4192,9 @@ export default function AdminPage() {
                 title="Categories & Subcategories CMS"
               >
                 <div className="flex items-center gap-2.5">
-                  <Layers className="w-4 h-4 flex-shrink-0 text-indigo-600" />
+                  <Layers className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Categories</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700">
-                    {categories.length}
-                  </span>
-                )}
               </button>
 
               <button
@@ -4308,14 +4206,9 @@ export default function AdminPage() {
                 title="Top Brands Showcase"
               >
                 <div className="flex items-center gap-2.5">
-                  <Award className="w-4 h-4 flex-shrink-0 text-amber-500" />
+                  <Award className="w-4 h-4 flex-shrink-0 text-slate-500" />
                   {!isWpSidebarCollapsed && <span>Top Brands</span>}
                 </div>
-                {!isWpSidebarCollapsed && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                    {brands.length}
-                  </span>
-                )}
               </button>
             </div>
 
@@ -6876,7 +6769,7 @@ export default function AdminPage() {
                       </span>
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      1920 × 1080 px image upload karein — Web aur Phone dono me automatic set ho jayega.
+                      Upload 1920 × 1080 px image — automatically formatted for desktop and mobile displays.
                     </p>
                   </div>
 
@@ -7313,7 +7206,7 @@ export default function AdminPage() {
                       <div>
                         <div className="flex items-center gap-2.5 flex-wrap">
                           <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
-                            Dustbin / Recycle Bin (कचरा पेटी)
+                            Recycle Bin
                           </h2>
                           <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
                             {trashProducts.length} Items in Trash
@@ -10017,8 +9910,8 @@ export default function AdminPage() {
                               const timing = formatProductTiming(prod.createdAt);
                               const isRecent = timing.relative.includes('now') || timing.relative.includes('m ago') || timing.relative.includes('h ago') || timing.relative === 'Yesterday';
                               return (
-                                <div key={prod.id} className="py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors rounded-lg px-1.5">
-                                  <div className="flex items-center gap-2.5 min-w-0">
+                                <div key={prod.id} className="py-2.5 flex items-center justify-between gap-2.5 hover:bg-slate-50/70 transition-colors rounded-xl px-2">
+                                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                     <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-200 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
                                       <img
                                         src={prod.image || '/images/product-placeholder.svg'}
@@ -10026,39 +9919,54 @@ export default function AdminPage() {
                                         className="w-full h-full object-contain"
                                       />
                                     </div>
-                                    <div className="min-w-0">
+                                    <div className="min-w-0 flex-1">
                                       <div
                                         onClick={() => setPreviewProduct(prod)}
-                                        className="font-bold text-gray-900 truncate max-w-xs sm:max-w-md hover:text-[#1A56DB] cursor-pointer"
-                                        title="Click to preview product details"
+                                        className="font-bold text-gray-900 truncate max-w-[140px] sm:max-w-xs md:max-w-md hover:text-[#1A56DB] cursor-pointer text-xs"
+                                        title={prod.name}
                                       >
                                         {prod.name}
                                       </div>
-                                      <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
-                                        <span className="font-semibold text-[#1A56DB]">{prod.category}</span>
-                                        <span>•</span>
-                                        <span className="font-bold text-gray-800">₹{prod.price.toLocaleString('en-IN')}</span>
-                                        <span>•</span>
-                                        <span className="font-mono text-gray-400 text-[10px]">SKU: {prod.sku || 'N/A'}</span>
+                                      <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5 flex-wrap sm:flex-nowrap">
+                                        <span className="font-semibold text-[#1A56DB] truncate max-w-[80px] sm:max-w-none">{prod.category}</span>
+                                        <span className="text-gray-300">•</span>
+                                        <span className="font-bold text-gray-900">₹{prod.price.toLocaleString('en-IN')}</span>
+                                        <span className="hidden sm:inline text-gray-300">•</span>
+                                        <span className="hidden sm:inline font-mono text-gray-400 text-[10px]">SKU: {prod.sku || 'N/A'}</span>
                                       </div>
                                     </div>
                                   </div>
 
                                   <div className="text-right flex-shrink-0">
-                                    <div className="flex items-center gap-1 font-bold text-gray-800 text-[11px] justify-end">
-                                      <Clock className={`w-3 h-3 ${isRecent ? 'text-emerald-500' : 'text-blue-500'}`} />
-                                      <span>{timing.dateOnly}</span>
+                                    {/* Mobile: Single clean pill */}
+                                    <div className="sm:hidden">
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                        isRecent
+                                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                          : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                      }`}>
+                                        <Clock className="w-2.5 h-2.5" />
+                                        <span>{isRecent ? timing.relative : timing.dateOnly}</span>
+                                      </span>
                                     </div>
-                                    <div className="flex items-center gap-1 text-[10px] justify-end mt-0.5">
-                                      <span className="text-gray-400 font-mono">{timing.exactTime}</span>
-                                      {timing.relative !== 'Pre-existing' && (
-                                        <span className={`px-1.5 py-0.2 rounded font-extrabold ${isRecent
-                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                            : 'bg-slate-100 text-slate-600 border border-slate-200'
-                                          }`}>
-                                          {timing.relative}
-                                        </span>
-                                      )}
+
+                                    {/* Desktop: Full Date & Exact Time */}
+                                    <div className="hidden sm:block">
+                                      <div className="flex items-center gap-1 font-bold text-gray-800 text-[11px] justify-end">
+                                        <Clock className={`w-3 h-3 ${isRecent ? 'text-emerald-500' : 'text-blue-500'}`} />
+                                        <span>{timing.dateOnly}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1 text-[10px] justify-end mt-0.5">
+                                        <span className="text-gray-400 font-mono">{timing.exactTime}</span>
+                                        {timing.relative !== 'Pre-existing' && (
+                                          <span className={`px-1.5 py-0.2 rounded font-extrabold ${isRecent
+                                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                              : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                            }`}>
+                                            {timing.relative}
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -11188,8 +11096,8 @@ export default function AdminPage() {
 
                         <p className="text-[11px] mt-0.5 font-medium leading-tight">
                           {duplicateCandidate.matchType === 'exact'
-                            ? 'Ye product already inventory me exist karta hai! Isko dubara upload karne par catalog me 2 baar dikhai dega. Pehle se maujood product ko edit karein.'
-                            : 'Isse milta julta product pehle se inventory me hai. Duplicate hone se bachane ke liye niche check karein.'}
+                            ? 'This product already exists in your inventory. Uploading it again will create duplicate listings in the catalog. Consider editing the existing item instead.'
+                            : 'A similar product already exists in inventory. Review below to prevent duplicate listings.'}
                         </p>
 
                         {/* Matched product preview mini-card */}
@@ -12212,7 +12120,7 @@ export default function AdminPage() {
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div>
                 <h3 className="font-extrabold text-base text-[#111827]">Upload Banner</h3>
-                <p className="text-[11px] text-gray-500">Web aur Phone dono me automatic set hoga (1920 × 1080 px)</p>
+                <p className="text-[11px] text-gray-500">Automatically optimized for desktop and mobile displays (1920 × 1080 px)</p>
               </div>
               <button
                 type="button"
@@ -12238,7 +12146,7 @@ export default function AdminPage() {
 
                 <input
                   type="text"
-                  placeholder="Ya direct image URL paste karein..."
+                  placeholder="Or paste direct image URL..."
                   value={newBannerDesktopImage}
                   onChange={(e) => {
                     setNewBannerDesktopImage(e.target.value);
@@ -13429,7 +13337,7 @@ export default function AdminPage() {
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">
                 <div>
                   <span className="font-bold text-gray-800 block text-xs">Brand Visibility on Homepage</span>
-                  <span className="text-[11px] text-gray-500">Visible ya Invisible karein (Toggle Show / Hide)</span>
+                  <span className="text-[11px] text-gray-500">Toggle brand display status on storefront</span>
                 </div>
                 <button
                   type="button"
@@ -13660,7 +13568,7 @@ export default function AdminPage() {
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">
                 <div>
                   <span className="font-bold text-gray-800 block text-xs">Storefront Visibility</span>
-                  <span className="text-[11px] text-gray-500">Show ya hide karein on Homepage &quot;Shop by Category&quot; grid</span>
+                  <span className="text-[11px] text-gray-500">Show or hide on Homepage &quot;Shop by Category&quot; grid</span>
                 </div>
                 <button
                   type="button"

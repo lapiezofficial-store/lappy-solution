@@ -78,7 +78,7 @@ export default function OrderRiderAssignModal({
 
   const handleAssign = async () => {
     if (!selectedRiderId) {
-      alert('Kripya ek delivery rider select karein!');
+      alert('Please select a delivery rider.');
       return;
     }
 
@@ -92,11 +92,11 @@ export default function OrderRiderAssignModal({
 
       const data = await res.json();
       if (res.ok) {
-        alert(data.message || 'Order rider ko dispatch ho gaya!');
+        alert(data.message || 'Order has been dispatched to rider.');
         onSuccess(data.order, data.rider);
         onClose();
       } else {
-        alert(data.error || 'Assign fail hua');
+        alert(data.error || 'Failed to assign rider');
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -106,7 +106,7 @@ export default function OrderRiderAssignModal({
   };
 
   const handleUnassign = async () => {
-    if (!confirm('Kya aap rider ko unassign karke order ko wapas free pool me daalna chahte hain?')) return;
+    if (!confirm('Are you sure you want to unassign this rider and return the order to the open pool?')) return;
 
     try {
       setIsAssigning(true);
@@ -118,11 +118,11 @@ export default function OrderRiderAssignModal({
 
       const data = await res.json();
       if (res.ok) {
-        alert('Rider unassign ho gaya. Order wapas open pool me hai.');
+        alert('Rider unassigned successfully. Order returned to open pool.');
         onSuccess(data.order, null);
         onClose();
       } else {
-        alert(data.error || 'Unassign fail hua');
+        alert(data.error || 'Failed to unassign rider');
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -234,8 +234,8 @@ export default function OrderRiderAssignModal({
           ) : riders.length === 0 ? (
             <div className="py-12 text-center bg-gray-50 rounded-2xl p-6 text-gray-400">
               <Bike className="w-10 h-10 mx-auto text-gray-300 mb-2" />
-              <p className="font-bold text-gray-600">Koi approved rider nahi mila</p>
-              <p className="text-xs mt-1">Pehle "Delivery Riders" tab se rider add ya approve karein.</p>
+              <p className="font-bold text-gray-600">No approved riders found</p>
+              <p className="text-xs mt-1">Please add or approve a rider from the "Delivery Riders" tab first.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -375,7 +375,7 @@ export default function OrderRiderAssignModal({
             </button>
           ) : (
             <div className="text-xs text-gray-500">
-              Rider select karke <strong>"Send Order to Rider"</strong> dabayein.
+              Select a rider and click <strong>"Send Order to Rider"</strong>.
             </div>
           )}
 

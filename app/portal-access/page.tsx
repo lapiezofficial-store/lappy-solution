@@ -186,7 +186,7 @@ export default function PortalAccessPage() {
               className="w-full p-2.5 rounded-xl bg-blue-900/40 hover:bg-blue-800/60 border border-blue-700/50 text-blue-200 font-semibold flex items-center justify-center gap-1.5 transition-colors text-xs"
             >
               <Store className="w-3.5 h-3.5 text-blue-400" />
-              <span>Staff Order Desk (कर्मचारी पोर्टल)</span>
+              <span>Staff Order Desk</span>
             </Link>
           </div>
 

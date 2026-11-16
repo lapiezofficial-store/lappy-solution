@@ -16,6 +16,7 @@ import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 import { useStore } from '../../context/StoreContext';
 import { STORE_INFO } from '../../data/storeData';
 import { Product } from '../../data/products';
+import { formatEnterpriseNotification } from '../../lib/notificationService';
 
 type AccountTab =
   | 'orders'
@@ -1073,13 +1074,8 @@ function AccountContent() {
                   <div className="space-y-2.5">
                     {customerNotifications.map((notif: any) => {
                       const isUnread = !notif.read;
-                      // Strip legacy emojis from titles and messages for clean executive SaaS look
-                      const cleanTitle = (notif.title || '')
-                        .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
-                        .trim();
-                      const cleanMessage = (notif.message || '')
-                        .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
-                        .trim();
+                      // Format title and message: strip emojis & translate legacy Hinglish into crisp executive English
+                      const { title: cleanTitle, message: cleanMessage } = formatEnterpriseNotification(notif.title, notif.message);
 
                       const isPayment = cleanTitle.toLowerCase().includes('payment') || cleanTitle.toLowerCase().includes('paid');
                       const isDeliver = cleanTitle.toLowerCase().includes('deliver');

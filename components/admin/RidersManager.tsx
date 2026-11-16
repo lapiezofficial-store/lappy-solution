@@ -165,7 +165,7 @@ export default function RidersManager() {
   const handleAddRider = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addForm.name || !addForm.phone || !addForm.password) {
-      alert('Kripya Name, Phone aur Password bharein!');
+      alert('Please fill in Name, Phone, and Password.');
       return;
     }
 
@@ -179,7 +179,7 @@ export default function RidersManager() {
 
       const data = await res.json();
       if (res.ok) {
-        alert(`Rider safalta se create ho gaya!\nRider ID: ${data.rider.riderCode || data.rider.id}`);
+        alert(`Rider created successfully!\nRider ID: ${data.rider.riderCode || data.rider.id}`);
         setShowAddModal(false);
         setAddForm({
           name: '',
@@ -195,7 +195,7 @@ export default function RidersManager() {
         });
         fetchRiders();
       } else {
-        alert(data.error || 'Rider add karne me error aaya');
+        alert(data.error || 'Failed to add rider');
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -206,7 +206,7 @@ export default function RidersManager() {
 
   // 2. APPROVE RIDER
   const handleApproveRider = async (rider: Rider) => {
-    if (!confirm(`Kya aap ${rider.name} (${rider.riderCode || rider.phone}) ko APPROVE karna chahte hain?`)) return;
+    if (!confirm(`Are you sure you want to approve ${rider.name} (${rider.riderCode || rider.phone})?`)) return;
 
     try {
       const res = await fetch(`/api/admin/riders/${rider.id}`, {
@@ -216,10 +216,10 @@ export default function RidersManager() {
       });
 
       if (res.ok) {
-        alert(`${rider.name} ko approve kar diya gaya hai! Ab wo login aur delivery kar sakta hai.`);
+        alert(`${rider.name} has been approved successfully.`);
         fetchRiders();
       } else {
-        alert('Approve fail hua.');
+        alert('Failed to approve rider.');
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -228,7 +228,7 @@ export default function RidersManager() {
 
   // 3. REJECT RIDER
   const handleRejectRider = async (rider: Rider) => {
-    const reason = prompt(`Reject karne ka karan dalein:`, 'Incomplete or unverified documents');
+    const reason = prompt(`Enter reason for rejection:`, 'Incomplete or unverified documents');
     if (reason === null) return;
 
     try {
@@ -239,10 +239,10 @@ export default function RidersManager() {
       });
 
       if (res.ok) {
-        alert(`${rider.name} ka application REJECT kar diya gaya.`);
+        alert(`${rider.name}'s application has been rejected.`);
         fetchRiders();
       } else {
-        alert('Reject fail hua.');
+        alert('Failed to reject application.');
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -253,11 +253,11 @@ export default function RidersManager() {
   const handleToggleBlock = async (rider: Rider) => {
     let reason = '';
     if (!rider.isBlocked) {
-      const input = prompt(`Block karne ka reason dalein (optional):`, 'Policy violation or inactive');
+      const input = prompt(`Enter reason for blocking (optional):`, 'Policy violation or inactive');
       if (input === null) return;
       reason = input;
     } else {
-      if (!confirm(`Kya aap ${rider.name} ko Unblock karna chahte hain?`)) return;
+      if (!confirm(`Are you sure you want to unblock ${rider.name}?`)) return;
     }
 
     try {
@@ -270,7 +270,7 @@ export default function RidersManager() {
       if (res.ok) {
         fetchRiders();
       } else {
-        alert('Action fail hua.');
+        alert('Failed to update rider status.');
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -309,11 +309,11 @@ export default function RidersManager() {
 
       const data = await res.json();
       if (res.ok) {
-        alert('Rider details safalta se update ho gayi!');
+        alert('Rider details updated successfully!');
         setShowEditModal(false);
         fetchRiders();
       } else {
-        alert(data.error || 'Update fail hua');
+        alert(data.error || 'Failed to update rider');
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -324,7 +324,7 @@ export default function RidersManager() {
 
   // 6. DELETE / REMOVE RIDER
   const handleDeleteRider = async (rider: Rider) => {
-    if (!confirm(`Kya aap pakka rider "${rider.name}" (${rider.riderCode || rider.phone}) ko permanently delete karna chahte hain?`)) {
+    if (!confirm(`Are you sure you want to permanently delete rider "${rider.name}" (${rider.riderCode || rider.phone})?`)) {
       return;
     }
 
@@ -335,10 +335,10 @@ export default function RidersManager() {
 
       const data = await res.json();
       if (res.ok) {
-        alert('Rider permanently delete ho gaya.');
+        alert('Rider deleted permanently.');
         fetchRiders();
       } else {
-        alert(data.error || 'Delete fail hua');
+        alert(data.error || 'Failed to delete rider');
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -349,7 +349,7 @@ export default function RidersManager() {
   const handleSettlePayout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRider || !payoutAmount || Number(payoutAmount) <= 0) {
-      alert('Sahi amount dalein');
+      alert('Please enter a valid amount.');
       return;
     }
 
@@ -368,13 +368,13 @@ export default function RidersManager() {
 
       const data = await res.json();
       if (res.ok) {
-        alert(`₹${payoutAmount} Payout settle ho gaya!`);
+        alert(`₹${payoutAmount} payout settled successfully!`);
         setShowPayoutModal(false);
         setPayoutAmount('');
         setUtrNumber('');
         fetchRiders();
       } else {
-        alert(data.error || 'Payout fail hua');
+        alert(data.error || 'Payout settlement failed');
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -387,7 +387,7 @@ export default function RidersManager() {
   const handleQuickDispatch = async (orderId: string) => {
     const targetRiderId = quickAssignSelection[orderId];
     if (!targetRiderId) {
-      alert('Pehle dropdown se ek Rider select karein.');
+      alert('Please select a rider from the dropdown first.');
       return;
     }
     try {
@@ -401,7 +401,7 @@ export default function RidersManager() {
       if (res.ok) {
         await fetchRiders(false);
       } else {
-        alert(data.error || 'Dispatch fail hua');
+        alert(data.error || 'Failed to dispatch order');
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -814,8 +814,8 @@ export default function RidersManager() {
       ) : filteredRiders.length === 0 ? (
         <div className="py-16 text-center bg-white border border-gray-200 rounded-2xl p-8">
           <Bike className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-gray-700">Koi Rider Nahi Mila</h3>
-          <p className="text-gray-400 text-xs mt-1">Upar diye gaye "+ Add New Rider" button se naya rider add karein.</p>
+          <h3 className="text-base font-bold text-gray-700">No Riders Found</h3>
+          <p className="text-gray-400 text-xs mt-1">Use the "+ Add New Rider" button above to add a rider to the fleet.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
@@ -906,7 +906,7 @@ export default function RidersManager() {
                     </div>
                   </div>
 
-                  {/* Live Location Strip (Kahan Hai & Kab Gaya) */}
+                  {/* Live Location Strip */}
                   <div className="bg-gray-50/90 p-2.5 rounded-xl border border-gray-100 text-xs space-y-1.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-1.5 min-w-0">

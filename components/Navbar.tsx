@@ -15,6 +15,7 @@ import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
 import { useStore, DEFAULT_SHOP_BY_CATEGORIES, CMSCategory } from '../context/StoreContext';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import { GooglePlayIcon } from './GooglePlayIcon';
+import { formatEnterpriseNotification } from '../lib/notificationService';
 
 interface NavbarProps {
   onOpenAccount?: () => void;
@@ -341,12 +342,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     ) : (
                       customerNotifications.map((notif: any) => {
                         const isUnread = !notif.read;
-                        const cleanTitle = (notif.title || '')
-                          .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
-                          .trim();
-                        const cleanMessage = (notif.message || '')
-                          .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
-                          .trim();
+                        const { title: cleanTitle, message: cleanMessage } = formatEnterpriseNotification(notif.title, notif.message);
 
                         const isPayment = cleanTitle.toLowerCase().includes('payment') || cleanTitle.toLowerCase().includes('paid');
                         const isDeliver = cleanTitle.toLowerCase().includes('deliver');
@@ -863,12 +859,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                       ) : (
                         customerNotifications.map((notif: any) => {
                           const isUnread = !notif.read;
-                          const cleanTitle = (notif.title || '')
-                            .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
-                            .trim();
-                          const cleanMessage = (notif.message || '')
-                            .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
-                            .trim();
+                          const { title: cleanTitle, message: cleanMessage } = formatEnterpriseNotification(notif.title, notif.message);
 
                           const isPayment = cleanTitle.toLowerCase().includes('payment') || cleanTitle.toLowerCase().includes('paid');
                           const isDeliver = cleanTitle.toLowerCase().includes('deliver');

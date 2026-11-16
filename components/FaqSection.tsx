@@ -14,7 +14,6 @@ export interface FAQItem {
   id: string;
   category: 'general' | 'warranty' | 'refurbished' | 'billing' | 'delivery' | 'cctv';
   question: string;
-  questionHindi?: string;
   answer: string;
 }
 
@@ -23,56 +22,48 @@ export const FAQ_DATA: FAQItem[] = [
     id: 'faq-1',
     category: 'billing',
     question: 'Do you provide 18% GST Invoices with ITC for all products?',
-    questionHindi: 'क्या सभी प्रोडक्ट्स पर 18% GST बिल और ITC मिलता है?',
     answer: 'Yes, 100%! Every purchase from Lapiez Garhwa comes with an official computer-generated 18% GST Tax Invoice mentioning valid HSN codes, product serial numbers, and store GSTIN (20AABCL1234F1Z5). Business buyers can provide their GSTIN during checkout to claim full Input Tax Credit (ITC).'
   },
   {
     id: 'faq-2',
     category: 'refurbished',
     question: 'How are Certified Refurbished laptops tested before handover?',
-    questionHindi: 'सर्टिफाइड रीफर्बिश्ड लैपटॉप्स की टेस्टिंग कैसे की जाती है?',
     answer: 'Every refurbished laptop undergoes our strict 24-Point Hardware Diagnostic check: Motherboard thermal stress testing, battery health check (minimum 80%+ capacity), NVMe SSD health & speed test, FHD IPS panel dead-pixel inspection, all ports (USB, HDMI, Type-C), webcam, mic, and keyboard key testing.'
   },
   {
     id: 'faq-3',
     category: 'warranty',
     question: 'What warranty is provided on Brand New vs Refurbished laptops?',
-    questionHindi: 'ब्रांड न्यू और रीफर्बिश्ड लैपटॉप्स पर क्या वारंटी मिलती है?',
     answer: 'Brand New Laptops (HP, Dell, Lenovo, Asus, Acer) come with 1-Year Official All-India On-Site Manufacturer Warranty valid across India. Certified Refurbished laptops include a 3 to 6-Month Lapiez Showroom Testing & Replacement Warranty for complete peace of mind.'
   },
   {
     id: 'faq-4',
     category: 'delivery',
     question: 'How fast is delivery across Garhwa and Palamu?',
-    questionHindi: 'गढ़वा और पलामू में डिलीवरी कितने समय में होती है?',
     answer: 'We provide Free Same-Day Hand-Delivery within Garhwa city (Chiniya Road, Bus Stand, Ranka Road, Majhiaon). For Palamu, Daltonganj, and neighboring districts, orders are dispatched with express courier or local transport reaching within 24 to 48 hours.'
   },
   {
     id: 'faq-5',
     category: 'general',
     question: 'Which payment methods are accepted at the store and online?',
-    questionHindi: 'दुकान और ऑनलाइन पर पेमेंट के कौन-से तरीके उपलब्ध हैं?',
     answer: 'We accept all standard payment modes: Instant UPI QR Code (PhonePe, Google Pay, Paytm, BHIM), Cash at Showroom Counter, Net Banking (IMPS/NEFT/RTGS), and Debit/Credit Cards. Cash on Delivery (COD) is also available for local deliveries.'
   },
   {
     id: 'faq-6',
     category: 'cctv',
     question: 'Do you provide CCTV camera installation and mobile view setup?',
-    questionHindi: 'क्या आप CCTV कैमरा इंस्टालेशन और मोबाइल व्यू सेटअप करते हैं?',
     answer: 'Yes! We supply CP-PLUS, Hikvision, Dahua, and EZVIZ HD and IP cameras, 4/8/16 channel DVRs/NVRs, and surveillance hard disks. Our certified technicians handle on-site cabling, camera mounting, and mobile app configuration for 24/7 live viewing.'
   },
   {
     id: 'faq-7',
     category: 'general',
     question: 'Can I upgrade my old laptop RAM or SSD at your showroom?',
-    questionHindi: 'क्या मैं अपने पुराने लैपटॉप का RAM या SSD अपग्रेड करवा सकता हूँ?',
     answer: 'Absolutely! We stock high-speed M.2 NVMe SSDs (Kingston, Crucial, WD) and DDR4/DDR5 RAM. Bring your laptop to our Chiniya Road showroom for instant same-day upgrade, Windows OS migration, and thermal paste servicing.'
   },
   {
     id: 'faq-8',
     category: 'delivery',
     question: 'Where is the Lapiez physical showroom located in Garhwa?',
-    questionHindi: 'लापिएज़ का फिजिकल शोरूम गढ़वा में कहाँ स्थित है?',
     answer: 'Our main showroom is centrally located: In front of G P Plaza, Chiniya Road, Garhwa, Jharkhand - 822114. We are open Monday to Saturday, 10:00 AM to 8:30 PM. You can contact us anytime at +91 9608828288.'
   }
 ];
@@ -105,7 +96,6 @@ export const FaqSection: React.FC<{ compact?: boolean }> = ({ compact = false })
       const q = searchQuery.toLowerCase();
       const matchesSearch = !searchQuery.trim() || 
         item.question.toLowerCase().includes(q) ||
-        (item.questionHindi && item.questionHindi.toLowerCase().includes(q)) ||
         item.answer.toLowerCase().includes(q);
       return matchesCat && matchesSearch;
     });
@@ -170,11 +160,6 @@ export const FaqSection: React.FC<{ compact?: boolean }> = ({ compact = false })
                       <h3 className="font-extrabold text-sm sm:text-base text-gray-900 leading-snug">
                         {faq.question}
                       </h3>
-                      {faq.questionHindi && (
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">
-                          {faq.questionHindi}
-                        </p>
-                      )}
                     </div>
                     <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-50 text-[#1A56DB] flex items-center justify-center mt-0.5">
                       {isOpen ? (

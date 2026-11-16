@@ -52,11 +52,10 @@ export interface WarrantyClaim {
 
 const STATUS_CONFIG: Record<
   string,
-  { label: string; hindi: string; bg: string; text: string; border: string; dot: string }
+  { label: string; bg: string; text: string; border: string; dot: string }
 > = {
   RECEIVED: {
     label: 'Received at Desk',
-    hindi: 'दुकान में जमा',
     bg: 'bg-blue-50 text-blue-800',
     text: 'text-blue-700',
     border: 'border-blue-200',
@@ -64,7 +63,6 @@ const STATUS_CONFIG: Record<
   },
   UNDER_INSPECTION: {
     label: 'Under Inspection',
-    hindi: 'जाँच चालू है',
     bg: 'bg-amber-50 text-amber-800',
     text: 'text-amber-700',
     border: 'border-amber-200',
@@ -72,7 +70,6 @@ const STATUS_CONFIG: Record<
   },
   SENT_TO_BRAND: {
     label: 'Sent to Brand Center',
-    hindi: 'कंपनी सर्विस सेंटर भेजा गया',
     bg: 'bg-purple-50 text-purple-800',
     text: 'text-purple-700',
     border: 'border-purple-200',
@@ -80,7 +77,6 @@ const STATUS_CONFIG: Record<
   },
   REPAIRED_READY: {
     label: 'Repaired & Ready',
-    hindi: 'तैयार है (कस्टमर को दें)',
     bg: 'bg-emerald-50 text-emerald-800',
     text: 'text-emerald-700',
     border: 'border-emerald-200',
@@ -88,7 +84,6 @@ const STATUS_CONFIG: Record<
   },
   DELIVERED_CLOSED: {
     label: 'Delivered & Closed',
-    hindi: 'कस्टमर को दे दिया गया',
     bg: 'bg-slate-100 text-slate-700',
     text: 'text-slate-600',
     border: 'border-slate-300',
@@ -96,7 +91,6 @@ const STATUS_CONFIG: Record<
   },
   REJECTED: {
     label: 'Rejected (Damage/Expired)',
-    hindi: 'रद्द / आउट ऑफ वारंटी',
     bg: 'bg-rose-50 text-rose-800',
     text: 'text-rose-700',
     border: 'border-rose-200',
@@ -473,7 +467,7 @@ export default function WarrantyManager({
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-xs font-extrabold flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>New Warranty Claim (नया क्लेम दर्ज करें)</span>
+            <span>New Warranty Claim</span>
           </button>
 
           <button
@@ -525,7 +519,7 @@ export default function WarrantyManager({
           <div className="text-2xl font-black mt-1">{metrics.offlineCount}</div>
           <div className={`text-[10px] mt-0.5 ${channelFilter === 'OFFLINE_STORE' ? 'text-purple-200' : 'text-purple-600'
             }`}>
-            दुकान से खरीदा हुआ
+            Showroom offline purchases
           </div>
         </div>
 
@@ -545,7 +539,7 @@ export default function WarrantyManager({
           <div className="text-2xl font-black mt-1">{metrics.onlineCount}</div>
           <div className={`text-[10px] mt-0.5 ${channelFilter === 'ONLINE_WEBSITE' ? 'text-blue-200' : 'text-blue-600'
             }`}>
-            वेबसाइट से आर्डर
+            Online storefront orders
           </div>
         </div>
 
@@ -565,7 +559,7 @@ export default function WarrantyManager({
           <div className="text-2xl font-black mt-1">{metrics.pastCount}</div>
           <div className={`text-[10px] mt-0.5 ${channelFilter === 'PAST_LEGACY' ? 'text-amber-200' : 'text-amber-600'
             }`}>
-            पुराने बिल व ग्राहक
+            Legacy showroom records
           </div>
         </div>
 
@@ -579,7 +573,7 @@ export default function WarrantyManager({
             <span>Bill Verification</span>
           </div>
           <div className="text-2xl font-black text-rose-900 mt-1">{metrics.pendingVerification}</div>
-          <div className="text-[10px] text-rose-600 mt-0.5">बिल जाँचना बाकी है</div>
+          <div className="text-[10px] text-rose-600 mt-0.5">Verification pending</div>
         </div>
 
       </div>
@@ -835,9 +829,6 @@ export default function WarrantyManager({
                           <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}></span>
                           <span>{cfg.label}</span>
                         </span>
-                        <div className="text-[10px] text-slate-400 mt-1">
-                          {cfg.hindi}
-                        </div>
                       </td>
 
                       {/* Actions */}
@@ -923,7 +914,7 @@ export default function WarrantyManager({
                   }`}
               >
                 <Store className="w-4 h-4" />
-                <span>1. Showroom Shop Purchase (दुकान से खरीदा)</span>
+                <span>1. Showroom Shop Purchase</span>
               </button>
 
               <button
@@ -935,7 +926,7 @@ export default function WarrantyManager({
                   }`}
               >
                 <Globe className="w-4 h-4" />
-                <span>2. Online Website Order (ऑनलाइन आर्डर)</span>
+                <span>2. Online Website Order</span>
               </button>
 
               <button
@@ -947,7 +938,7 @@ export default function WarrantyManager({
                   }`}
               >
                 <History className="w-4 h-4" />
-                <span>3. Past Customer (पुराना ग्राहक)</span>
+                <span>3. Past Customer</span>
               </button>
             </div>
 
@@ -981,7 +972,7 @@ export default function WarrantyManager({
               <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Customer Contact Details (ग्राहक की जानकारी)</span>
+                  <span>Customer Contact Details</span>
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1049,9 +1040,9 @@ export default function WarrantyManager({
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-purple-600" />
                   <span>
-                    {purchaseChannel === 'OFFLINE_STORE' && 'Showroom Bill & Invoice Details (दुकान का बिल)'}
+                    {purchaseChannel === 'OFFLINE_STORE' && 'Showroom Bill & Invoice Details'}
                     {purchaseChannel === 'ONLINE_WEBSITE' && 'Online Website Order Verification'}
-                    {purchaseChannel === 'PAST_LEGACY' && 'Past Purchase Record (पुराना बिल/कैश मेमो)'}
+                    {purchaseChannel === 'PAST_LEGACY' && 'Past Purchase Record'}
                   </span>
                 </h4>
 
@@ -1071,7 +1062,7 @@ export default function WarrantyManager({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Date of Purchase (खरीदने की तारीख)
+                      Date of Purchase
                     </label>
                     <input
                       type="date"
@@ -1088,7 +1079,7 @@ export default function WarrantyManager({
                     <label className="block text-xs font-bold text-purple-900 flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <Upload className="w-3.5 h-3.5 text-purple-600" />
-                        <span>Upload Showroom Bill Photo (बिल की फोटो)</span>
+                        <span>Upload Showroom Bill Photo</span>
                       </span>
                       {billFileName && (
                         <span className="text-[10px] text-emerald-700 font-bold truncate max-w-[120px]">
@@ -1147,7 +1138,7 @@ export default function WarrantyManager({
                       onChange={(e) => setFormCategory(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none"
                     >
-                      <option value="Laptop">Laptop (लैपटॉप)</option>
+                      <option value="Laptop">Laptop</option>
                       <option value="Desktop">Desktop / All-in-One PC</option>
                       <option value="CCTV">CCTV Camera / DVR</option>
                       <option value="Printer">Printer / Scanner</option>
@@ -1216,7 +1207,7 @@ export default function WarrantyManager({
                       onChange={(e) => setFormWarrantyType(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none"
                     >
-                      <option value="Brand Authorized Warranty">Brand Authorized Warranty (कंपनी वारंटी)</option>
+                      <option value="Brand Authorized Warranty">Brand Authorized Warranty</option>
                       <option value="Lapiez Showroom Warranty">Lapiez Showroom Warranty</option>
                       <option value="Refurbished 6-Month Warranty">Refurbished 6-Month Warranty</option>
                       <option value="Out of Warranty Service">Out of Warranty / Paid Service</option>
@@ -1263,7 +1254,7 @@ export default function WarrantyManager({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Accessories Received (सामान क्या-क्या मिला)
+                      Accessories Received
                     </label>
                     <input
                       type="text"
@@ -1276,7 +1267,7 @@ export default function WarrantyManager({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Physical Condition (शारीरिक स्थिति)
+                      Physical Condition
                     </label>
                     <input
                       type="text"
@@ -1338,7 +1329,7 @@ export default function WarrantyManager({
                   ) : (
                     <>
                       <ShieldCheck className="w-4 h-4" />
-                      <span>Register & Print Job Sheet (दर्ज करें)</span>
+                      <span>Register & Print Job Sheet</span>
                     </>
                   )}
                 </button>
@@ -1382,12 +1373,12 @@ export default function WarrantyManager({
                     onChange={(e) => setUpdateStatus(e.target.value as any)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-bold focus:outline-none"
                   >
-                    <option value="RECEIVED">1. RECEIVED (दुकान में जमा)</option>
-                    <option value="UNDER_INSPECTION">2. UNDER_INSPECTION (जाँच चालू)</option>
-                    <option value="SENT_TO_BRAND">3. SENT_TO_BRAND (Brand ASC भेजा)</option>
-                    <option value="REPAIRED_READY">4. REPAIRED_READY (तैयार है)</option>
-                    <option value="DELIVERED_CLOSED">5. DELIVERED_CLOSED (दे दिया गया)</option>
-                    <option value="REJECTED">6. REJECTED (रद्द / डैमेज)</option>
+                    <option value="RECEIVED">1. RECEIVED (Received at Desk)</option>
+                    <option value="UNDER_INSPECTION">2. UNDER_INSPECTION (Under Diagnosis)</option>
+                    <option value="SENT_TO_BRAND">3. SENT_TO_BRAND (Brand Service Center)</option>
+                    <option value="REPAIRED_READY">4. REPAIRED_READY (Repaired & Ready)</option>
+                    <option value="DELIVERED_CLOSED">5. DELIVERED_CLOSED (Delivered & Closed)</option>
+                    <option value="REJECTED">6. REJECTED (Rejected / Out of Warranty)</option>
                   </select>
                 </div>
 
@@ -1400,7 +1391,7 @@ export default function WarrantyManager({
                     onChange={(e) => setUpdateVerification(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-bold focus:outline-none"
                   >
-                    <option value="VERIFIED">Bill Verified (बिल जाँचा गया)</option>
+                    <option value="VERIFIED">Bill Verified</option>
                     <option value="PENDING_VERIFICATION">Verification Pending</option>
                     <option value="REJECTED_INVALID_BILL">Invalid / Fake Bill</option>
                   </select>

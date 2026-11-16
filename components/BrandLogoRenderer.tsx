@@ -141,7 +141,7 @@ export const BrandLogoRenderer: React.FC<{ brand: BrandData; className?: string 
           <img
             src="/images/brands/hp.png"
             alt="HP"
-            className="h-9 w-9 sm:h-10 sm:w-10 object-contain rounded-full"
+            className="h-8 w-8 sm:h-9 sm:w-9 object-contain rounded-full shadow-2xs"
           />
         </div>
       );
@@ -200,8 +200,8 @@ export const BrandLogoRenderer: React.FC<{ brand: BrandData; className?: string 
 
     case 'frontech':
       return (
-        <div className={`bg-[#FEC907] text-black font-black px-2.5 py-1 rounded-[4px] flex items-center justify-center shadow-xs ${className}`}>
-          <span className="text-black font-black text-[13px] tracking-wider font-sans">
+        <div className={`bg-[#FEC907] text-black font-black px-2 py-0.5 rounded-[4px] flex items-center justify-center shadow-xs max-w-full ${className}`}>
+          <span className="text-black font-black text-[11px] sm:text-[13px] tracking-wide font-sans truncate">
             FRONTECH
           </span>
         </div>
@@ -210,7 +210,7 @@ export const BrandLogoRenderer: React.FC<{ brand: BrandData; className?: string 
     case 'cpplus':
     case 'cp-plus':
       return (
-        <div className={`flex items-center font-black text-[14px] tracking-tight font-sans ${className}`}>
+        <div className={`flex items-center font-black text-[13px] sm:text-[14px] tracking-tight font-sans max-w-full ${className}`}>
           <span className="text-[#E11D48]">CP</span>
           <span className="text-[#1E293B]">-PLUS</span>
         </div>
@@ -331,8 +331,8 @@ export const BrandLogoRenderer: React.FC<{ brand: BrandData; className?: string 
 
     case 'logitech':
       return (
-        <div className={`flex items-center ${className}`}>
-          <span className="text-[#000000] font-bold text-[17px] tracking-tight font-sans lowercase">
+        <div className={`flex items-center max-w-full ${className}`}>
+          <span className="text-[#000000] font-bold text-[13.5px] sm:text-[15.5px] tracking-tight font-sans lowercase truncate">
             logitech
           </span>
         </div>
