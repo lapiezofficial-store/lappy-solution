@@ -687,36 +687,6 @@ export default function CheckoutPage() {
                             </span>
                           </div>
                         </div>
-
-                        {/* Popular Quick Area Chips */}
-                        <div>
-                          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                            Popular Local Areas (Tap to Select)
-                          </label>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {POPULAR_GARHWA_HUBS.map((hub) => {
-                              const isSelected = selectedArea === hub.name;
-                              return (
-                                <button
-                                  key={hub.name}
-                                  type="button"
-                                  onClick={() => handleUpdateDistance(hub.distanceKm, hub.name, hub.pincode)}
-                                  className={`p-2.5 rounded-xl text-left border transition-all text-xs cursor-pointer ${
-                                    isSelected
-                                      ? 'border-[#1A56DB] bg-blue-50/70 font-bold text-slate-900 shadow-2xs'
-                                      : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <span className="truncate">{hub.name}</span>
-                                    {isSelected && <Check className="w-3.5 h-3.5 text-[#1A56DB] flex-shrink-0" />}
-                                  </div>
-                                  <span className="text-[10.5px] text-slate-400 font-normal block mt-0.5">{hub.distanceKm} km</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-slate-700">Street Address / Mohalla / Village *</label>

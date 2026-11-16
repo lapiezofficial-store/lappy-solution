@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   MapPin, SlidersHorizontal, Truck, Clock, ShieldCheck, 
   Save, RefreshCw, CheckCircle2, AlertCircle, Users, 
-  ExternalLink, ArrowRight, DollarSign, Navigation 
+  ExternalLink, ArrowRight, DollarSign, Navigation, Plus, Trash2 
 } from 'lucide-react';
 import { DeliverySettings, DeliverySlab, CustomerLocationRecord } from '@/lib/deliveryService';
 
@@ -56,15 +56,35 @@ export const DeliveryManager: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSlabPriceChange = (index: number, newPrice: number) => {
+  const handleSlabChange = (index: number, field: keyof DeliverySlab, value: any) => {
     const updated = [...slabs];
-    updated[index] = { ...updated[index], price: Math.max(0, newPrice) };
+    updated[index] = { ...updated[index], [field]: value };
     setSlabs(updated);
   };
 
-  const handleSlabTimeChange = (index: number, newTime: string) => {
-    const updated = [...slabs];
-    updated[index] = { ...updated[index], estimatedTime: newTime };
+  const handleAddSlab = () => {
+    const lastSlab = slabs[slabs.length - 1];
+    const newMin = lastSlab ? lastSlab.maxKm : 0;
+    const newMax = newMin + 15;
+    const newSlab: DeliverySlab = {
+      id: `slab-${Date.now()}`,
+      name: `Tier ${slabs.length + 1} (${newMin}-${newMax} km)`,
+      minKm: newMin,
+      maxKm: newMax,
+      price: 100,
+      estimatedTime: 'Same-Day Delivery',
+      description: `Delivery between ${newMin} km and ${newMax} km`,
+      popularAreas: [],
+    };
+    setSlabs([...slabs, newSlab]);
+  };
+
+  const handleDeleteSlab = (index: number) => {
+    if (slabs.length <= 1) {
+      alert('At least one delivery distance slab is required.');
+      return;
+    }
+    const updated = slabs.filter((_, i) => i !== index);
     setSlabs(updated);
   };
 
@@ -183,12 +203,17 @@ export const DeliveryManager: React.FC = () => {
                   Distance Slabs &amp; Delivery Pricing
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Set how much customers are charged based on distance from showroom (Chiniya Rd, Garhwa).
+                  Configure distance scale in kilometers and the exact delivery fee (₹) for customers in Garhwa &amp; Palamu.
                 </p>
               </div>
-              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
-                {slabs.length} Slabs Configured
-              </span>
+              <button
+                type="button"
+                onClick={handleAddSlab}
+                className="h-8 px-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1A56DB] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Tier</span>
+              </button>
             </div>
 
             {/* Slabs List */}
@@ -198,43 +223,77 @@ export const DeliveryManager: React.FC = () => {
                   key={slab.id || index}
                   className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/90 space-y-3 transition-all hover:border-slate-300"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-lg bg-blue-600 text-white font-extrabold text-xs flex items-center justify-center">
+                  {/* Top Row: Tier Name & Price */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2 flex-1">
+                      <span className="w-6 h-6 rounded-lg bg-[#1A56DB] text-white font-black text-xs flex items-center justify-center flex-shrink-0">
                         {index + 1}
                       </span>
-                      <div>
-                        <strong className="text-xs font-bold text-slate-900 block leading-tight">
-                          {slab.name}
-                        </strong>
-                        <span className="text-[10px] text-slate-500 font-medium">
-                          Range: {slab.minKm} km - {slab.maxKm} km ({slab.description})
-                        </span>
-                      </div>
+                      <input
+                        type="text"
+                        value={slab.name}
+                        onChange={(e) => handleSlabChange(index, 'name', e.target.value)}
+                        className="font-bold text-xs text-slate-900 bg-white border border-slate-200 rounded-lg px-2.5 py-1 flex-1 focus:outline-none focus:border-blue-600"
+                        placeholder="Tier Name (e.g. Garhwa Town)"
+                      />
                     </div>
 
                     <div className="flex items-center gap-2 self-end sm:self-auto">
-                      <div className="flex items-center bg-white border border-slate-200 rounded-xl px-2.5 py-1">
-                        <span className="text-xs font-bold text-slate-400 mr-1">₹</span>
+                      <div className="flex items-center bg-white border border-slate-200 rounded-xl px-2.5 py-1 shadow-2xs">
+                        <span className="text-xs font-bold text-slate-400 mr-1">Fee: ₹</span>
                         <input
                           type="number"
                           min="0"
                           step="10"
                           value={slab.price}
-                          onChange={(e) => handleSlabPriceChange(index, Number(e.target.value))}
+                          onChange={(e) => handleSlabChange(index, 'price', Math.max(0, Number(e.target.value)))}
                           className="w-16 text-xs font-black text-slate-900 text-right focus:outline-none"
                         />
                       </div>
-                      {slab.price === 0 && (
+                      {slab.price === 0 ? (
                         <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
                           FREE
                         </span>
+                      ) : null}
+                      {slabs.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSlab(index)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="Delete this slab"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Estimated Delivery Time Input */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-xs">
+                  {/* Range Inputs & Delivery Speed */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-200/60 text-xs">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block mb-1">
+                        Min Distance (km)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={slab.minKm}
+                        onChange={(e) => handleSlabChange(index, 'minKm', Math.max(0, Number(e.target.value)))}
+                        className="w-full h-8 px-2.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block mb-1">
+                        Max Distance (km)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={slab.maxKm}
+                        onChange={(e) => handleSlabChange(index, 'maxKm', Math.max(1, Number(e.target.value)))}
+                        className="w-full h-8 px-2.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600"
+                      />
+                    </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block mb-1">
                         Est. Delivery Speed
@@ -242,18 +301,10 @@ export const DeliveryManager: React.FC = () => {
                       <input
                         type="text"
                         value={slab.estimatedTime}
-                        onChange={(e) => handleSlabTimeChange(index, e.target.value)}
+                        onChange={(e) => handleSlabChange(index, 'estimatedTime', e.target.value)}
                         placeholder="e.g. 30-60 mins"
                         className="w-full h-8 px-2.5 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-600"
                       />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block mb-1">
-                        Covered Areas
-                      </label>
-                      <div className="text-[11px] text-slate-600 truncate py-1 font-medium">
-                        {slab.popularAreas?.join(', ') || slab.description}
-                      </div>
                     </div>
                   </div>
                 </div>

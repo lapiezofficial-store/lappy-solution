@@ -4376,17 +4376,17 @@ export default function AdminPage() {
               <div className="flex items-center gap-3">
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                   {activeTab === 'dashboard' && 'Dashboard'}
-                  {activeTab === 'delivery' && 'Delivery Charges & Distance Scale Controller'}
-                  {activeTab === 'security' && 'Security & Approved Devices (256-Bit Hardware Whitelist)'}
+                  {activeTab === 'delivery' && 'Delivery Charges & Distance Scale'}
+                  {activeTab === 'security' && 'Security & Approved Devices'}
                   {activeTab === 'inventory' && `All Products (${products.length} SKUs)`}
-                  {activeTab === 'trash' && `Dustbin / Recycle Bin (${trashProducts.length} Items - 15 Days Retention)`}
+                  {activeTab === 'trash' && `Recycle Bin (${trashProducts.length} Items)`}
                   {activeTab === 'categories' && `Categories & Subcategories (${categories.length})`}
                   {activeTab === 'brands' && `Top Brands Showcase (${brands.length})`}
                   {activeTab === 'scraper' && 'Live Web Scraper & Crawler Engine'}
                   {activeTab === 'orders' && `Orders & UTR Verification (${orders.length})`}
                   {activeTab === 'billing' && `GST Invoices & Billing (${invoices.length})`}
-                  {activeTab === 'mybillbook' && 'Lapiez Billing System • POS & Tax Invoicing'}
-                  {activeTab === 'bank' && 'Official Bank Details & Settlement'}
+                  {activeTab === 'mybillbook' && 'Billing & POS Console'}
+                  {activeTab === 'bank' && 'Bank Details & Settlement'}
                   {activeTab === 'coupons' && `Coupons & Discounts (${coupons.length})`}
                   {activeTab === 'leads' && `Customer Quotes & Inquiries (${leads.length})`}
                   {activeTab === 'homepage' && 'Homepage Builder & Layout Sections'}
@@ -4398,7 +4398,7 @@ export default function AdminPage() {
                   {activeTab === 'media' && 'Media Library Assets'}
                   {activeTab === 'settings' && 'Store & Payment Settings'}
                   {activeTab === 'tools' && 'System Tools, Backups & Diagnostics'}
-                  {activeTab === 'warranty' && 'Customer Warranty & RMA Service Desk'}
+                  {activeTab === 'warranty' && 'Warranty & RMA Claims Desk'}
                 </h1>
 
                 {/* Contextual Action Button */}

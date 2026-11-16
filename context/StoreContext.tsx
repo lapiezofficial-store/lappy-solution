@@ -669,16 +669,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       .catch(() => {});
   }, []);
 
-  // First-visit auto prompt for customer delivery location
+  // Auto-prompt on app open if customer location has not been confirmed yet
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const hasSet = localStorage.getItem('lapiez_customer_location');
-    const hasPrompted = sessionStorage.getItem('lapiez_loc_prompted');
-    if (!hasSet && !hasPrompted) {
-      sessionStorage.setItem('lapiez_loc_prompted', 'true');
+    const isSpecialRoute = window.location.pathname.startsWith('/admin') || 
+                           window.location.pathname.startsWith('/rider') || 
+                           window.location.pathname.startsWith('/staff') ||
+                           window.location.pathname.startsWith('/portal');
+    if (isSpecialRoute) return;
+
+    const hasConfirmed = localStorage.getItem('lapiez_loc_confirmed');
+    if (!hasConfirmed) {
       const timer = setTimeout(() => {
         setIsLocationModalOpen(true);
-      }, 1500);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, []);

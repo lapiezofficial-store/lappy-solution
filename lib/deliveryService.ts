@@ -8,8 +8,8 @@ export interface DeliverySlab {
   maxKm: number;
   price: number;
   estimatedTime: string;
-  description: string;
-  popularAreas: string[];
+  description?: string;
+  popularAreas?: string[];
 }
 
 export interface DeliverySettings {
