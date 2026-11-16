@@ -232,7 +232,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
             </span>
           </div>
           <div className="flex items-center gap-1 text-[10px] font-bold text-yellow-200 bg-blue-700/60 px-2 py-0.5 rounded-full border border-blue-400/40 flex-shrink-0">
-            <span>{customerLocation ? `${customerLocation.distanceKm} km` : 'Select Area'}</span>
+            <span>{customerLocation?.area ? 'Change' : 'Set Location'}</span>
             <ChevronDown className="w-3 h-3 text-yellow-200" />
           </div>
         </div>
@@ -504,7 +504,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
               <MapPin className="w-3.5 h-3.5 text-[#FEF08A] flex-shrink-0 animate-pulse" />
               <span className="text-blue-100">Deliver to:</span>
               <strong className="text-white font-semibold underline decoration-blue-300 underline-offset-2 group-hover:text-yellow-200">
-                {customerLocation ? `${customerLocation.area} (${customerLocation.distanceKm} km)` : 'Garhwa & Palamu (Select Location)'}
+                {customerLocation?.area ? customerLocation.area : 'Garhwa & Palamu (Select Location)'}
               </strong>
               <ChevronDown className="w-3 h-3 text-yellow-200" />
             </button>

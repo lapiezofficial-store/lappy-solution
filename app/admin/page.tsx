@@ -4419,31 +4419,6 @@ export default function AdminPage() {
                     + Add New Category
                   </button>
                 )}
-                {activeTab === 'inventory' && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleOpenAddProduct}
-                      className="px-3 py-1 rounded bg-[#2271b1] hover:bg-[#135e96] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
-                    >
-                      + Add New Product
-                    </button>
-                    <button
-                      onClick={async () => {
-                        const confirmed = window.confirm(
-                          "⚠️ DELETE ALL PRODUCTS?\n\nAre you sure you want to permanently delete ALL products from Database (Supabase PostgreSQL), Vercel & Storefront?\n\nThis will clear the entire product catalog so you can upload fresh products."
-                        );
-                        if (confirmed) {
-                          await wipeAllProductsFromDb();
-                        }
-                      }}
-                      className="px-3 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs flex items-center gap-1"
-                      title="Delete all products from database and store"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Clear All Products</span>
-                    </button>
-                  </div>
-                )}
                 {activeTab === 'brands' && (
                   <button
                     onClick={handleOpenAddBrand}
@@ -5825,15 +5800,15 @@ export default function AdminPage() {
                   <div>
                     <div className="flex items-center gap-2.5 flex-wrap">
                       <h2 className="text-2xl font-black text-gray-900 tracking-tight">Inventory</h2>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
                         {products.length.toLocaleString('en-IN')} Active
                       </span>
                       <button
                         onClick={() => setActiveTab('trash')}
-                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all cursor-pointer shadow-2xs"
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all cursor-pointer shadow-2xs"
                         title="View Trashed Products"
                       >
-                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                        <Trash2 className="w-3.5 h-3.5 text-slate-500" />
                         <span>Dustbin ({trashProducts.length})</span>
                       </button>
                     </div>
@@ -5878,99 +5853,100 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* 2. Top 5 KPI Summary Cards (Matching Image 2) */}
+                {/* 2. Top 5 KPI Summary Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
 
                   {/* Card 1: TOTAL PRODUCTS */}
-                  <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 shadow-2xs space-y-2 hover:border-gray-300 transition-all">
+                  <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-2 hover:border-slate-300 transition-all">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         TOTAL PRODUCTS
                       </span>
-                      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 border border-slate-200">
+                      <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-700 border border-slate-200">
                         <Box className="w-3.5 h-3.5" />
                       </div>
                     </div>
-                    <div className="text-2xl font-black text-gray-900 tracking-tight">
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
                       {products.length.toLocaleString('en-IN')}
                     </div>
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600">
-                      <span>↗ +100% active catalog</span>
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span>Active catalog</span>
                     </div>
                   </div>
 
                   {/* Card 2: IN STOCK */}
-                  <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 shadow-2xs space-y-2 hover:border-gray-300 transition-all">
+                  <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-2 hover:border-slate-300 transition-all">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         IN STOCK
                       </span>
-                      <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-200">
+                      <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-emerald-600 border border-slate-200">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                       </div>
                     </div>
-                    <div className="text-2xl font-black text-emerald-700 tracking-tight">
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
                       {inStockCount.toLocaleString('en-IN')}
                     </div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       <span>{Math.round((inStockCount / Math.max(products.length, 1)) * 100)}% of catalog</span>
                     </div>
                   </div>
 
                   {/* Card 3: LOW STOCK */}
-                  <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 shadow-2xs space-y-2 hover:border-gray-300 transition-all">
+                  <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-2 hover:border-slate-300 transition-all">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         LOW STOCK
                       </span>
-                      <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-200">
+                      <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-amber-500 border border-slate-200">
                         <AlertTriangle className="w-3.5 h-3.5" />
                       </div>
                     </div>
-                    <div className="text-2xl font-black text-amber-600 tracking-tight">
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
                       {lowStockCount.toLocaleString('en-IN')}
                     </div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                       <span>{Math.round((lowStockCount / Math.max(products.length, 1)) * 100)}% of catalog</span>
                     </div>
                   </div>
 
                   {/* Card 4: OUT OF STOCK */}
-                  <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 shadow-2xs space-y-2 hover:border-gray-300 transition-all">
+                  <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-2 hover:border-slate-300 transition-all">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         OUT OF STOCK
                       </span>
-                      <div className="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 border border-rose-200">
+                      <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-rose-500 border border-slate-200">
                         <XCircle className="w-3.5 h-3.5" />
                       </div>
                     </div>
-                    <div className="text-2xl font-black text-rose-600 tracking-tight">
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
                       {outOfStockCount.toLocaleString('en-IN')}
                     </div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                       <span>{Math.round((outOfStockCount / Math.max(products.length, 1)) * 100)}% of catalog</span>
                     </div>
                   </div>
 
                   {/* Card 5: TOTAL BRANDS */}
-                  <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 shadow-2xs space-y-2 hover:border-gray-300 transition-all">
+                  <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-2 hover:border-slate-300 transition-all">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         TOTAL BRANDS
                       </span>
-                      <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-700 border border-amber-200">
+                      <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-blue-600 border border-slate-200">
                         <Award className="w-3.5 h-3.5" />
                       </div>
                     </div>
-                    <div className="text-2xl font-black text-gray-900 tracking-tight">
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
                       {distinctBrands.length.toLocaleString('en-IN')}
                     </div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
                       <span>Active brand partners</span>
                     </div>
                   </div>

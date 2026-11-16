@@ -447,24 +447,24 @@ export default function WarrantyManager({
     <div className="space-y-6">
 
       {/* Top Banner / Hero Header */}
-      <div className="bg-gradient-to-r from-[#0F1D3D] via-[#1A365D] to-[#1E3A8A] rounded-2xl p-6 text-white shadow-lg border border-blue-900/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-semibold">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Garhwa Showroom Warranty & RMA Desk</span>
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#1A56DB] text-[11px] font-bold">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#1A56DB]" />
+            <span>Garhwa Showroom Warranty &amp; RMA Desk</span>
           </div>
-          <h2 className="text-2xl font-black tracking-tight text-white flex items-center gap-2.5">
-            <span>Customer Warranty & Service Claims</span>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
+            <span>Customer Warranty &amp; Service Claims</span>
           </h2>
-          <p className="text-xs text-blue-200/80 max-w-2xl leading-relaxed">
-            Support for <strong>Showroom Walk-in Counter Purchases</strong>, <strong>Website Online Orders</strong>, and <strong>Past Legacy Customers</strong> with Bill verification, Serial number tracking, and Brand ASC (HP, Dell, Lenovo, Hikvision) coordination.
+          <p className="text-xs text-slate-500 max-w-2xl leading-relaxed">
+            Manage showroom counter bills, online website orders, and legacy customers with serial number tracking and brand ASC coordination.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setIsNewModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-xs font-extrabold flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+            className="h-9 px-4 rounded-xl bg-[#1A56DB] hover:bg-[#1545B0] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>New Warranty Claim</span>
@@ -473,10 +473,11 @@ export default function WarrantyManager({
           <button
             onClick={fetchClaims}
             disabled={loading}
-            className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center justify-center transition-colors cursor-pointer"
+            className="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             title="Refresh Claims"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
           </button>
         </div>
       </div>
@@ -487,18 +488,17 @@ export default function WarrantyManager({
         {/* All Claims */}
         <div
           onClick={() => { setChannelFilter('ALL'); setStatusFilter('ALL'); }}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${channelFilter === 'ALL' && statusFilter === 'ALL'
-            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-            : 'bg-white border-slate-200 hover:border-slate-300'
-            }`}
+          className={`p-4 rounded-xl border transition-all cursor-pointer ${
+            channelFilter === 'ALL' && statusFilter === 'ALL'
+              ? 'bg-blue-50/70 border-2 border-[#1A56DB] shadow-2xs'
+              : 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs'
+          }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider ${channelFilter === 'ALL' && statusFilter === 'ALL' ? 'text-blue-100' : 'text-slate-500'
-            }`}>
+          <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
             Total Claims
           </div>
-          <div className="text-2xl font-black mt-1">{metrics.total}</div>
-          <div className={`text-[10px] mt-0.5 ${channelFilter === 'ALL' && statusFilter === 'ALL' ? 'text-blue-200' : 'text-slate-400'
-            }`}>
+          <div className="text-2xl font-black text-slate-900 mt-1">{metrics.total}</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">
             All channels combined
           </div>
         </div>
@@ -506,19 +506,18 @@ export default function WarrantyManager({
         {/* 1. Showroom Offline Purchases */}
         <div
           onClick={() => setChannelFilter('OFFLINE_STORE')}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${channelFilter === 'OFFLINE_STORE'
-            ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-            : 'bg-white border-slate-200 hover:border-purple-300'
-            }`}
+          className={`p-4 rounded-xl border transition-all cursor-pointer ${
+            channelFilter === 'OFFLINE_STORE'
+              ? 'bg-blue-50/70 border-2 border-[#1A56DB] shadow-2xs'
+              : 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs'
+          }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${channelFilter === 'OFFLINE_STORE' ? 'text-purple-100' : 'text-purple-700'
-            }`}>
-            <Store className="w-3.5 h-3.5" />
+          <div className="text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 text-slate-500">
+            <Store className="w-3.5 h-3.5 text-slate-600" />
             <span>Showroom Shop Bill</span>
           </div>
-          <div className="text-2xl font-black mt-1">{metrics.offlineCount}</div>
-          <div className={`text-[10px] mt-0.5 ${channelFilter === 'OFFLINE_STORE' ? 'text-purple-200' : 'text-purple-600'
-            }`}>
+          <div className="text-2xl font-black text-slate-900 mt-1">{metrics.offlineCount}</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">
             Showroom offline purchases
           </div>
         </div>
@@ -526,19 +525,18 @@ export default function WarrantyManager({
         {/* 2. Online Website Orders */}
         <div
           onClick={() => setChannelFilter('ONLINE_WEBSITE')}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${channelFilter === 'ONLINE_WEBSITE'
-            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-            : 'bg-white border-slate-200 hover:border-blue-300'
-            }`}
+          className={`p-4 rounded-xl border transition-all cursor-pointer ${
+            channelFilter === 'ONLINE_WEBSITE'
+              ? 'bg-blue-50/70 border-2 border-[#1A56DB] shadow-2xs'
+              : 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs'
+          }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${channelFilter === 'ONLINE_WEBSITE' ? 'text-blue-100' : 'text-blue-700'
-            }`}>
-            <Globe className="w-3.5 h-3.5" />
+          <div className="text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 text-slate-500">
+            <Globe className="w-3.5 h-3.5 text-slate-600" />
             <span>Online Orders</span>
           </div>
-          <div className="text-2xl font-black mt-1">{metrics.onlineCount}</div>
-          <div className={`text-[10px] mt-0.5 ${channelFilter === 'ONLINE_WEBSITE' ? 'text-blue-200' : 'text-blue-600'
-            }`}>
+          <div className="text-2xl font-black text-slate-900 mt-1">{metrics.onlineCount}</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">
             Online storefront orders
           </div>
         </div>
@@ -546,19 +544,18 @@ export default function WarrantyManager({
         {/* 3. Past Legacy Customers */}
         <div
           onClick={() => setChannelFilter('PAST_LEGACY')}
-          className={`p-4 rounded-xl border transition-all cursor-pointer ${channelFilter === 'PAST_LEGACY'
-            ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-            : 'bg-white border-slate-200 hover:border-amber-300'
-            }`}
+          className={`p-4 rounded-xl border transition-all cursor-pointer ${
+            channelFilter === 'PAST_LEGACY'
+              ? 'bg-blue-50/70 border-2 border-[#1A56DB] shadow-2xs'
+              : 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs'
+          }`}
         >
-          <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${channelFilter === 'PAST_LEGACY' ? 'text-amber-100' : 'text-amber-700'
-            }`}>
-            <History className="w-3.5 h-3.5" />
+          <div className="text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 text-slate-500">
+            <History className="w-3.5 h-3.5 text-slate-600" />
             <span>Past Customers</span>
           </div>
-          <div className="text-2xl font-black mt-1">{metrics.pastCount}</div>
-          <div className={`text-[10px] mt-0.5 ${channelFilter === 'PAST_LEGACY' ? 'text-amber-200' : 'text-amber-600'
-            }`}>
+          <div className="text-2xl font-black text-slate-900 mt-1">{metrics.pastCount}</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">
             Legacy showroom records
           </div>
         </div>
@@ -566,14 +563,18 @@ export default function WarrantyManager({
         {/* 4. Pending Bill Verification */}
         <div
           onClick={() => { setChannelFilter('ALL'); setStatusFilter('RECEIVED'); }}
-          className="p-4 rounded-xl bg-white border border-slate-200 hover:border-rose-300 transition-all cursor-pointer"
+          className={`p-4 rounded-xl border transition-all cursor-pointer ${
+            statusFilter === 'RECEIVED'
+              ? 'bg-blue-50/70 border-2 border-[#1A56DB] shadow-2xs'
+              : 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs'
+          }`}
         >
-          <div className="text-[11px] font-bold text-rose-700 uppercase tracking-wider flex items-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+          <div className="text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 text-slate-500">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
             <span>Bill Verification</span>
           </div>
-          <div className="text-2xl font-black text-rose-900 mt-1">{metrics.pendingVerification}</div>
-          <div className="text-[10px] text-rose-600 mt-0.5">Verification pending</div>
+          <div className="text-2xl font-black text-slate-900 mt-1">{metrics.pendingVerification}</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">Verification pending</div>
         </div>
 
       </div>

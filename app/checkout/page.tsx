@@ -7,7 +7,7 @@ import {
   ShieldCheck, Truck, Store, Check, ArrowLeft, 
   ArrowRight, QrCode, CreditCard, Banknote, Smartphone, 
   Copy, CheckCircle2, Lock, Building, UploadCloud, AlertCircle, Tag,
-  User, UserCheck, LogIn, LogOut, Clock, RotateCcw, Sparkles, ExternalLink, MapPin
+  User, UserCheck, LogIn, LogOut, Clock, RotateCcw, Sparkles, ExternalLink, MapPin, Navigation
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useStore } from '../../context/StoreContext';
@@ -119,6 +119,77 @@ export default function CheckoutPage() {
         landmark: landmark || '',
       });
     }
+  };
+
+  const [isDetectingGps, setIsDetectingGps] = useState(false);
+
+  const handleUseLiveGps = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsDetectingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const STORE_LAT = 24.1611;
+          const STORE_LNG = 83.8055;
+          const R = 6371;
+          const dLat = ((latitude - STORE_LAT) * Math.PI) / 180;
+          const dLon = ((longitude - STORE_LNG) * Math.PI) / 180;
+          const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos((STORE_LAT * Math.PI) / 180) * Math.cos((latitude * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          const distKm = Math.round(R * c * 10) / 10;
+          setSelectedDistance(distKm);
+
+          const slabs = deliverySettings?.slabs || [
+            { minKm: 0, maxKm: 5, price: 0 },
+            { minKm: 5, maxKm: 15, price: 60 },
+            { minKm: 15, maxKm: 35, price: 120 },
+            { minKm: 35, maxKm: 100, price: 200 },
+          ];
+          const matched = slabs.find((s: any) => distKm >= s.minKm && distKm < s.maxKm) || slabs[slabs.length - 1];
+          const fee = (subtotal >= (deliverySettings?.freeDeliveryAbove ?? 5000)) ? 0 : (matched?.price ?? 0);
+
+          let locName = 'Garhwa Area';
+          try {
+            const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+            if (res.ok) {
+              const data = await res.json();
+              locName = data.locality || data.city || data.principalSubdivision || 'Garhwa Area';
+              if (data.postcode) setPincode(data.postcode);
+            }
+          } catch {}
+
+          if (!streetAddress || streetAddress === 'Garhwa Town Core') setStreetAddress(locName);
+          setSelectedArea(locName);
+
+          if (setCustomerDeliveryLocation) {
+            setCustomerDeliveryLocation({
+              area: locName,
+              city: 'Garhwa',
+              pincode: pincode || '822114',
+              distanceKm: distKm,
+              lat: latitude,
+              lng: longitude,
+              distanceSlab: matched?.name || 'Local Delivery',
+              deliveryFee: fee,
+              fullAddress: `${locName}, Garhwa - ${pincode || '822114'}`,
+              updatedAt: new Date().toISOString(),
+            });
+          }
+        } catch {} finally {
+          setIsDetectingGps(false);
+        }
+      },
+      () => {
+        setIsDetectingGps(false);
+        alert('Could not access GPS location. Please enter your street address.');
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
   };
 
   // GST Invoice & Purchase Order
@@ -636,53 +707,36 @@ export default function CheckoutPage() {
                   {deliveryType === 'delivery' ? (
                     <div className="space-y-4 pt-2">
 
-                      {/* Interactive Delivery Distance Scale & Area Selector */}
-                      <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-[#1A56DB]" />
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                              Store Distance Scale & Delivery Rate
+                      {/* Live Location & Delivery Status Card (Clean, no slider) */}
+                      <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#1A56DB] flex items-center justify-center flex-shrink-0">
+                            <Truck className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-900 block">
+                              Doorstep Delivery to Your Address
+                            </span>
+                            <span className="text-[11px] text-slate-500">
+                              Dispatched from Garhwa Showroom • Direct courier / rider handover
                             </span>
                           </div>
-                          <span className="text-xs font-black px-2.5 py-1 rounded-full bg-blue-50 text-[#1A56DB] border border-blue-200">
-                            {selectedDistance} km from Store
-                          </span>
                         </div>
 
-                        {/* Distance Slider */}
-                        <div>
-                          <input
-                            type="range"
-                            min={1}
-                            max={50}
-                            step={1}
-                            value={selectedDistance}
-                            onChange={(e) => handleUpdateDistance(Number(e.target.value))}
-                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#1A56DB]"
-                          />
-                          <div className="flex justify-between text-[10.5px] text-slate-500 font-semibold mt-1.5">
-                            <span>1 km (Town Core)</span>
-                            <span>15 km (Outskirts)</span>
-                            <span>35 km (Blocks)</span>
-                            <span>50 km+ (Palamu)</span>
-                          </div>
-                        </div>
-
-                        {/* Live Delivery Fee & Speed Badge */}
-                        <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                          <div className="flex items-center gap-2.5">
-                            <Truck className="w-4 h-4 text-[#1A56DB] flex-shrink-0" />
-                            <div>
-                              <span className="text-xs font-bold text-slate-900 block">{selectedArea || 'Local Garhwa Delivery'}</span>
-                              <span className="text-[11px] text-slate-500">
-                                {selectedDistance <= 5 ? 'Est. Speed: 30 - 60 mins' : selectedDistance <= 15 ? 'Est. Speed: 2 - 4 hours' : 'Est. Speed: Same-Day Delivery'}
-                              </span>
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={handleUseLiveGps}
+                            disabled={isDetectingGps}
+                            className="h-8 px-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1A56DB] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-blue-200 disabled:opacity-60"
+                            title="Auto-detect current GPS location"
+                          >
+                            <Navigation className={`w-3.5 h-3.5 ${isDetectingGps ? 'animate-spin' : ''}`} />
+                            <span>{isDetectingGps ? 'Detecting...' : 'Auto-Fill via GPS'}</span>
+                          </button>
                           <div className="text-right">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Delivery Charge</span>
-                            <span className={`text-sm font-black ${currentDeliveryFee === 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+                            <span className={`text-xs font-black ${currentDeliveryFee === 0 ? 'text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 inline-block' : 'text-slate-900'}`}>
                               {currentDeliveryFee === 0 ? 'FREE' : `₹${currentDeliveryFee}`}
                             </span>
                           </div>
@@ -862,19 +916,11 @@ export default function CheckoutPage() {
                         </strong>
                       </div>
                       <div className="flex justify-between items-center text-slate-600 pt-1 border-t border-slate-200/80">
-                        <span>Distance & Delivery Charge:</span>
+                        <span>Delivery Charge:</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-slate-700">{selectedDistance} km</span>
                           <span className={`font-bold ${currentDeliveryFee === 0 ? 'text-emerald-700' : 'text-slate-900'}`}>
-                            ({currentDeliveryFee === 0 ? 'FREE' : `₹${currentDeliveryFee}`})
+                            {currentDeliveryFee === 0 ? 'FREE' : `₹${currentDeliveryFee}`}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => setStep(1)}
-                            className="text-[11px] text-[#1A56DB] hover:underline font-bold ml-1 cursor-pointer"
-                          >
-                            Adjust
-                          </button>
                         </div>
                       </div>
                     </>
@@ -1607,7 +1653,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span>Delivery Charges ({isPickupOrder ? 'Pickup' : `${customerLocation?.distanceKm || selectedDistance} km`})</span>
+                  <span>Delivery Charges ({isPickupOrder ? 'Showroom Pickup' : 'Doorstep Delivery'})</span>
                   {currentDeliveryFee === 0 ? (
                     <span className="text-emerald-700 font-bold">FREE</span>
                   ) : (
