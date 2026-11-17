@@ -107,7 +107,7 @@ export default function StaffPage() {
           setHandoverStaffName(data.staffCode && data.staffCode !== 'PIN-DESK' ? `${name} (${data.staffCode})` : name);
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (active) setIsCheckingAuth(false);
       });
@@ -363,18 +363,16 @@ export default function StaffPage() {
             <button
               type="button"
               onClick={() => { setLoginMode('credentials'); setAuthError(''); }}
-              className={`py-2 rounded-lg transition-all cursor-pointer ${
-                loginMode === 'credentials' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-blue-200/70 hover:text-white'
-              }`}
+              className={`py-2 rounded-lg transition-all cursor-pointer ${loginMode === 'credentials' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-blue-200/70 hover:text-white'
+                }`}
             >
               Staff ID &amp; Password
             </button>
             <button
               type="button"
               onClick={() => { setLoginMode('pin'); setAuthError(''); }}
-              className={`py-2 rounded-lg transition-all cursor-pointer ${
-                loginMode === 'pin' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-blue-200/70 hover:text-white'
-              }`}
+              className={`py-2 rounded-lg transition-all cursor-pointer ${loginMode === 'pin' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-blue-200/70 hover:text-white'
+                }`}
             >
               Counter PIN
             </button>
@@ -525,9 +523,8 @@ export default function StaffPage() {
             <button
               type="button"
               onClick={() => setActiveSection('orders')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                activeSection === 'orders' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-blue-100 hover:text-white'
-              }`}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${activeSection === 'orders' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-blue-100 hover:text-white'
+                }`}
             >
               <Package className="w-3.5 h-3.5" />
               <span>Orders Desk ({metrics.aayaCount})</span>
@@ -536,9 +533,8 @@ export default function StaffPage() {
               <button
                 type="button"
                 onClick={() => setActiveSection('warranty')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  activeSection === 'warranty' ? 'bg-emerald-600 text-white shadow-xs' : 'text-blue-100 hover:text-white'
-                }`}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${activeSection === 'warranty' ? 'bg-emerald-600 text-white shadow-xs' : 'text-blue-100 hover:text-white'
+                  }`}
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Warranty &amp; RMA</span>
@@ -588,9 +584,8 @@ export default function StaffPage() {
             <button
               type="button"
               onClick={() => setActiveSection('orders')}
-              className={`py-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                activeSection === 'orders' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-slate-600'
-              }`}
+              className={`py-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeSection === 'orders' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-slate-600'
+                }`}
             >
               <Package className="w-3.5 h-3.5" />
               <span>Orders ({metrics.aayaCount})</span>
@@ -598,9 +593,8 @@ export default function StaffPage() {
             <button
               type="button"
               onClick={() => setActiveSection('warranty')}
-              className={`py-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                activeSection === 'warranty' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600'
-              }`}
+              className={`py-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeSection === 'warranty' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600'
+                }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Warranty Desk</span>
@@ -620,22 +614,19 @@ export default function StaffPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div
               onClick={() => setActiveTab('aaya')}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${
-                activeTab === 'aaya'
+              className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${activeTab === 'aaya'
                   ? 'bg-[#1A56DB] text-white border-[#1A56DB] shadow-md'
                   : 'bg-white text-slate-800 border-slate-200 hover:border-blue-300'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
-                <span className={`text-xs font-black uppercase flex items-center gap-1 ${
-                  activeTab === 'aaya' ? 'text-blue-100' : 'text-blue-600'
-                }`}>
+                <span className={`text-xs font-black uppercase flex items-center gap-1 ${activeTab === 'aaya' ? 'text-blue-100' : 'text-blue-600'
+                  }`}>
                   <ArrowDownLeft className="w-4 h-4" />
                   <span>Incoming Orders</span>
                 </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  activeTab === 'aaya' ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'
-                }`}>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${activeTab === 'aaya' ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'
+                  }`}>
                   Pending
                 </span>
               </div>
@@ -644,22 +635,19 @@ export default function StaffPage() {
 
             <div
               onClick={() => setActiveTab('gya')}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${
-                activeTab === 'gya'
+              className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${activeTab === 'gya'
                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                   : 'bg-white text-slate-800 border-slate-200 hover:border-emerald-300'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
-                <span className={`text-xs font-black uppercase flex items-center gap-1 ${
-                  activeTab === 'gya' ? 'text-emerald-100' : 'text-emerald-600'
-                }`}>
+                <span className={`text-xs font-black uppercase flex items-center gap-1 ${activeTab === 'gya' ? 'text-emerald-100' : 'text-emerald-600'
+                  }`}>
                   <ArrowUpRight className="w-4 h-4" />
                   <span>Dispatched Orders</span>
                 </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  activeTab === 'gya' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
-                }`}>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${activeTab === 'gya' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
+                  }`}>
                   Done
                 </span>
               </div>
@@ -668,16 +656,14 @@ export default function StaffPage() {
 
             <div
               onClick={() => { setActiveTab('all'); setFilterType('all'); }}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${
-                activeTab === 'all' && filterType === 'all'
+              className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${activeTab === 'all' && filterType === 'all'
                   ? 'bg-slate-900 text-white border-slate-900 shadow-md'
                   : 'bg-white text-slate-800 border-slate-200 hover:border-slate-400'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
-                <span className={`text-xs font-bold uppercase ${
-                  activeTab === 'all' && filterType === 'all' ? 'text-slate-300' : 'text-slate-500'
-                }`}>
+                <span className={`text-xs font-bold uppercase ${activeTab === 'all' && filterType === 'all' ? 'text-slate-300' : 'text-slate-500'
+                  }`}>
                   Today
                 </span>
                 <Calendar className="w-4 h-4 text-amber-500" />
@@ -687,16 +673,14 @@ export default function StaffPage() {
 
             <div
               onClick={() => { setActiveTab('all'); setFilterType('pickup'); }}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${
-                filterType === 'pickup'
+              className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${filterType === 'pickup'
                   ? 'bg-purple-700 text-white border-purple-700 shadow-md'
                   : 'bg-white text-slate-800 border-slate-200 hover:border-purple-300'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
-                <span className={`text-xs font-bold uppercase flex items-center gap-1 ${
-                  filterType === 'pickup' ? 'text-purple-100' : 'text-purple-700'
-                }`}>
+                <span className={`text-xs font-bold uppercase flex items-center gap-1 ${filterType === 'pickup' ? 'text-purple-100' : 'text-purple-700'
+                  }`}>
                   <Store className="w-4 h-4" />
                   <span>Counter</span>
                 </span>
@@ -714,27 +698,24 @@ export default function StaffPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('aaya')}
-                className={`flex-1 md:flex-initial px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                  activeTab === 'aaya' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-slate-600'
-                }`}
+                className={`flex-1 md:flex-initial px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'aaya' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-slate-600'
+                  }`}
               >
                 Incoming ({metrics.aayaCount})
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('gya')}
-                className={`flex-1 md:flex-initial px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                  activeTab === 'gya' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600'
-                }`}
+                className={`flex-1 md:flex-initial px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'gya' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600'
+                  }`}
               >
                 Dispatched ({metrics.gyaCount})
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('all')}
-                className={`flex-1 md:flex-initial px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                  activeTab === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600'
-                }`}
+                className={`flex-1 md:flex-initial px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600'
+                  }`}
               >
                 All ({orders.length})
               </button>
@@ -771,9 +752,8 @@ export default function StaffPage() {
                   type="button"
                   key={f.id}
                   onClick={() => setFilterType(f.id as any)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
-                    filterType === f.id ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${filterType === f.id ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
                 >
                   {f.label}
                 </button>
@@ -803,34 +783,30 @@ export default function StaffPage() {
                 return (
                   <div
                     key={order.id}
-                    className={`bg-white rounded-2xl border transition-all p-4 sm:p-5 shadow-xs ${
-                      isDelivered ? 'border-slate-200 bg-slate-50/60' : 'border-blue-200 hover:border-blue-400'
-                    }`}
+                    className={`bg-white rounded-2xl border transition-all p-4 sm:p-5 shadow-xs ${isDelivered ? 'border-slate-200 bg-slate-50/60' : 'border-blue-200 hover:border-blue-400'
+                      }`}
                   >
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-sm font-black text-blue-700">#{order.orderId}</span>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase ${
-                            isDelivered
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase ${isDelivered
                               ? 'bg-slate-200 text-slate-700'
                               : isOutForDelivery
-                              ? 'bg-purple-100 text-purple-800'
-                              : isPacked
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
+                                ? 'bg-purple-100 text-purple-800'
+                                : isPacked
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-blue-100 text-blue-800'
+                            }`}>
                             {order.orderStatus}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold flex items-center gap-1 ${
-                            order.isStorePickup ? 'bg-purple-50 text-purple-700' : 'bg-emerald-50 text-emerald-700'
-                          }`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold flex items-center gap-1 ${order.isStorePickup ? 'bg-purple-50 text-purple-700' : 'bg-emerald-50 text-emerald-700'
+                            }`}>
                             {order.isStorePickup ? <Store className="w-3 h-3" /> : <Truck className="w-3 h-3" />}
                             <span>{order.isStorePickup ? 'Counter Pickup' : 'Delivery'}</span>
                           </span>
-                          <span className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold ${
-                            order.paymentStatus === 'Paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                          }`}>
+                          <span className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold ${order.paymentStatus === 'Paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                            }`}>
                             {order.paymentStatus} • {order.paymentMethod}
                           </span>
                         </div>

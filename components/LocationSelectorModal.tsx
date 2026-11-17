@@ -39,6 +39,13 @@ export const LocationSelectorModal: React.FC = () => {
   const [manualArea, setManualArea] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
 
+  // Auto-detect GPS as soon as modal opens if coordinates not yet available
+  React.useEffect(() => {
+    if (isLocationModalOpen && !customerLocation?.lat && !isDetecting && !gpsError) {
+      handleDetectLiveLocation();
+    }
+  }, [isLocationModalOpen]);
+
   const slabs = deliverySettings?.slabs || [
     { id: 's1', name: 'Garhwa Town Core', minKm: 0, maxKm: 5, price: 0, estimatedTime: '30-60 mins' },
     { id: 's2', name: 'Garhwa Outskirts & Rural', minKm: 5, maxKm: 15, price: 60, estimatedTime: '2-4 hours' },

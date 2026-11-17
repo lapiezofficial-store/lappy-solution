@@ -45,6 +45,8 @@ export default function CheckoutPage() {
     customer,
     customerLocation,
     setCustomerDeliveryLocation,
+    isLocationModalOpen,
+    setIsLocationModalOpen,
     deliverySettings,
     deliveryFee,
     isCustomerLoading,
@@ -368,7 +370,8 @@ export default function CheckoutPage() {
     if (deliveryType === 'delivery') {
       const hasLiveCoordinates = Boolean(customerLocation?.lat && customerLocation?.lng);
       if (!hasLiveCoordinates) {
-        showToast('Live GPS location is mandatory for doorstep delivery. Please allow location access.');
+        showToast('Location access is required. Opening location selector...');
+        setIsLocationModalOpen(true);
         handleUseLiveGps();
         return;
       }
@@ -385,8 +388,9 @@ export default function CheckoutPage() {
     if (deliveryType === 'delivery') {
       const hasLiveCoordinates = Boolean(customerLocation?.lat && customerLocation?.lng);
       if (!hasLiveCoordinates) {
-        showToast('Live GPS location is mandatory for doorstep delivery. Please allow location access.');
+        showToast('Live GPS location is mandatory for doorstep delivery.');
         setStep(1);
+        setIsLocationModalOpen(true);
         handleUseLiveGps();
         return;
       }
@@ -402,8 +406,9 @@ export default function CheckoutPage() {
     if (!isPickup) {
       const hasLiveCoordinates = Boolean(customerLocation?.lat && customerLocation?.lng);
       if (!hasLiveCoordinates) {
-        showToast('Live GPS location is mandatory for doorstep delivery. Please turn on GPS.');
+        showToast('Live GPS location is mandatory for doorstep delivery.');
         setStep(1);
+        setIsLocationModalOpen(true);
         handleUseLiveGps();
         return;
       }
@@ -739,76 +744,32 @@ export default function CheckoutPage() {
                   {deliveryType === 'delivery' ? (
                     <div className="space-y-4 pt-2">
 
-                      {/* Live GPS Location Gate (Strictly Mandatory for Doorstep Delivery) */}
-                      {Boolean(customerLocation?.lat && customerLocation?.lng) ? (
-                        <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
-                              <CheckCircle2 className="w-5 h-5" />
+                      {/* Live GPS Location Status (Clean & Subtle - Hidden until detected) */}
+                      {Boolean(customerLocation?.lat && customerLocation?.lng) && (
+                        <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 shadow-2xs flex items-center justify-between gap-3 text-xs">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                              <CheckCircle2 className="w-4 h-4" />
                             </div>
                             <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-slate-900 block">
-                                  Live Location Verified: {customerLocation?.area || 'Garhwa Area'}
-                                </span>
-                                <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                                  GPS Verified
-                                </span>
-                              </div>
+                              <span className="font-bold text-slate-900 block">
+                                Live Location Verified: {customerLocation?.area || 'Garhwa Area'} ({customerLocation?.distanceKm ?? 0} km from Store)
+                              </span>
                               <span className="text-[11px] text-slate-500">
-                                {customerLocation?.distanceKm ?? 0} km from Garhwa Showroom • Direct courier / rider handover
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2.5 self-end sm:self-auto">
-                            <button
-                              type="button"
-                              onClick={handleUseLiveGps}
-                              disabled={isDetectingGps}
-                              className="h-8 px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200 disabled:opacity-60"
-                              title="Update GPS coordinates"
-                            >
-                              <Navigation className={`w-3.5 h-3.5 ${isDetectingGps ? 'animate-spin' : ''}`} />
-                              <span>{isDetectingGps ? 'Updating...' : 'Update GPS'}</span>
-                            </button>
-                            <div className="text-right">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Delivery Charge</span>
-                              <span className={`text-xs font-black ${currentDeliveryFee === 0 ? 'text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 inline-block' : 'text-slate-900'}`}>
-                                {currentDeliveryFee === 0 ? 'FREE' : `₹${currentDeliveryFee}`}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-4 rounded-2xl bg-amber-50/90 border-2 border-amber-300 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0 animate-pulse">
-                              <Navigation className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-black text-amber-950 block">
-                                  Live Location Access Required
-                                </span>
-                                <span className="text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white px-2 py-0.5 rounded-full">
-                                  MANDATORY
-                                </span>
-                              </div>
-                              <span className="text-[11px] text-amber-800">
-                                Please turn on GPS location to verify delivery route &amp; calculate distance from showroom.
+                                Delivery Charge: <strong className="text-emerald-700">{currentDeliveryFee === 0 ? 'FREE' : `₹${currentDeliveryFee}`}</strong>
                               </span>
                             </div>
                           </div>
 
                           <button
                             type="button"
-                            onClick={handleUseLiveGps}
-                            disabled={isDetectingGps}
-                            className="h-9 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-95 transition-all self-stretch sm:self-auto flex-shrink-0 disabled:opacity-60"
+                            onClick={() => {
+                              setIsLocationModalOpen(true);
+                              handleUseLiveGps();
+                            }}
+                            className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer shrink-0"
                           >
-                            <Navigation className={`w-3.5 h-3.5 ${isDetectingGps ? 'animate-spin' : ''}`} />
-                            <span>{isDetectingGps ? 'Detecting GPS...' : 'Turn On Live Location'}</span>
+                            Update Location
                           </button>
                         </div>
                       )}

@@ -7,8 +7,11 @@ import {
   ExternalLink, ArrowRight, DollarSign, Navigation, Plus, Trash2 
 } from 'lucide-react';
 import { DeliverySettings, DeliverySlab, CustomerLocationRecord } from '@/lib/deliveryService';
+import { adminFetch } from '@/lib/adminApi';
+import { useStore } from '@/context/StoreContext';
 
 export const DeliveryManager: React.FC = () => {
+  const { updateDeliverySettingsInStore, showToast } = useStore();
   const [settings, setSettings] = useState<DeliverySettings | null>(null);
   const [slabs, setSlabs] = useState<DeliverySlab[]>([]);
   const [freeDeliveryAbove, setFreeDeliveryAbove] = useState<number>(5000);
@@ -24,8 +27,8 @@ export const DeliveryManager: React.FC = () => {
     setErrorMessage('');
     try {
       const [ratesRes, locsRes] = await Promise.all([
-        fetch('/api/delivery/rates'),
-        fetch('/api/customer/location'),
+        adminFetch('/api/delivery/rates'),
+        adminFetch('/api/customer/location'),
       ]);
 
       if (ratesRes.ok) {
@@ -94,22 +97,29 @@ export const DeliveryManager: React.FC = () => {
     setErrorMessage('');
 
     try {
-      const res = await fetch('/api/delivery/rates', {
+      const payload = {
+        enabled: true,
+        freeDeliveryAbove,
+        slabs,
+      };
+
+      const res = await adminFetch('/api/delivery/rates', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          enabled: true,
-          freeDeliveryAbove,
-          slabs,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && data.success) {
         setSaveSuccess(true);
         if (data.settings) {
           setSettings(data.settings);
-          setSlabs(data.settings.slabs);
+          setSlabs(data.settings.slabs || []);
+        }
+        if (updateDeliverySettingsInStore) {
+          await updateDeliverySettingsInStore(payload);
+        }
+        if (showToast) {
+          showToast('Delivery rates saved & live updated!');
         }
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {

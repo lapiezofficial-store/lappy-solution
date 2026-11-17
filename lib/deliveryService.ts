@@ -91,7 +91,9 @@ const DEFAULT_DELIVERY_SETTINGS: DeliverySettings = {
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const RATES_FILE = path.join(DATA_DIR, 'delivery_rates.json');
+const TMP_RATES_FILE = path.join('/tmp', 'delivery_rates.json');
 const LOCATIONS_FILE = path.join(DATA_DIR, 'customer_locations.json');
+const TMP_LOCATIONS_FILE = path.join('/tmp', 'customer_locations.json');
 
 // In-memory caches
 let cachedSettings: DeliverySettings | null = null;
@@ -102,14 +104,29 @@ function ensureDataDir() {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
-  } catch (e) {
-    console.error('Failed to create data dir:', e);
-  }
+  } catch (e) {}
 }
 
 export function getDeliverySettings(): DeliverySettings {
   if (cachedSettings) return cachedSettings;
 
+  // 1. Try reading from /tmp first (active Lambda instance)
+  try {
+    if (fs.existsSync(TMP_RATES_FILE)) {
+      const data = fs.readFileSync(TMP_RATES_FILE, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (parsed && Array.isArray(parsed.slabs) && parsed.slabs.length > 0) {
+        cachedSettings = {
+          ...DEFAULT_DELIVERY_SETTINGS,
+          ...parsed,
+          slabs: parsed.slabs,
+        };
+        return cachedSettings!;
+      }
+    }
+  } catch (e) {}
+
+  // 2. Try reading from project data file
   ensureDataDir();
   try {
     if (fs.existsSync(RATES_FILE)) {
@@ -124,13 +141,14 @@ export function getDeliverySettings(): DeliverySettings {
         return cachedSettings!;
       }
     }
-  } catch (e) {
-    console.error('Error reading delivery rates file:', e);
-  }
+  } catch (e) {}
 
   cachedSettings = { ...DEFAULT_DELIVERY_SETTINGS };
   try {
     fs.writeFileSync(RATES_FILE, JSON.stringify(cachedSettings, null, 2), 'utf-8');
+  } catch (e) {}
+  try {
+    fs.writeFileSync(TMP_RATES_FILE, JSON.stringify(cachedSettings, null, 2), 'utf-8');
   } catch (e) {}
 
   return cachedSettings;
@@ -148,9 +166,10 @@ export function saveDeliverySettings(newSettings: Partial<DeliverySettings>): De
   ensureDataDir();
   try {
     fs.writeFileSync(RATES_FILE, JSON.stringify(merged, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('Error writing delivery rates file:', e);
-  }
+  } catch (e) {}
+  try {
+    fs.writeFileSync(TMP_RATES_FILE, JSON.stringify(merged, null, 2), 'utf-8');
+  } catch (e) {}
 
   return merged;
 }

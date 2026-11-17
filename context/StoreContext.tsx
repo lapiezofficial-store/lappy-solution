@@ -679,14 +679,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   });
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  const [deliverySettings, setDeliverySettings] = useState<any>(null);
+  const [deliverySettings, setDeliverySettings] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('ls_delivery_settings');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return null;
+  });
 
   // Fetch Delivery Settings & Slabs from Server
   useEffect(() => {
     fetch('/api/delivery/rates')
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.settings) setDeliverySettings(data.settings);
+        if (data?.settings) {
+          setDeliverySettings(data.settings);
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('ls_delivery_settings', JSON.stringify(data.settings));
+            } catch (e) {}
+          }
+        }
       })
       .catch(() => {});
   }, []);
@@ -726,13 +741,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateDeliverySettingsInStore = useCallback(async (newSettings: any): Promise<boolean> => {
     try {
+      setDeliverySettings(newSettings);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('ls_delivery_settings', JSON.stringify(newSettings));
+        } catch (e) {}
+      }
+
       const res = await adminFetch('/api/delivery/rates', {
         method: 'POST',
         body: JSON.stringify(newSettings),
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.settings) setDeliverySettings(data.settings);
+        if (data.settings) {
+          setDeliverySettings(data.settings);
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('ls_delivery_settings', JSON.stringify(data.settings));
+            } catch (e) {}
+          }
+        }
         setToast('Delivery rates updated successfully!');
         setTimeout(() => setToast(null), 2800);
         return true;
