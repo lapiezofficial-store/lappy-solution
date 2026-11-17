@@ -11,6 +11,7 @@ import { CustomerAuthModal } from './CustomerAuthModal';
 import { MobileBottomNav } from './MobileBottomNav';
 import { AppDownloadModal } from './AppDownloadModal';
 import { LocationSelectorModal } from './LocationSelectorModal';
+import { ChatBotWidget } from './ChatBotWidget';
 import { CheckCircle2 } from 'lucide-react';
 
 import { usePathname } from 'next/navigation';
@@ -106,6 +107,7 @@ export const ClientShell: React.FC<{ children: React.ReactNode }> = ({ children 
         <CustomerAuthModal />
         <LocationSelectorModal />
         <AppDownloadModalContainer />
+        <ChatBotWidget />
         <ToastNotification />
       </div>
     </StoreProvider>

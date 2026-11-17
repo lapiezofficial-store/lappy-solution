@@ -71,9 +71,9 @@ export function validatePasswordPolicy(password: string): { isValid: boolean; er
   const clean = password.trim();
 
   if (clean.length < 8 || clean.length > 14) {
-    return { 
-      isValid: false, 
-      error: `Password length is ${clean.length} characters. It must be strictly between 8 and 14 characters.` 
+    return {
+      isValid: false,
+      error: `Password length is ${clean.length} characters. It must be strictly between 8 and 14 characters.`
     };
   }
 
@@ -81,9 +81,9 @@ export function validatePasswordPolicy(password: string): { isValid: boolean; er
   const hasNumbersOrSymbols = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(clean);
 
   if (!hasLetters || !hasNumbersOrSymbols) {
-    return { 
-      isValid: false, 
-      error: 'Password must be mixed (must contain both letters and numbers/symbols).' 
+    return {
+      isValid: false,
+      error: 'Password must be mixed (must contain both letters and numbers/symbols).'
     };
   }
 
