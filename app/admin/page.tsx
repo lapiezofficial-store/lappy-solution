@@ -4583,7 +4583,7 @@ export default function AdminPage() {
                               </span>
                               <span className="text-xs text-gray-400">•</span>
                               <span className="text-xs text-gray-500 font-medium">
-                                {order.date}
+                                {order.billedAt || (order.billedTime ? `${order.date}, ${order.billedTime}` : order.date)}
                               </span>
 
                               {/* Payment Badge */}

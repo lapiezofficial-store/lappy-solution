@@ -537,6 +537,10 @@ export default function InvoicePage() {
                 <span className="text-gray-500">Date: </span>
                 <strong className="text-gray-900">{invoice.date}</strong>
               </div>
+              <div>
+                <span className="text-gray-500">Time: </span>
+                <strong className="text-gray-900 font-mono text-[11.5px]">{invoice.time || (invoice.billedAt && invoice.billedAt.includes(',') ? invoice.billedAt.split(',')[1].trim() : '')}</strong>
+              </div>
               {invoice.orderId && (
                 <div>
                   <span className="text-gray-500">Order Ref: </span>
@@ -854,8 +858,13 @@ export default function InvoicePage() {
 
           <div className="sm:col-span-4 text-center sm:text-right space-y-1 pt-2 sm:pt-0">
             {invoice.sellerHandedBy && (
-              <div className="text-[10px] text-gray-600 pb-0.5">
-                Sold / Handed By: <strong className="text-gray-900 font-bold">{invoice.sellerHandedBy}</strong>
+              <div className="text-[10px] text-gray-600 pb-0.5 space-y-0.5">
+                <div>Sold / Handed By: <strong className="text-gray-900 font-bold">{invoice.sellerHandedBy}</strong></div>
+                {invoice.billedAt && (
+                  <div className="text-[9px] text-gray-500 font-mono">
+                    Billed At: {invoice.billedAt}
+                  </div>
+                )}
               </div>
             )}
             <div className="h-10 flex items-end justify-center sm:justify-end">

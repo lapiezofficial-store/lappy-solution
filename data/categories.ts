@@ -29,6 +29,7 @@ export interface Category {
   status?: string;
   subcategories: SubCategory[];
   isFeatured?: boolean;
+  parentId?: string | null;
 }
 
 export const CATEGORIES: Category[] = [
@@ -194,7 +195,11 @@ export const CATEGORIES: Category[] = [
     position: 7,
     status: 'active',
     isFeatured: true,
-    subcategories: [],
+    subcategories: [
+      { id: 'sub-elec-screen', name: 'Laptop Screens & Displays', slug: 'screens-displays', position: 0, status: 'active', parentId: 'cat-electronics' },
+      { id: 'sub-elec-parts', name: 'Electronic Modules & ICs', slug: 'electronic-modules', position: 1, status: 'active', parentId: 'cat-electronics' },
+      { id: 'sub-elec-sound', name: 'Speakers & Audio Modules', slug: 'audio-modules', position: 2, status: 'active', parentId: 'cat-electronics' },
+    ],
   },
 
   // 9. Toner & ink
@@ -211,7 +216,11 @@ export const CATEGORIES: Category[] = [
     position: 8,
     status: 'active',
     isFeatured: true,
-    subcategories: [],
+    subcategories: [
+      { id: 'sub-toner-cart', name: 'Toner Cartridges', slug: 'toner-cartridges', position: 0, status: 'active', parentId: 'cmvhvzqln0000l507w15zkg57' },
+      { id: 'sub-ink-bottles', name: 'Ink Bottles & Refills', slug: 'ink-bottles', position: 1, status: 'active', parentId: 'cmvhvzqln0000l507w15zkg57' },
+      { id: 'sub-cart-parts', name: 'OPC Drum & Doctor Blade', slug: 'drum-blades', position: 2, status: 'active', parentId: 'cmvhvzqln0000l507w15zkg57' },
+    ],
   },
 
   // 10. Refurbished
@@ -228,7 +237,11 @@ export const CATEGORIES: Category[] = [
     position: 9,
     status: 'active',
     isFeatured: true,
-    subcategories: [],
+    subcategories: [
+      { id: 'sub-refurb-laptops', name: 'Certified Refurbished Laptops', slug: 'refurb-laptops', position: 0, status: 'active', parentId: 'cmweetc8x0002l1084bkacugq' },
+      { id: 'sub-refurb-desktop', name: 'Refurbished Desktop PCs', slug: 'refurb-desktops', position: 1, status: 'active', parentId: 'cmweetc8x0002l1084bkacugq' },
+      { id: 'sub-refurb-monitors', name: 'Refurbished HD Monitors', slug: 'refurb-monitors', position: 2, status: 'active', parentId: 'cmweetc8x0002l1084bkacugq' },
+    ],
   },
 
   // 11. Paper &Sticker
@@ -245,7 +258,11 @@ export const CATEGORIES: Category[] = [
     position: 10,
     status: 'active',
     isFeatured: true,
-    subcategories: [],
+    subcategories: [
+      { id: 'sub-photo-paper', name: 'Photo Glossy Paper', slug: 'photo-paper', position: 0, status: 'active', parentId: 'cmweeusjv0000jp08sfqy641e' },
+      { id: 'sub-barcode-labels', name: 'Barcode & Shipping Labels', slug: 'barcode-labels', position: 1, status: 'active', parentId: 'cmweeusjv0000jp08sfqy641e' },
+      { id: 'sub-matte-sheets', name: 'Matte & Sticker Rolls', slug: 'sticker-rolls', position: 2, status: 'active', parentId: 'cmweeusjv0000jp08sfqy641e' },
+    ],
   },
 
   // 12. Battery
@@ -262,7 +279,12 @@ export const CATEGORIES: Category[] = [
     position: 11,
     status: 'active',
     isFeatured: true,
-    subcategories: [],
+    subcategories: [
+      { id: 'sub-dell-bat', name: 'Dell Laptop Battery', slug: 'dell-batteries', position: 0, status: 'active', parentId: 'cmweev64j0001jp08le6ikuyw' },
+      { id: 'sub-hp-bat', name: 'HP Laptop Battery', slug: 'hp-batteries', position: 1, status: 'active', parentId: 'cmweev64j0001jp08le6ikuyw' },
+      { id: 'sub-lenovo-bat', name: 'Lenovo & Acer Battery', slug: 'lenovo-acer-batteries', position: 2, status: 'active', parentId: 'cmweev64j0001jp08le6ikuyw' },
+      { id: 'sub-cmos-bat', name: 'CMOS & Device Cells', slug: 'cmos-cells', position: 3, status: 'active', parentId: 'cmweev64j0001jp08le6ikuyw' },
+    ],
   },
 
   // 13. Cable & Connector
@@ -279,7 +301,12 @@ export const CATEGORIES: Category[] = [
     position: 12,
     status: 'active',
     isFeatured: true,
-    subcategories: [],
+    subcategories: [
+      { id: 'sub-hdmi-cables', name: 'HDMI & DisplayPort Cables', slug: 'hdmi-dp-cables', position: 0, status: 'active', parentId: 'cmweevtwk0003l1083g37q35n' },
+      { id: 'sub-typec-cables', name: 'Type-C & USB Data Cables', slug: 'typec-usb-cables', position: 1, status: 'active', parentId: 'cmweevtwk0003l1083g37q35n' },
+      { id: 'sub-power-cords', name: 'Power Cords & SATA Cables', slug: 'power-sata-cords', position: 2, status: 'active', parentId: 'cmweevtwk0003l1083g37q35n' },
+      { id: 'sub-vga-lan', name: 'VGA & LAN Ethernet Cables', slug: 'vga-lan-cables', position: 3, status: 'active', parentId: 'cmweevtwk0003l1083g37q35n' },
+    ],
   },
 
   // 14. Adapters
@@ -296,7 +323,11 @@ export const CATEGORIES: Category[] = [
     position: 13,
     status: 'active',
     isFeatured: true,
-    subcategories: [],
+    subcategories: [
+      { id: 'sub-lap-chargers', name: 'Laptop Adapters (65W / 90W)', slug: 'laptop-adapters', position: 0, status: 'active', parentId: 'cmweexco90004l108zxzfyoee' },
+      { id: 'sub-typec-chargers', name: 'Type-C Fast PD Adapters', slug: 'typec-chargers', position: 1, status: 'active', parentId: 'cmweexco90004l108zxzfyoee' },
+      { id: 'sub-all-in-one', name: 'Desktop & Monitor Power Supplies', slug: 'desktop-power-supplies', position: 2, status: 'active', parentId: 'cmweexco90004l108zxzfyoee' },
+    ],
   },
 
   // 15. Keyboard
@@ -313,6 +344,10 @@ export const CATEGORIES: Category[] = [
     position: 14,
     status: 'active',
     isFeatured: true,
-    subcategories: [],
+    subcategories: [
+      { id: 'sub-mech-kb', name: 'Mechanical & Gaming Keyboards', slug: 'mech-gaming-keyboards', position: 0, status: 'active', parentId: 'cmwek9x5c0000l207qu12qn1l' },
+      { id: 'sub-wireless-kb', name: 'Wireless Keyboard & Mouse Combos', slug: 'wireless-combos', position: 1, status: 'active', parentId: 'cmwek9x5c0000l207qu12qn1l' },
+      { id: 'sub-laptop-rep-kb', name: 'Internal Laptop Keyboards', slug: 'replacement-laptop-keyboards', position: 2, status: 'active', parentId: 'cmwek9x5c0000l207qu12qn1l' },
+    ],
   },
 ];

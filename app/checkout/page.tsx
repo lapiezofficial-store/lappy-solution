@@ -486,6 +486,11 @@ export default function CheckoutPage() {
       ? `Showroom Counter Pickup (${showroomAddr})${pickupStaffText}`
       : `${streetAddress}${landmark ? `, Near ${landmark}` : ''}, ${city}, Jharkhand - ${pincode}`;
 
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    const billedAt = `${dateStr}, ${timeStr}`;
+
     const newOrder = {
       orderId: tempOrderId,
       customerId: customer?.id || `cust-${Date.now()}`,
@@ -495,6 +500,11 @@ export default function CheckoutPage() {
       address: fullAddress,
       deliveryType: isPickup ? 'pickup' : 'delivery',
       pickupHandedBy: pickupHandedBy.trim() || null,
+      staffCode: verifiedStaff?.staffCode || null,
+      staffId: verifiedStaff?.id || null,
+      billedAt,
+      billedDate: dateStr,
+      billedTime: timeStr,
       items: cart.map(item => ({
         id: item.product.id,
         productId: item.product.id,
@@ -522,8 +532,8 @@ export default function CheckoutPage() {
           : `NetBanking / Bank Transfer (${selectedBank})`,
       paymentStatus: (paymentMethod === 'upi_qr' || (paymentMethod === 'store_pickup' && pickupPaymentMode === 'online') || paymentMethod === 'netbanking' || Boolean(utrNumber)) ? 'Paid' : 'Pending',
       utrNumber: utrNumber || null,
-      orderDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-      date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+      orderDate: billedAt,
+      date: dateStr,
       gstin: needGst ? gstin : null,
       businessName: needGst ? businessName : null,
       poNumber: poNumber.trim() || null,

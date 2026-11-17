@@ -198,7 +198,7 @@ export default function OrderSuccessPage() {
             <div className="sm:text-right font-mono text-xs">
               <span className="text-gray-400 block text-[10px] uppercase font-bold">INVOICE NUMBER</span>
               <strong className="text-gray-900 text-sm">INV-LS-{order.orderId}</strong>
-              <div className="text-gray-500 text-[11px] mt-0.5">Date: {order.orderDate || 'Today'}</div>
+              <div className="text-gray-500 text-[11px] mt-0.5">Date &amp; Time: <strong className="text-gray-900 font-semibold">{order.billedAt || order.orderDate || 'Today'}</strong></div>
               <div className="text-[10px] text-emerald-700 font-bold mt-0.5">Place of Supply: Jharkhand (20)</div>
             </div>
           </div>

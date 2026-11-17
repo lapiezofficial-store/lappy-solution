@@ -123,6 +123,10 @@ export interface Invoice {
   upiId: string;
   upiQrData: string;
   sellerHandedBy?: string;
+  staffCode?: string;
+  billedAt?: string;
+  time?: string;
+  dateTime?: string;
   approvedBy?: string;
   isApproved?: boolean;
   isPickupOrder?: boolean;
@@ -437,11 +441,37 @@ export function buildInvoiceFromOrder(params: {
     invoiceNumber
   });
 
-  const dateStr = order.date || new Date().toLocaleDateString('en-IN', {
+  const now = new Date();
+  const dateStr = order.billedDate || order.date || now.toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric'
   });
+
+  let timeStr = order.billedTime || '';
+  if (!timeStr && order.billedAt && order.billedAt.includes(',')) {
+    timeStr = order.billedAt.split(',')[1].trim();
+  }
+  if (!timeStr && order.createdAt) {
+    try {
+      timeStr = new Date(order.createdAt).toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+    } catch {}
+  }
+  if (!timeStr) {
+    timeStr = now.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  }
+
+  const billedAt = order.billedAt || `${dateStr}, ${timeStr}`;
 
   const isPickup = Boolean(
     order.isStorePickup ||
@@ -517,6 +547,10 @@ export function buildInvoiceFromOrder(params: {
     upiId: settings.upiId,
     upiQrData: qrCodeUrl,
     sellerHandedBy,
+    staffCode: order.staffCode || undefined,
+    billedAt,
+    time: timeStr,
+    dateTime: billedAt,
     approvedBy,
     isApproved,
     isPickupOrder: isPickup,

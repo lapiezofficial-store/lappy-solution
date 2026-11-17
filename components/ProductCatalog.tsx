@@ -11,6 +11,7 @@ import {
 import { Product } from '../data/products';
 import { ProductCard } from './ProductCard';
 import { useStore } from '../context/StoreContext';
+import { CATEGORIES as DEFAULT_TAXONOMY_CATEGORIES } from '../data/categories';
 
 interface ProductCatalogProps {
   initialCategory?: string;
@@ -154,7 +155,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     return Layers;
   };
 
-  // Dynamic Categories organized from CMS & Real Inventory
+  // Dynamic Categories organized from CMS, Taxonomy & Real Inventory
   const categories = useMemo(() => {
     const list: { name: string; icon: any; count: number }[] = [
       { name: 'All', icon: LayoutGrid, count: products.length }
@@ -175,59 +176,72 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     const seen = new Set<string>();
     seen.add('all');
 
-    // Add active CMS categories that have products or are top-level parent categories
-    if (Array.isArray(cmsCategories) && cmsCategories.length > 0) {
-      cmsCategories
-        .filter((c) => c.status !== 'inactive' && !c.parentId)
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-        .forEach((c) => {
-          const cName = c.name.trim();
+    // Source categories: prefer active CMS categories, fallback/complement with DEFAULT_TAXONOMY_CATEGORIES
+    const sourceCategories = (Array.isArray(cmsCategories) && cmsCategories.length > 0)
+      ? cmsCategories
+      : DEFAULT_TAXONOMY_CATEGORIES;
+
+    // 1. First add all primary CMS categories in exact position order
+    sourceCategories
+      .filter((c: any) => c.status !== 'inactive' && !c.parentId)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .forEach((c) => {
+        const cName = c.name.trim();
+        if (!seen.has(cName.toLowerCase())) {
+          seen.add(cName.toLowerCase());
           const count = getNormalizedCategoryCount(cName);
-          if (count > 0) {
-            seen.add(cName.toLowerCase());
-            list.push({
-              name: cName,
-              icon: getCategoryIcon(cName),
-              count,
-            });
-          }
-        });
-    }
-
-    // Ensure any category that has active products is included
-    const rawCatSet = new Set<string>();
-    products.forEach((p) => {
-      if (p.category?.trim()) rawCatSet.add(p.category.trim());
-    });
-
-    rawCatSet.forEach((catName) => {
-      if (!seen.has(catName.toLowerCase())) {
-        const count = getNormalizedCategoryCount(catName);
-        if (count > 0) {
-          seen.add(catName.toLowerCase());
           list.push({
-            name: catName,
-            icon: getCategoryIcon(catName),
+            name: cName,
+            icon: getCategoryIcon(cName),
             count,
           });
         }
+      });
+
+    // 2. Also ensure all categories from DEFAULT_TAXONOMY_CATEGORIES are present if CMS had fewer
+    DEFAULT_TAXONOMY_CATEGORIES.forEach((c) => {
+      const cName = c.name.trim();
+      if (!seen.has(cName.toLowerCase())) {
+        seen.add(cName.toLowerCase());
+        const count = getNormalizedCategoryCount(cName);
+        list.push({
+          name: cName,
+          icon: getCategoryIcon(cName),
+          count,
+        });
       }
     });
 
-    // Sort: 'All' first, then categories by count descending
-    const allItem = list[0];
-    const otherItems = list.slice(1).sort((a, b) => b.count - a.count);
+    // 3. Ensure any category that has active products is included
+    products.forEach((p) => {
+      const pCat = p.category?.trim();
+      if (pCat && !seen.has(pCat.toLowerCase())) {
+        seen.add(pCat.toLowerCase());
+        const count = getNormalizedCategoryCount(pCat);
+        list.push({
+          name: pCat,
+          icon: getCategoryIcon(pCat),
+          count,
+        });
+      }
+    });
 
-    return [allItem, ...otherItems];
+    return list;
   }, [cmsCategories, products]);
 
-  // Subcategories available under currently selected category (Merged CMS + Inventory counts)
+  // Subcategories available under currently selected category (Merged CMS + Taxonomy + Inventory counts)
   const availableSubcategories = useMemo(() => {
     if (selectedCategory === 'All' || selectedCategory === 'All Products') return [];
     const catLower = selectedCategory.toLowerCase();
 
-    // 1. Find matching CMS category
+    // 1. Find matching CMS category or taxonomy category
     const matched = (cmsCategories || []).find(
+      (c) =>
+        c.name.toLowerCase() === catLower ||
+        c.name.toLowerCase().includes(catLower) ||
+        catLower.includes(c.name.toLowerCase()) ||
+        c.slug?.toLowerCase() === catLower
+    ) || DEFAULT_TAXONOMY_CATEGORIES.find(
       (c) =>
         c.name.toLowerCase() === catLower ||
         c.name.toLowerCase().includes(catLower) ||
@@ -892,29 +906,39 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
               
               {/* Category Options */}
               <div>
-                <span className="font-bold text-gray-900 uppercase tracking-wider block mb-2">
-                  Select Category
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-extrabold text-xs text-gray-900 uppercase tracking-wider block">
+                    Select Category
+                  </span>
+                  <span className="text-[11px] text-gray-500 font-bold">
+                    {categories.length - 1} Categories
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
                   {categories.map((cat) => {
                     const count = cat.name === 'All' ? products.length : cat.count;
                     const isSelected = selectedCategory === cat.name || (cat.name === 'All' && selectedCategory === 'All Products');
                     return (
                       <button
                         key={cat.name}
+                        type="button"
                         onClick={() => {
                           setSelectedCategory(cat.name);
                           setSelectedSubcategory('All');
                           setDisplayLimit(24);
                         }}
-                        className={`p-2 rounded-lg text-left text-xs font-medium border flex items-center justify-between transition-colors ${
+                        className={`p-2.5 rounded-xl text-left text-xs font-semibold border flex items-center justify-between gap-1 transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-blue-50 border-[#1A56DB] text-[#1A56DB] font-bold'
-                            : 'bg-[#F9FAFB] border-gray-200 text-gray-700'
+                            ? 'bg-blue-50 border-[#1A56DB] text-[#1A56DB] font-extrabold shadow-2xs'
+                            : 'bg-[#F9FAFB] hover:bg-gray-100 border-gray-200 text-gray-700'
                         }`}
                       >
                         <span className="truncate">{cat.name}</span>
-                        <span className="text-[10px] text-gray-400">({count})</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
+                          isSelected ? 'bg-[#1A56DB] text-white' : 'text-gray-500 bg-gray-200/70'
+                        }`}>
+                          {count}
+                        </span>
                       </button>
                     );
                   })}
@@ -925,27 +949,27 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
               {selectedCategory !== 'All' && selectedCategory !== 'All Products' && availableSubcategories.length > 0 && (
                 <div className="pt-3 border-t border-gray-100">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-gray-900 uppercase tracking-wider block">
+                    <span className="font-extrabold text-xs text-gray-900 uppercase tracking-wider block">
                       Subcategories in {selectedCategory}
                     </span>
                     {selectedSubcategory !== 'All' && (
                       <button
                         type="button"
                         onClick={() => setSelectedSubcategory('All')}
-                        className="text-[11px] font-bold text-blue-600 hover:underline"
+                        className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
                       >
-                        View All
+                        Reset to All
                       </button>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
                     <button
                       type="button"
                       onClick={() => setSelectedSubcategory('All')}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                         selectedSubcategory === 'All'
-                          ? 'bg-[#1A56DB] text-white border-[#1A56DB]'
-                          : 'bg-gray-50 text-gray-700 border-gray-200'
+                          ? 'bg-[#1A56DB] text-white border-[#1A56DB] shadow-2xs'
+                          : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
                       }`}
                     >
                       All {selectedCategory}
@@ -957,10 +981,10 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                           key={sub.name}
                           type="button"
                           onClick={() => setSelectedSubcategory(isSubSelected ? 'All' : sub.name)}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                             isSubSelected
-                              ? 'bg-[#1A56DB] text-white border-[#1A56DB]'
-                              : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                              ? 'bg-[#1A56DB] text-white border-[#1A56DB] shadow-2xs'
+                              : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'
                           }`}
                         >
                           {sub.name} {sub.count > 0 && `(${sub.count})`}
