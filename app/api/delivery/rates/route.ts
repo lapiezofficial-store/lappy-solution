@@ -39,6 +39,17 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    if (body && Array.isArray(body.slabs)) {
+      body.slabs = body.slabs.map((s: any) => ({
+        ...s,
+        minKm: Number(s.minKm || 0),
+        maxKm: Number(s.maxKm || 0),
+        price: Number(s.price || 0),
+      }));
+    }
+    if (body && body.freeDeliveryAbove !== undefined) {
+      body.freeDeliveryAbove = Number(body.freeDeliveryAbove || 0);
+    }
     const updated = saveDeliverySettings(body);
 
     // Save permanently to Supabase PostgreSQL database

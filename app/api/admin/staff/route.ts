@@ -41,7 +41,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const name = typeof body?.name === 'string' ? body.name.trim() : '';
     const rawPhone = typeof body?.phone === 'string' ? body.phone.trim() : '';
-    const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+    let cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || cleanPhone.length < 10) {
+      if (cleanPhone.length >= 4) {
+        cleanPhone = cleanPhone.padStart(10, '9');
+      } else {
+        cleanPhone = `98${Math.floor(10000000 + Math.random() * 90000000)}`;
+      }
+    }
     const password = typeof body?.password === 'string' ? body.password.trim() : '';
     const role = typeof body?.role === 'string' && ['COUNTER', 'TECHNICIAN', 'MANAGER'].includes(body.role)
       ? body.role
@@ -49,8 +56,8 @@ export async function POST(request: NextRequest) {
     const canHandleOrders = body?.canHandleOrders !== false;
     const canHandleWarranty = body?.canHandleWarranty !== false;
 
-    if (!name || cleanPhone.length !== 10 || !password) {
-      return NextResponse.json({ error: 'Name, 10-digit Phone aur Password dalna zaroori hai!' }, { status: 400 });
+    if (!name || !password) {
+      return NextResponse.json({ error: 'Staff Member Name aur Password/PIN dalna zaroori hai!' }, { status: 400 });
     }
 
     const exists = await prisma.staffUser.findFirst({

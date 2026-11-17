@@ -97,8 +97,8 @@ export default function StaffManager() {
 
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.phone.trim() || !form.password.trim()) {
-      alert('Please fill Staff Name, 10-digit Phone, and Login Password/PIN.');
+    if (!form.name.trim() || !form.password.trim()) {
+      alert('Staff Member Name aur Login Password/PIN dalna zaroori hai.');
       return;
     }
 
@@ -111,7 +111,7 @@ export default function StaffManager() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        alert(`Staff ID Created Successfully!\nStaff ID: ${data.staff.staffCode}\nName: ${data.staff.name}\nPhone: ${data.staff.phone}`);
+        alert(`✅ Staff ID Created Successfully!\n\nStaff ID: ${data.staff.staffCode}\nName: ${data.staff.name}\nPhone: ${data.staff.phone}\nPassword: ${form.password}\n\nAb ye staff counter checkout aur staff portal dono me login kar sakte hain.`);
         setShowAddModal(false);
         setForm({
           name: '',
@@ -201,6 +201,13 @@ export default function StaffManager() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const shareOnWhatsApp = (s: StaffAccount) => {
+    const text = `Namaste ${s.name},\nAapka Lapiez Showroom Staff ID create ho gaya hai:\n\nStaff ID: ${s.staffCode}\nMobile: ${s.phone}\nRole: ${s.role}\nPortal URL: https://www.lapiez.com/staff\n\nIs ID/PIN ko bill counter checkout ya staff portal login me use karein.`;
+    const cleanPhone = s.phone.replace(/\D/g, '').slice(-10);
+    const url = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
   const filtered = staffList.filter((s) => {
     if (roleFilter !== 'ALL' && s.role !== roleFilter) return false;
     const q = search.toLowerCase();
@@ -257,6 +264,120 @@ export default function StaffManager() {
             <span>+ Create Staff ID</span>
           </button>
         </div>
+      </div>
+
+      {/* Quick Direct Create Staff ID & Password Form */}
+      <div className="bg-white border-2 border-blue-500/30 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-3">
+          <div>
+            <h4 className="font-extrabold text-sm text-gray-900 flex items-center gap-2">
+              <Key className="w-4 h-4 text-blue-600" />
+              <span>Create New Staff ID &amp; Password / PIN</span>
+            </h4>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              Billing counter staff aur workers ke liye direct Staff ID aur PIN generate karein.
+            </p>
+          </div>
+          <span className="text-[10px] font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200 self-start">
+            Instant Counter Billing &amp; Staff App Login
+          </span>
+        </div>
+
+        <form onSubmit={handleCreateStaff} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div>
+            <label className="font-bold text-gray-700 block mb-1">Staff Member Name *</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Rahul Kumar"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full h-9 px-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-blue-500 font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold text-gray-700 block mb-1">
+              Staff ID / Code <span className="text-gray-400 font-normal">(Optional)</span>
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. STF-01 (or auto)"
+              value={form.customStaffCode}
+              onChange={(e) => setForm({ ...form, customStaffCode: e.target.value })}
+              className="w-full h-9 px-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-blue-500 font-mono uppercase font-bold"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold text-gray-700 block mb-1">Login Password / PIN *</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. 1234 or Pass@123"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              className="w-full h-9 px-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-blue-500 font-mono font-bold"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold text-gray-700 block mb-1">10-Digit Mobile Number</label>
+            <input
+              type="tel"
+              placeholder="e.g. 9876543210 (Optional)"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="w-full h-9 px-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-blue-500 font-mono"
+            />
+          </div>
+
+          <div className="sm:col-span-2 lg:col-span-3 flex items-center gap-4 flex-wrap pt-1">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-gray-600">Role:</span>
+              <select
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value as any })}
+                className="h-8 px-2.5 rounded-lg bg-gray-50 border border-gray-200 font-semibold"
+              >
+                <option value="COUNTER">Counter Billing Staff</option>
+                <option value="TECHNICIAN">Warranty Technician</option>
+                <option value="MANAGER">Showroom Manager</option>
+              </select>
+            </div>
+
+            <label className="flex items-center gap-1.5 font-bold cursor-pointer text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.canHandleOrders}
+                onChange={(e) => setForm({ ...form, canHandleOrders: e.target.checked })}
+                className="rounded"
+              />
+              <span>Counter Billing Orders</span>
+            </label>
+
+            <label className="flex items-center gap-1.5 font-bold cursor-pointer text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.canHandleWarranty}
+                onChange={(e) => setForm({ ...form, canHandleWarranty: e.target.checked })}
+                className="rounded"
+              />
+              <span>Warranty Portal</span>
+            </label>
+          </div>
+
+          <div className="sm:col-span-2 lg:col-span-1 flex items-end justify-end">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-9 px-4 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isSubmitting ? 'Creating...' : '+ Save Staff Account'}</span>
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Role Filters & Search */}
@@ -350,14 +471,24 @@ export default function StaffManager() {
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => copyCredentials(s)}
-                    className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 cursor-pointer"
-                    title="Copy Login Info"
-                  >
-                    {copiedId === s.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => shareOnWhatsApp(s)}
+                      className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 cursor-pointer"
+                      title="Share Login Details on WhatsApp"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copyCredentials(s)}
+                      className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 cursor-pointer"
+                      title="Copy Login Info"
+                    >
+                      {copiedId === s.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Staff Work Performance Tracking */}

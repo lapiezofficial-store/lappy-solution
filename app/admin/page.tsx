@@ -3739,9 +3739,12 @@ export default function AdminPage() {
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'staff' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                       }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <User className="w-4 h-4 text-slate-500" />
-                      <span>Staff Accounts</span>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <User className="w-4 h-4 text-slate-500" />
+                        <span>Staff &amp; Passwords</span>
+                      </div>
+                      <span className="text-[10px] bg-blue-100 text-blue-700 font-extrabold px-2 py-0.5 rounded">ID/PIN</span>
                     </div>
                   </button>
 
@@ -4054,9 +4057,14 @@ export default function AdminPage() {
                   }`}
                 title="Manage Staff IDs & Passwords"
               >
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 w-full">
                   <User className="w-4 h-4 flex-shrink-0 text-slate-500" />
-                  {!isWpSidebarCollapsed && <span>Staff Accounts</span>}
+                  {!isWpSidebarCollapsed && (
+                    <div className="flex items-center justify-between flex-1">
+                      <span>Staff &amp; Passwords</span>
+                      <span className="text-[9px] bg-blue-100 text-blue-700 font-extrabold px-1.5 py-0.5 rounded">ID/PIN</span>
+                    </div>
+                  )}
                 </div>
               </button>
 
