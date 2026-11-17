@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" fill="none">
+  <defs>
+    <!-- Background Outer Glow -->
+    <radialGradient id="avatarGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1A56DB" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#1A56DB" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Head Body Gradient (Soft Ceramic 3D) -->
+    <linearGradient id="headGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="60%" stop-color="#F1F5F9"/>
+      <stop offset="100%" stop-color="#CBD5E1"/>
+    </linearGradient>
+
+    <!-- Head Highlight -->
+    <linearGradient id="headHighlight" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Visor Gradient (Glossy Obsidian) -->
+    <linearGradient id="visorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+
+    <!-- Visor Reflection -->
+    <linearGradient id="visorReflect" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Eye Glow (Neon Cyan Blue) -->
+    <filter id="eyeGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Headset Metallic Blue Gradient -->
+    <linearGradient id="headsetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="50%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#1E3A8A"/>
+    </linearGradient>
+
+    <!-- Ear Cushion Gradient -->
+    <linearGradient id="cushionGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+
+    <!-- Antenna / Star Sparkle Gradient -->
+    <linearGradient id="sparkleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient Glow Circle -->
+  <circle cx="60" cy="60" r="56" fill="url(#avatarGlow)"/>
+
+  <!-- Headset Band (Back Arc) -->
+  <path d="M26 60 C 26 32, 94 32, 94 60" stroke="#334155" stroke-width="7" stroke-linecap="round"/>
+  <path d="M26 60 C 26 32, 94 32, 94 60" stroke="url(#headsetGrad)" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Main Ceramic Head -->
+  <rect x="25" y="32" width="70" height="62" rx="31" fill="url(#headGrad)"/>
+  <rect x="25" y="32" width="70" height="62" rx="31" stroke="#E2E8F0" stroke-width="1"/>
+
+  <!-- Head Top Highlight Reflection -->
+  <path d="M35 36 Q 60 33 85 36 Q 60 40 35 36" fill="url(#headHighlight)"/>
+
+  <!-- Glossy Visor Screen -->
+  <rect x="33" y="46" width="54" height="34" rx="17" fill="url(#visorGrad)"/>
+  <rect x="33" y="46" width="54" height="34" rx="17" fill="url(#visorReflect)"/>
+  <rect x="33" y="46" width="54" height="34" rx="17" stroke="#38BDF8" stroke-width="0.8" stroke-opacity="0.4"/>
+
+  <!-- Friendly Cyan Eyes (Curved Happy Blink / Eyes) -->
+  <!-- Left Eye -->
+  <path d="M44 61 C 44 56, 52 56, 52 61" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" fill="none" filter="url(#eyeGlow)"/>
+  <circle cx="48" cy="62" r="1.5" fill="#FFFFFF"/>
+
+  <!-- Right Eye -->
+  <path d="M68 61 C 68 56, 76 56, 76 61" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" fill="none" filter="url(#eyeGlow)"/>
+  <circle cx="72" cy="62" r="1.5" fill="#FFFFFF"/>
+
+  <!-- Cute Smile (Visor Subtle Glow) -->
+  <path d="M56 71 Q 60 74 64 71" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" fill="none" stroke-opacity="0.75"/>
+
+  <!-- Cheerful Blush Accents -->
+  <circle cx="41" cy="68" r="2.5" fill="#38BDF8" fill-opacity="0.25"/>
+  <circle cx="79" cy="68" r="2.5" fill="#38BDF8" fill-opacity="0.25"/>
+
+  <!-- Left Headset Cup -->
+  <rect x="18" y="50" width="10" height="24" rx="5" fill="url(#cushionGrad)"/>
+  <rect x="18" y="52" width="7" height="20" rx="3.5" fill="url(#headsetGrad)"/>
+  <circle cx="21" cy="62" r="2" fill="#60A5FA"/>
+
+  <!-- Right Headset Cup -->
+  <rect x="92" y="50" width="10" height="24" rx="5" fill="url(#cushionGrad)"/>
+  <rect x="95" y="52" width="7" height="20" rx="3.5" fill="url(#headsetGrad)"/>
+  <circle cx="99" cy="62" r="2" fill="#60A5FA"/>
+
+  <!-- Microphone Boom Arm (Curves from Right Cup to Mouth) -->
+  <path d="M96 66 C 96 82, 78 86, 68 85" stroke="#475569" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Microphone Tip with Cyan LED -->
+  <rect x="63" y="82.5" width="6" height="5" rx="2.5" fill="#1E293B"/>
+  <circle cx="64.5" cy="85" r="1.2" fill="#38BDF8" filter="url(#eyeGlow)"/>
+
+  <!-- Cute Little AI Star Sparkle near Ear (Top Right) -->
+  <path d="M88 28 Q 91 33 96 33 Q 91 33 88 38 Q 88 33 83 33 Q 88 33 88 28 Z" fill="url(#sparkleGrad)"/>
+</svg>

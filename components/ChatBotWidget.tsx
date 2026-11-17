@@ -220,19 +220,34 @@ export const ChatBotWidget: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-18 md:bottom-6 right-4 sm:right-6 z-40 h-11 px-4 rounded-full bg-[#0F172A] hover:bg-[#1E293B] text-white shadow-xl border border-slate-700/60 flex items-center gap-2.5 transition-all active:scale-95 cursor-pointer group"
+          className="fixed bottom-18 md:bottom-6 right-3 sm:right-6 z-40 h-13 pl-1.5 pr-4 rounded-full bg-[#0F172A] hover:bg-[#1E293B] text-white shadow-[0_8px_25px_-4px_rgba(26,86,219,0.4)] border border-slate-700/70 flex items-center gap-2.5 transition-all active:scale-95 cursor-pointer group"
           title="Chat with Lapiez Showroom Assistant"
           aria-label="Open Chat"
         >
-          <div className="relative">
-            <MessageSquare className="w-4 h-4 text-white" />
-            <span className="w-2 h-2 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-[#0F172A]" />
+          {/* 3D Avatar Image with pulsing status dot */}
+          <div className="relative w-10 h-10 rounded-full bg-slate-800 p-0.5 border border-blue-500/40 shadow-sm flex-shrink-0">
+            <img
+              src="/images/assistant-avatar.png"
+              alt="Lapiez Assistant"
+              className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform"
+              onError={(e: any) => {
+                e.target.src = '/images/assistant-avatar.svg';
+              }}
+            />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 absolute bottom-0 right-0 ring-2 ring-[#0F172A]" />
           </div>
-          <span className="text-xs font-bold tracking-tight text-slate-100">
-            Ask Assistant
-          </span>
+
+          <div className="text-left flex flex-col justify-center">
+            <span className="text-[9.5px] uppercase font-extrabold tracking-wider text-blue-400 leading-none">
+              Live AI Desk
+            </span>
+            <span className="text-xs font-black tracking-tight text-white mt-0.5 leading-none">
+              Ask Assistant
+            </span>
+          </div>
+
           {cartCount > 0 && (
-            <span className="bg-[#1A56DB] text-white text-[9.5px] font-black px-1.5 py-0.2 rounded-full">
+            <span className="bg-[#1A56DB] text-white text-[9.5px] font-black px-1.5 py-0.2 rounded-full ml-0.5 shadow-xs">
               {cartCount}
             </span>
           )}
@@ -250,16 +265,26 @@ export const ChatBotWidget: React.FC = () => {
         >
           {/* Header */}
           <div className="px-4 py-3 bg-white border-b border-slate-100 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-[#1A56DB]">
-                <MessageSquare className="w-4 h-4" />
+            <div className="flex items-center gap-3">
+              <div className="relative w-10 h-10 rounded-full bg-slate-100 p-0.5 border border-slate-200 shadow-2xs flex-shrink-0">
+                <img
+                  src="/images/assistant-avatar.png"
+                  alt="Lapiez Assistant"
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e: any) => {
+                    e.target.src = '/images/assistant-avatar.svg';
+                  }}
+                />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 absolute bottom-0 right-0 ring-2 ring-white" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-extrabold text-xs text-slate-900 tracking-tight">
                     Lapiez Assistant
                   </h3>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="px-1.5 py-0.2 text-[9px] font-extrabold bg-blue-50 text-[#1A56DB] rounded-full border border-blue-200">
+                    AI Online
+                  </span>
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium">
                   Garhwa Showroom Live AI • Orders &amp; Support
@@ -328,17 +353,30 @@ export const ChatBotWidget: React.FC = () => {
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                className={`flex gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                {/* Bubble */}
-                <div
-                  className={`p-3 text-xs leading-relaxed max-w-[88%] ${
-                    msg.sender === 'user'
-                      ? 'bg-[#1A56DB] text-white rounded-2xl rounded-tr-xs shadow-2xs'
-                      : 'bg-white text-slate-800 rounded-2xl rounded-tl-xs border border-slate-200/80 shadow-2xs space-y-2'
-                  }`}
-                >
-                  <p className="whitespace-pre-line">{msg.text}</p>
+                {msg.sender === 'assistant' && (
+                  <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex-shrink-0 mt-1 shadow-2xs">
+                    <img
+                      src="/images/assistant-avatar.png"
+                      alt="Assistant"
+                      className="w-full h-full object-cover"
+                      onError={(e: any) => {
+                        e.target.src = '/images/assistant-avatar.svg';
+                      }}
+                    />
+                  </div>
+                )}
+                <div className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[86%]`}>
+                  {/* Bubble */}
+                  <div
+                    className={`p-3 text-xs leading-relaxed ${
+                      msg.sender === 'user'
+                        ? 'bg-[#1A56DB] text-white rounded-2xl rounded-tr-xs shadow-2xs'
+                        : 'bg-white text-slate-800 rounded-2xl rounded-tl-xs border border-slate-200/80 shadow-2xs space-y-2'
+                    }`}
+                  >
+                    <p className="whitespace-pre-line">{msg.text}</p>
 
                   {/* Order Tracking Card */}
                   {msg.orderData && (
@@ -500,6 +538,7 @@ export const ChatBotWidget: React.FC = () => {
                 <span className="text-[9px] text-slate-400 px-1 mt-1">
                   {msg.timestamp}
                 </span>
+                </div>
               </div>
             ))}
 
