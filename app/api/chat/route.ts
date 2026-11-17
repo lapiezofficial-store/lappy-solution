@@ -22,10 +22,49 @@ export async function POST(req: NextRequest) {
 
     const lower = rawMessage.toLowerCase();
 
-    // 1. ORDER TRACKING INTENT
+    // 1. SHOWROOM LOCATION, HOURS & CONTACT INTENT (High Priority for store inquiries)
+    const isLocationQuery =
+      lower.includes('address') ||
+      lower.includes('location') ||
+      lower.includes('where is') ||
+      lower.includes('map') ||
+      lower.includes('timing') ||
+      lower.includes('open') ||
+      lower.includes('close') ||
+      lower.includes('hours') ||
+      lower.includes('phone') ||
+      lower.includes('contact') ||
+      lower.includes('call') ||
+      lower.includes('mobile') ||
+      lower.includes('whatsapp') ||
+      ((lower.includes('kahan') || lower.includes('kaha')) && (lower.includes('shop') || lower.includes('store') || lower.includes('showroom') || lower.includes('lapiez') || lower.includes('aap'))) ||
+      (lower.includes('showroom') && (lower.includes('visit') || lower.includes('address') || lower.includes('kahan') || lower.includes('details')));
+
+    if (isLocationQuery) {
+      const reply = `Lapiez Technology Showroom Details:\n` +
+        `• Location: Opposite G P Plaza, Chiniya Road, Garhwa, Jharkhand - 822114\n` +
+        `• Showroom Hours: 10:00 AM - 8:30 PM (Monday to Sunday)\n` +
+        `• Phone & WhatsApp: +91 9608828288\n` +
+        `• Landmark: Chiniya Road main market, opposite G P Plaza.\n\n` +
+        `You can visit our counter for direct walk-in purchases, laptop service, or instant order counter pickups.`;
+
+      return NextResponse.json({
+        reply,
+        orderData: null,
+        products: [],
+        action: {
+          type: 'SHOWROOM_INFO',
+          address: 'Opposite G P Plaza, Chiniya Road, Garhwa, Jharkhand - 822114',
+          phone: '+919608828288',
+          mapsUrl: 'https://maps.google.com/?q=Lapiez+Garhwa+Chiniya+Road',
+        },
+      });
+    }
+
+    // 2. ORDER TRACKING INTENT
     // Matches patterns like "LPZ-12345", "#LPZ-12345", "order 12345", "track 12345", or 4-6 digit order numbers
     const orderIdMatch = rawMessage.match(/(?:#|order\s*(?:id|#)?\s*|track\s*|status\s*)?(lpz-[\w-]+|\b\d{4,6}\b)/i);
-    const mentionsOrder = lower.includes('order') || lower.includes('track') || lower.includes('status') || lower.includes('kahan') || lower.includes('delivery');
+    const mentionsOrder = (lower.includes('order') || lower.includes('track')) && !lower.includes('shop') && !lower.includes('store');
 
     if (orderIdMatch && (mentionsOrder || /lpz/i.test(rawMessage) || /^\d{4,6}$/.test(rawMessage.trim()))) {
       const candidateId = orderIdMatch[1].trim();
@@ -88,46 +127,6 @@ export async function POST(req: NextRequest) {
         reply: 'To check your order status, please provide your Order ID (e.g. #LPZ-19845 or your 5-digit order number), and I will instantly look it up for you.',
         orderData: null,
         products: [],
-      });
-    }
-
-    // 2. SHOWROOM LOCATION & CONTACT INTENT
-    if (
-      lower.includes('address') ||
-      lower.includes('location') ||
-      lower.includes('kahan') ||
-      lower.includes('kaha') ||
-      lower.includes('where is') ||
-      lower.includes('map') ||
-      lower.includes('timing') ||
-      lower.includes('open') ||
-      lower.includes('close') ||
-      lower.includes('hours') ||
-      lower.includes('phone') ||
-      lower.includes('contact') ||
-      lower.includes('call') ||
-      lower.includes('mobile') ||
-      lower.includes('number') ||
-      lower.includes('whatsapp') ||
-      (lower.includes('showroom') && (lower.includes('visit') || lower.includes('address')))
-    ) {
-      const reply = `Lapiez Technology Showroom Details:\n` +
-        `• Location: Opposite G P Plaza, Chiniya Road, Garhwa, Jharkhand - 822114\n` +
-        `• Showroom Hours: 10:00 AM - 8:30 PM (Monday to Sunday)\n` +
-        `• Phone & WhatsApp: +91 9608828288\n` +
-        `• Landmark: Chiniya Road main market, near G P Plaza.\n\n` +
-        `You can visit our counter for direct counter purchases, laptop service, or instant showroom pickups.`;
-
-      return NextResponse.json({
-        reply,
-        orderData: null,
-        products: [],
-        action: {
-          type: 'SHOWROOM_INFO',
-          address: 'Opposite G P Plaza, Chiniya Road, Garhwa, Jharkhand - 822114',
-          phone: '+919608828288',
-          mapsUrl: 'https://maps.google.com/?q=Lapiez+Technology+Garhwa+Chiniya+Road',
-        },
       });
     }
 
