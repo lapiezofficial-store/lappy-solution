@@ -2,12 +2,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   MessageSquare, X, Send, RotateCcw, 
   MapPin, Phone, Truck, ShieldCheck, 
   Package, CheckCircle2, Clock, 
-  ArrowRight, ExternalLink, Sparkles 
+  ArrowRight, ExternalLink, ShoppingCart, 
+  Maximize2, Minimize2, Zap, MessageCircle 
 } from 'lucide-react';
+import { useStore } from '../context/StoreContext';
 
 interface ProductItem {
   id: string;
@@ -41,6 +44,7 @@ interface ChatMessage {
   text: string;
   products?: ProductItem[];
   orderData?: OrderData | null;
+  isOrderIntent?: boolean;
   action?: {
     type: string;
     address?: string;
@@ -56,21 +60,24 @@ interface ChatMessage {
 const INITIAL_MESSAGE: ChatMessage = {
   id: 'init-1',
   sender: 'assistant',
-  text: 'Welcome to Lapiez Garhwa. I am your online showroom assistant.\n\nHow can I help you today? You can ask about our laptops, printer toners, CCTV deals, track an order, or get showroom directions.',
+  text: 'Namaste! Welcome to Lapiez Garhwa Showroom Assistant.\n\nMain aapki kya madad kar sakta hoon? Aap kisi bhi product ka order book kar sakte hain, live order track kar sakte hain, ya showroom details jaan sakte hain.',
   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 };
 
 const QUICK_PROMPTS = [
+  'Order HP Toner Cartridge',
+  'Find Laptops Under 35k',
   'Track My Order',
-  'Find Budget Laptops',
-  'HP Printer Toners',
   'CCTV Camera Setup',
   'Showroom Address & Hours',
-  'Laptop Repair & Warranty',
+  'Laptop Motherboard Repair',
 ];
 
 export const ChatBotWidget: React.FC = () => {
+  const router = useRouter();
+  const { cart, addToCart, setIsCartOpen } = useStore();
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -88,7 +95,9 @@ export const ChatBotWidget: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto scroll to latest message
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartSubtotal = cart.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -99,11 +108,10 @@ export const ChatBotWidget: React.FC = () => {
     }
   }, [messages, isOpen, isLoading]);
 
-  // Save conversation history
   useEffect(() => {
     if (typeof window !== 'undefined' && messages.length > 0) {
       try {
-        localStorage.setItem('lapiez_chat_history', JSON.stringify(messages.slice(-25)));
+        localStorage.setItem('lapiez_chat_history', JSON.stringify(messages.slice(-30)));
       } catch {}
     }
   }, [messages]);
@@ -147,9 +155,10 @@ export const ChatBotWidget: React.FC = () => {
       const assistantMsg: ChatMessage = {
         id: `asst-${Date.now()}`,
         sender: 'assistant',
-        text: data.reply || 'Thank you for your message.',
+        text: data.reply || 'Shukriya! Main aapki madad ke liye taiyar hoon.',
         products: Array.isArray(data.products) ? data.products : [],
         orderData: data.orderData || null,
+        isOrderIntent: data.isOrderIntent,
         action: data.action,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
@@ -159,7 +168,7 @@ export const ChatBotWidget: React.FC = () => {
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         sender: 'assistant',
-        text: 'Unable to connect to showroom services. Please call our Garhwa desk directly at +91 9608828288.',
+        text: 'Showroom server se connect nahi ho pa raha hai. Kripya direct showroom desk par call karein: +91 9608828288.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -168,8 +177,35 @@ export const ChatBotWidget: React.FC = () => {
     }
   };
 
+  const handleAddToCartFromChat = (product: ProductItem) => {
+    const formattedProduct: any = {
+      id: product.id,
+      name: product.name,
+      brand: product.brand,
+      category: product.category,
+      price: product.price,
+      mrp: product.mrp,
+      discount: product.discount,
+      specs: product.specs,
+      description: product.specs || product.name,
+      image: product.image,
+      inStock: product.inStock,
+      stockQuantity: 10,
+      sku: `SKU-${product.id}`,
+      rating: product.rating,
+      featured: false,
+    };
+    addToCart(formattedProduct, 1);
+  };
+
+  const handleBuyNowFromChat = (product: ProductItem) => {
+    handleAddToCartFromChat(product);
+    setIsOpen(false);
+    router.push('/checkout');
+  };
+
   const handleClearChat = () => {
-    if (confirm('Clear chat history?')) {
+    if (confirm('Conversation history clear karein?')) {
       setMessages([INITIAL_MESSAGE]);
       if (typeof window !== 'undefined') {
         localStorage.removeItem('lapiez_chat_history');
@@ -179,12 +215,12 @@ export const ChatBotWidget: React.FC = () => {
 
   return (
     <>
-      {/* Floating Trigger Pill / Button */}
+      {/* Floating Trigger Pill Button (Above Mobile Bottom Nav) */}
       {!isOpen && (
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 h-11 px-4 rounded-full bg-[#0F172A] hover:bg-[#1E293B] text-white shadow-xl border border-slate-700/60 flex items-center gap-2.5 transition-all active:scale-95 cursor-pointer group"
+          className="fixed bottom-18 md:bottom-6 right-4 sm:right-6 z-40 h-11 px-4 rounded-full bg-[#0F172A] hover:bg-[#1E293B] text-white shadow-xl border border-slate-700/60 flex items-center gap-2.5 transition-all active:scale-95 cursor-pointer group"
           title="Chat with Lapiez Showroom Assistant"
           aria-label="Open Chat"
         >
@@ -193,19 +229,29 @@ export const ChatBotWidget: React.FC = () => {
             <span className="w-2 h-2 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-[#0F172A]" />
           </div>
           <span className="text-xs font-bold tracking-tight text-slate-100">
-            Assistant
+            Ask Assistant
           </span>
+          {cartCount > 0 && (
+            <span className="bg-[#1A56DB] text-white text-[9.5px] font-black px-1.5 py-0.2 rounded-full">
+              {cartCount}
+            </span>
+          )}
         </button>
       )}
 
-      {/* Floating Chat Window Modal */}
+      {/* Floating Chat Screen Modal */}
       {isOpen && (
-        <div className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-50 w-[92vw] sm:w-[380px] h-[520px] max-h-[82vh] bg-white rounded-2xl border border-slate-200/90 shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
-          
+        <div
+          className={`fixed z-50 bg-white rounded-2xl border border-slate-200/90 shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ${
+            isExpanded
+              ? 'inset-3 sm:inset-6 md:inset-auto md:bottom-6 md:right-6 md:w-[680px] md:h-[720px] md:max-h-[92vh]'
+              : 'bottom-16 md:bottom-6 right-2 sm:right-6 w-[95vw] sm:w-[420px] h-[580px] max-h-[85vh]'
+          }`}
+        >
           {/* Header */}
-          <div className="px-4 py-3 bg-white border-b border-slate-100 flex items-center justify-between">
+          <div className="px-4 py-3 bg-white border-b border-slate-100 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-[#1A56DB]">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-[#1A56DB]">
                 <MessageSquare className="w-4 h-4" />
               </div>
               <div>
@@ -213,15 +259,26 @@ export const ChatBotWidget: React.FC = () => {
                   <h3 className="font-extrabold text-xs text-slate-900 tracking-tight">
                     Lapiez Assistant
                   </h3>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium">
-                  Garhwa Showroom Live Support
+                  Garhwa Showroom Live AI • Orders &amp; Support
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-1">
+              {/* Fullscreen / Expand Button */}
+              <button
+                type="button"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                title={isExpanded ? 'Collapse' : 'Expand full screen'}
+              >
+                {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              </button>
+
+              {/* Restart Button */}
               <button
                 type="button"
                 onClick={handleClearChat}
@@ -230,6 +287,8 @@ export const ChatBotWidget: React.FC = () => {
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
+
+              {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -241,6 +300,29 @@ export const ChatBotWidget: React.FC = () => {
             </div>
           </div>
 
+          {/* Active Cart Banner (If customer has items in cart) */}
+          {cartCount > 0 && (
+            <div className="px-3.5 py-2 bg-blue-50/70 border-b border-blue-100 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="w-3.5 h-3.5 text-[#1A56DB]" />
+                <span className="font-bold text-slate-800 text-[11px]">
+                  {cartCount} item{cartCount > 1 ? 's' : ''} in Cart (₹{cartSubtotal.toLocaleString('en-IN')})
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  router.push('/checkout');
+                }}
+                className="text-[11px] font-extrabold text-[#1A56DB] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>Checkout Now</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           {/* Messages Body */}
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 bg-[#F8FAFC]">
             {messages.map((msg) => (
@@ -250,7 +332,7 @@ export const ChatBotWidget: React.FC = () => {
               >
                 {/* Bubble */}
                 <div
-                  className={`p-3 text-xs leading-relaxed max-w-[86%] ${
+                  className={`p-3 text-xs leading-relaxed max-w-[88%] ${
                     msg.sender === 'user'
                       ? 'bg-[#1A56DB] text-white rounded-2xl rounded-tr-xs shadow-2xs'
                       : 'bg-white text-slate-800 rounded-2xl rounded-tl-xs border border-slate-200/80 shadow-2xs space-y-2'
@@ -282,57 +364,99 @@ export const ChatBotWidget: React.FC = () => {
                           <span className="text-slate-400">Items:</span>
                           <span className="font-semibold text-slate-800">{msg.orderData.itemCount}</span>
                         </div>
+                        <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-100 mt-1 truncate">
+                          Address: {msg.orderData.address}
+                        </div>
                       </div>
                       <Link
                         href="/account?tab=orders"
                         onClick={() => setIsOpen(false)}
-                        className="h-7 w-full rounded-lg bg-[#1A56DB] hover:bg-[#1545B0] text-white text-[10.5px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                        className="h-8 w-full rounded-lg bg-[#1A56DB] hover:bg-[#1545B0] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                       >
-                        <Package className="w-3 h-3" />
-                        <span>Track Order Details</span>
+                        <Package className="w-3.5 h-3.5" />
+                        <span>Track Full Order &amp; Invoice</span>
                       </Link>
                     </div>
                   )}
 
-                  {/* Product Matches List */}
+                  {/* Product Cards with Direct Order Taking (Add to Cart & Buy Now) */}
                   {msg.products && msg.products.length > 0 && (
-                    <div className="mt-2.5 space-y-2 pt-1 border-t border-slate-100">
+                    <div className="mt-3 space-y-2.5 pt-1.5 border-t border-slate-100">
                       {msg.products.map((p) => (
-                        <Link
+                        <div
                           key={p.id}
-                          href={`/product/${p.id}`}
-                          onClick={() => setIsOpen(false)}
-                          className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 hover:bg-slate-100/90 border border-slate-200/80 transition-all cursor-pointer group"
+                          className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2 hover:border-slate-300 transition-all"
                         >
-                          <img
-                            src={p.image || '/logo.png'}
-                            alt={p.name}
-                            className="w-11 h-11 object-contain rounded-lg bg-white border border-slate-200 p-1 flex-shrink-0"
-                            onError={(e: any) => {
-                              e.target.src = '/logo.png';
-                            }}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <span className="text-[11px] font-bold text-slate-900 block truncate group-hover:text-[#1A56DB] transition-colors">
-                              {p.name}
-                            </span>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-xs font-black text-slate-900">
-                                ₹{p.price.toLocaleString('en-IN')}
+                          <div className="flex items-center gap-2.5">
+                            <img
+                              src={p.image || '/logo.png'}
+                              alt={p.name}
+                              className="w-12 h-12 object-contain rounded-lg bg-white border border-slate-200 p-1 flex-shrink-0"
+                              onError={(e: any) => {
+                                e.target.src = '/logo.png';
+                              }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[11.5px] font-bold text-slate-900 block truncate">
+                                {p.name}
                               </span>
-                              {p.discount > 0 && (
-                                <span className="text-[10px] text-slate-400 line-through">
-                                  ₹{p.mrp.toLocaleString('en-IN')}
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs font-black text-slate-900">
+                                  ₹{p.price.toLocaleString('en-IN')}
                                 </span>
+                                {p.discount > 0 && (
+                                  <span className="text-[10px] text-slate-400 line-through">
+                                    ₹{p.mrp.toLocaleString('en-IN')}
+                                  </span>
+                                )}
+                                <span className="text-[9.5px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
+                                  In Stock
+                                </span>
+                              </div>
+                              {p.specs && (
+                                <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                                  {p.specs}
+                                </p>
                               )}
-                              <span className="text-[9.5px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                                In Stock
-                              </span>
                             </div>
                           </div>
-                          <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1A56DB] flex-shrink-0" />
-                        </Link>
+
+                          {/* Direct Order Actions: Add to Cart & Buy Now */}
+                          <div className="flex items-center gap-2 pt-1 border-t border-slate-200/70">
+                            <button
+                              type="button"
+                              onClick={() => handleAddToCartFromChat(p)}
+                              className="flex-1 h-7 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                            >
+                              <ShoppingCart className="w-3 h-3 text-slate-600" />
+                              <span>+ Add to Cart</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleBuyNowFromChat(p)}
+                              className="flex-1 h-7 rounded-lg bg-[#1A56DB] hover:bg-[#1545B0] text-white text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer shadow-xs"
+                            >
+                              <Zap className="w-3 h-3" />
+                              <span>Buy Now</span>
+                            </button>
+                          </div>
+                        </div>
                       ))}
+
+                      {/* WhatsApp Showroom Booking Option */}
+                      <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-[11px] text-emerald-900 flex items-center justify-between">
+                        <span>Showroom Phone / WhatsApp Booking:</span>
+                        <a
+                          href="https://wa.me/919608828288?text=Hello%20Lapiez,%20I%20want%20to%20order%20products%20from%20your%20Garhwa%20showroom"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="h-6 px-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] flex items-center gap-1 transition-colors"
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                          <span>WhatsApp Order</span>
+                        </a>
+                      </div>
                     </div>
                   )}
 
@@ -394,8 +518,8 @@ export const ChatBotWidget: React.FC = () => {
           </div>
 
           {/* Quick Prompt Pills */}
-          {messages.length <= 3 && !isLoading && (
-            <div className="px-3 py-2 bg-white border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          {messages.length <= 4 && !isLoading && (
+            <div className="px-3 py-2 bg-white border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
               {QUICK_PROMPTS.map((prompt) => (
                 <button
                   key={prompt}
@@ -415,13 +539,13 @@ export const ChatBotWidget: React.FC = () => {
               e.preventDefault();
               handleSendMessage();
             }}
-            className="p-2.5 bg-white border-t border-slate-100 flex items-center gap-2"
+            className="p-2.5 bg-white border-t border-slate-100 flex items-center gap-2 flex-shrink-0"
           >
             <input
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Ask a question or enter order ID..."
+              placeholder="Ask anything or say 'Order HP Toner'..."
               className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#1A56DB] focus:bg-white transition-all"
             />
             <button

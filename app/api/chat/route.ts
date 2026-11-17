@@ -15,14 +15,26 @@ export async function POST(req: NextRequest) {
 
     if (!rawMessage) {
       return NextResponse.json(
-        { reply: 'Please enter a message or question.', products: [], orderData: null },
+        { reply: 'Kripya apna sawal ya product ka naam likhein.', products: [], orderData: null },
         { status: 400 }
       );
     }
 
     const lower = rawMessage.toLowerCase();
 
-    // 1. SHOWROOM LOCATION, HOURS & CONTACT INTENT (High Priority for store inquiries)
+    // 1. ORDER TAKING & DIRECT BOOKING INTENT ("order lene wala")
+    const isOrderPlacement =
+      (lower.includes('order') && (lower.includes('book') || lower.includes('karna') || lower.includes('karo') || lower.includes('lena') || lower.includes('placing') || lower.includes('place'))) ||
+      lower.includes('kharidna') ||
+      lower.includes('lena hai') ||
+      lower.includes('mangwana') ||
+      lower.includes('bhejo') ||
+      lower.includes('buy now') ||
+      lower.includes('purchase') ||
+      lower.includes('kaise order') ||
+      lower.includes('how to order');
+
+    // 2. SHOWROOM LOCATION, HOURS & CONTACT INTENT (High Priority for store inquiries)
     const isLocationQuery =
       lower.includes('address') ||
       lower.includes('location') ||
@@ -46,7 +58,7 @@ export async function POST(req: NextRequest) {
         `• Showroom Hours: 10:00 AM - 8:30 PM (Monday to Sunday)\n` +
         `• Phone & WhatsApp: +91 9608828288\n` +
         `• Landmark: Chiniya Road main market, opposite G P Plaza.\n\n` +
-        `You can visit our counter for direct walk-in purchases, laptop service, or instant order counter pickups.`;
+        `Aap showroom aakar direct counter purchase kar sakte hain, ya laptop service/inspection karwa sakte hain.`;
 
       return NextResponse.json({
         reply,
@@ -61,12 +73,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2. ORDER TRACKING INTENT
+    // 3. ORDER TRACKING INTENT
     // Matches patterns like "LPZ-12345", "#LPZ-12345", "order 12345", "track 12345", or 4-6 digit order numbers
     const orderIdMatch = rawMessage.match(/(?:#|order\s*(?:id|#)?\s*|track\s*|status\s*)?(lpz-[\w-]+|\b\d{4,6}\b)/i);
-    const mentionsOrder = (lower.includes('order') || lower.includes('track')) && !lower.includes('shop') && !lower.includes('store');
+    const mentionsTracking = (lower.includes('track') || lower.includes('status') || lower.includes('kahan tak')) && !isOrderPlacement;
 
-    if (orderIdMatch && (mentionsOrder || /lpz/i.test(rawMessage) || /^\d{4,6}$/.test(rawMessage.trim()))) {
+    if (orderIdMatch && (mentionsTracking || /lpz/i.test(rawMessage) || /^\d{4,6}$/.test(rawMessage.trim()))) {
       const candidateId = orderIdMatch[1].trim();
 
       try {
@@ -87,12 +99,12 @@ export async function POST(req: NextRequest) {
             if (Array.isArray(parsed)) itemCount = parsed.length;
           } catch {}
 
-          const reply = `I found Order #${order.orderId} for ${order.customerName}.\n` +
+          const reply = `Aapka Order #${order.orderId} mil gaya hai (${order.customerName}):\n` +
             `• Status: ${order.orderStatus.toUpperCase()}\n` +
             `• Payment: ${order.paymentStatus} (${order.paymentMethod})\n` +
             `• Total: ₹${order.totalAmount.toLocaleString('en-IN')} (${itemCount} item${itemCount > 1 ? 's' : ''})\n` +
-            `• Destination: ${order.address}\n\n` +
-            `Our showroom dispatch team is handling this order. You can view full details and download your 18% GST Invoice below.`;
+            `• Address: ${order.address}\n\n` +
+            `Aapka order showroom dispatch team ke dwara pack ho chuka hai. Full details aur GST invoice niche dekhein.`;
 
           return NextResponse.json({
             reply,
@@ -112,7 +124,7 @@ export async function POST(req: NextRequest) {
           });
         } else if (/lpz/i.test(candidateId) || /^\d{4,6}$/.test(candidateId)) {
           return NextResponse.json({
-            reply: `No order found matching "${candidateId}". Please double-check your Order ID (usually formatted as #LPZ-XXXXX) from your SMS or order confirmation screen.`,
+            reply: `No order found matching "${candidateId}". Kripya apna sahi Order ID (jaise #LPZ-XXXXX) check karke dobara bhejein.`,
             orderData: null,
             products: [],
           });
@@ -122,15 +134,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (mentionsOrder && !orderIdMatch) {
+    if (mentionsTracking && !orderIdMatch) {
       return NextResponse.json({
-        reply: 'To check your order status, please provide your Order ID (e.g. #LPZ-19845 or your 5-digit order number), and I will instantly look it up for you.',
+        reply: 'Apna order status check karne ke liye kripya apna Order ID (jaise #LPZ-19845 ya 5-digit number) bhejein. Main turant live status check karke bata dunga.',
         orderData: null,
         products: [],
       });
     }
 
-    // 3. WARRANTY, REPAIR & HARDWARE SERVICE INTENT
+    // 4. WARRANTY, REPAIR & HARDWARE SERVICE INTENT
     if (
       lower.includes('warranty') ||
       lower.includes('guarantee') ||
@@ -147,22 +159,22 @@ export async function POST(req: NextRequest) {
       lower.includes('rma')
     ) {
       const reply = `Lapiez Garhwa Hardware & Warranty Services:\n` +
-        `• Chip-Level Motherboard Repair: Power issues, short circuits, charging IC diagnosis.\n` +
+        `• Chip-Level Motherboard Repair: Short-circuit, no power, charging IC diagnosis.\n` +
         `• Screen & Display Replacement: Original HD/FHD LED panels for HP, Dell, Lenovo, Asus.\n` +
-        `• Hinge & Body Restoration: Hinge fabrication and top-cover repair.\n` +
-        `• Brand Warranty Coordination: Direct RMA assistance with official brand ASC centers.\n` +
-        `• Software & Maintenance: Windows 11 installation, SSD upgrades, and thermal paste servicing.\n\n` +
-        `You can bring your device directly to our Chiniya Road showroom or submit an RMA request under our Warranty section.`;
+        `• Hinge & Body Repair: Hinge fabrication aur structural restoration.\n` +
+        `• Brand Authorized Warranty: Official ASC support for HP, Dell, Lenovo, Asus, CP Plus.\n` +
+        `• Software & Maintenance: Windows installation, SSD upgrades, and thermal cleaning.\n\n` +
+        `Aap apna device direct Chiniya Road showroom par laa sakte hain ya online RMA claim submit kar sakte hain.`;
 
       return NextResponse.json({
         reply,
         orderData: null,
         products: [],
-        action: { type: 'NAVIGATE', url: '/warranty', label: 'View Warranty Desk' },
+        action: { type: 'NAVIGATE', url: '/warranty', label: 'Open Warranty Desk' },
       });
     }
 
-    // 4. DELIVERY & SHIPPING INTENT
+    // 5. DELIVERY & SHIPPING INTENT
     if (
       lower.includes('delivery') ||
       lower.includes('shipping') ||
@@ -173,11 +185,11 @@ export async function POST(req: NextRequest) {
       lower.includes('ranka') ||
       lower.includes('majhiaon')
     ) {
-      const reply = `Delivery Coverage & Rates from Garhwa Showroom:\n` +
-        `• Garhwa Town Core (0-5 km): Ultra-fast delivery (30 to 60 minutes). Orders above ₹5,000 receive 100% Free Delivery.\n` +
-        `• Suburbs (5-15 km): 2 to 4 hours delivery.\n` +
-        `• Outer Blocks & Palamu (15-50+ km): Same-day / Next-day courier & rider dispatch.\n\n` +
-        `Delivery charges are automatically calculated based on your live GPS distance at checkout.`;
+      const reply = `Garhwa Showroom se Doorstep Delivery Coverage:\n` +
+        `• Garhwa Town Core (0-5 km): 30 se 60 minute ke andar express delivery. ₹5,000 se upar ke order par 100% Free Delivery.\n` +
+        `• Suburbs (5-15 km): 2 se 4 ghante me delivery.\n` +
+        `• Outer Blocks & Palamu (15-50+ km): Same-day / Next-day courier dispatch.\n\n` +
+        `Delivery charges aapke live GPS distance ke hisab se automatic checkout par calculate hote hain.`;
 
       return NextResponse.json({
         reply,
@@ -186,7 +198,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 5. INVOICE, GST & AUTHENTICITY INTENT
+    // 6. INVOICE, GST & PAYMENT INTENT
     if (
       lower.includes('gst') ||
       lower.includes('invoice') ||
@@ -195,12 +207,14 @@ export async function POST(req: NextRequest) {
       lower.includes('genuine') ||
       lower.includes('original') ||
       lower.includes('asli') ||
-      lower.includes('fake')
+      lower.includes('cod') ||
+      lower.includes('cash on delivery') ||
+      lower.includes('payment')
     ) {
-      const reply = `Quality Assurance & GST Compliance:\n` +
-        `• 100% Genuine Products: Sourced directly from authorized brand distributors.\n` +
-        `• Official 18% GST Invoice: Included with every single purchase for warranty validity and ITC credit.\n` +
-        `• Official Brand Warranty: Valid at all authorized brand service centers across India.`;
+      const reply = `Payment & 100% Genuine Billing:\n` +
+        `• 100% Original Products: Authorized distributor warranty ke sath.\n` +
+        `• Official 18% GST Invoice: Sabhi orders ke sath official tax invoice diya jata hai (Input Tax Credit / ITC valid).\n` +
+        `• Payment Options: Cash on Delivery (COD), UPI Dynamic QR (GPay, PhonePe, Paytm), aur Counter Payment.`;
 
       return NextResponse.json({
         reply,
@@ -209,15 +223,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 6. PRODUCT SEARCH & RECOMMENDATION INTENT
-    // Extract price constraints if any
+    // 7. PRODUCT SEARCH & ORDERING ("order lene wala")
     let maxPrice: number | undefined;
     const priceMatch = rawMessage.match(/(?:under|below|kam|upto|within|budget of)\s*(?:rs\.?|inr|₹)?\s*(\d+)/i);
     if (priceMatch) {
       maxPrice = parseInt(priceMatch[1], 10);
     }
 
-    // Identify brand keywords
     const brandKeywords = [
       'hp', 'dell', 'lenovo', 'asus', 'acer', 'frontech', 
       'lapcare', 'cp plus', 'cp-plus', 'hikvision', 'logitech', 
@@ -225,7 +237,6 @@ export async function POST(req: NextRequest) {
     ];
     const detectedBrand = brandKeywords.find((b) => lower.includes(b));
 
-    // Identify category keywords
     const categoryKeywords: Record<string, string[]> = {
       'Laptops': ['laptop', 'notebook', 'ultrabook', 'refurbished laptop', 'macbook'],
       'Toners & Cartridges': ['toner', 'cartridge', 'ink', 'laser toner', 'printer ink'],
@@ -246,18 +257,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Product search query
-    // If brand, category or specific hardware term is detected
-    const isProductQuery = detectedBrand || detectedCategory || maxPrice ||
+    const isProductQuery = detectedBrand || detectedCategory || maxPrice || isOrderPlacement ||
       lower.includes('buy') || lower.includes('chahiye') || lower.includes('price') || 
       lower.includes('rate') || lower.includes('cost') || lower.includes('sasta') || 
       lower.includes('best') || lower.includes('suggest') || lower.includes('recommend');
 
     if (isProductQuery) {
-      // Build search query terms
       const searchTerms = rawMessage
         .replace(/(?:under|below|kam|upto|within|budget of)\s*(?:rs\.?|inr|₹)?\s*\d+/gi, '')
-        .replace(/(?:chahiye|mujhe|dikhao|price|rate|cost|best|suggest|recommend|hai|kya|ke|ka|ki|in|for|buy|please)/gi, '')
+        .replace(/(?:chahiye|mujhe|dikhao|price|rate|cost|best|suggest|recommend|hai|kya|ke|ka|ki|in|for|buy|please|order|book|karna|lena)/gi, '')
         .trim();
 
       const whereClause: any = {
@@ -274,7 +282,6 @@ export async function POST(req: NextRequest) {
         whereClause.brand = { contains: brandNorm, mode: 'insensitive' };
       }
 
-      // Try searching Prisma
       let products = await prisma.product.findMany({
         where: whereClause,
         take: 6,
@@ -294,7 +301,6 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // If no exact brand matches, fallback to keyword search across name, specs, category
       if (products.length === 0 && searchTerms.length > 2) {
         const words = searchTerms.split(/\s+/).filter((w) => w.length > 2);
         if (words.length > 0) {
@@ -332,42 +338,50 @@ export async function POST(req: NextRequest) {
       }
 
       if (products.length > 0) {
-        let reply = `Here are the top matches available at Lapiez Garhwa showroom`;
-        if (detectedBrand) reply += ` for ${detectedBrand.toUpperCase()}`;
-        if (maxPrice) reply += ` under ₹${maxPrice.toLocaleString('en-IN')}`;
-        reply += ` with 18% GST Invoice and direct brand warranty:`;
+        let reply = '';
+        if (isOrderPlacement) {
+          reply = `Aapke order ke liye Lapiez Garhwa showroom se top options available hain. Niche product card par **Add to Cart** ya **Buy Now** click karke turant order book karein:`;
+        } else {
+          reply = `Lapiez Garhwa showroom me yeh best items available hain`;
+          if (detectedBrand) reply += ` (${detectedBrand.toUpperCase()})`;
+          if (maxPrice) reply += ` under ₹${maxPrice.toLocaleString('en-IN')}`;
+          reply += ` (18% GST Invoice aur brand warranty ke sath):`;
+        }
 
         return NextResponse.json({
           reply,
           orderData: null,
           products,
+          isOrderIntent: isOrderPlacement,
           action: { type: 'VIEW_CATALOG', query: searchTerms || detectedBrand || detectedCategory },
         });
       } else {
         return NextResponse.json({
-          reply: `I could not find an exact match${maxPrice ? ` under ₹${maxPrice.toLocaleString('en-IN')}` : ''} in our online catalog right now. However, we have additional stock at our Chiniya Road showroom counter! You can browse all 91+ SKUs in our Shop or call us directly at +91 9608828288.`,
+          reply: `Aap jo product dhundh rahe hain${maxPrice ? ` under ₹${maxPrice.toLocaleString('en-IN')}` : ''}, uska exact match online abhi stock me update ho raha hai. Hamare Chiniya Road showroom counter par aur bhi stock available hai! Aap Shop me browse karein ya direct +91 9608828288 par call/WhatsApp karke order book karein.`,
           orderData: null,
           products: [],
-          action: { type: 'NAVIGATE', url: '/shop', label: 'Browse Full Catalog' },
+          action: { type: 'NAVIGATE', url: '/shop', label: 'Browse Full Shop' },
         });
       }
     }
 
-    // 7. DEFAULT / GREETING RESPONSE
+    // 8. GENERAL GREETINGS & CHAT ("baat krne wala")
     if (
       lower.includes('hi') ||
       lower.includes('hello') ||
       lower.includes('hey') ||
       lower.includes('namaste') ||
       lower.includes('start') ||
-      lower.includes('help')
+      lower.includes('help') ||
+      lower.includes('bhaiya') ||
+      lower.includes('sir')
     ) {
-      const reply = `Hello! Welcome to Lapiez Garhwa. I am your online showroom assistant.\n\n` +
-        `How can I help you today?\n` +
-        `• Track an existing order status (e.g. #LPZ-19845)\n` +
-        `• Find laptops, printers, CCTV systems or toners\n` +
-        `• Get Garhwa showroom directions, timings & phone number\n` +
-        `• Hardware repair, warranty & technical support`;
+      const reply = `Namaste! Lapiez Garhwa Showroom Assistant me aapka swagat hai.\n\n` +
+        `Main aapki kya madad kar sakta hoon?\n` +
+        `• Product order karne me (Laptops, Toners, CCTV, Printers)\n` +
+        `• Live Order Status track karne me (Send Order ID: #LPZ-19845)\n` +
+        `• Showroom location, timing aur counter pickup me\n` +
+        `• Laptop repair, screen replacement aur warranty assistance me`;
 
       return NextResponse.json({
         reply,
@@ -376,13 +390,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Generic polite answer with showroom context
-    const reply = `Thank you for reaching out to Lapiez Garhwa. I can help you with:\n` +
-      `• Checking order status (just send your Order ID, e.g. #LPZ-19845)\n` +
-      `• Looking up product availability, genuine pricing, and specifications\n` +
-      `• Showroom location on Chiniya Road, Garhwa (Open 10 AM - 8:30 PM)\n` +
-      `• Laptop repairs and official brand warranty support\n\n` +
-      `You can also reach our showroom desk directly at +91 9608828288.`;
+    // Polite fallback
+    const reply = `Lapiez Garhwa Showroom me sampark karne ke liye dhanyawad. Main aapki in chizon me madad kar sakta hoon:\n` +
+      `• Kisi bhi product ko order karne me (Direct chat se Add to Cart ya Buy Now karein)\n` +
+      `• Order track karne me (Send Order ID jaise #LPZ-19845)\n` +
+      `• Showroom timing (10 AM - 8:30 PM, Chiniya Road, Garhwa)\n` +
+      `• Laptop motherboard repair aur original warranty service\n\n` +
+      `Aap direct hamare showroom desk par call bhi kar sakte hain: +91 9608828288.`;
 
     return NextResponse.json({
       reply,
@@ -393,7 +407,7 @@ export async function POST(req: NextRequest) {
     console.error('Chatbot API error:', error);
     return NextResponse.json(
       {
-        reply: 'Our assistant is momentarily busy. Please try again or call our showroom directly at +91 9608828288.',
+        reply: 'Assistant abhi busy hai. Kripya thodi der baad koshish karein ya direct showroom par call karein: +91 9608828288.',
         orderData: null,
         products: [],
       },
