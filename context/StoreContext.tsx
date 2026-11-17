@@ -356,31 +356,31 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
     id: 'cat-laptops',
     name: 'Computer & Laptops',
     slug: 'laptops',
-    image: 'https://cdn.dotpe.in/longtail/item_collection/8473996/242BcPaL.webp',
-    imageUrl: 'https://cdn.dotpe.in/longtail/item_collection/8473996/242BcPaL.webp',
+    image: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794544844/lapiez/categories/rh3lpqqkh4wza6omv2tm.jpg',
+    imageUrl: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794544844/lapiez/categories/rh3lpqqkh4wza6omv2tm.jpg',
     position: 0,
     status: 'active',
-    href: '/shop?cat=Laptops',
+    href: '/shop?cat=Computer%20%26%20Laptops',
   },
   {
     id: 'cat-laptop-parts',
     name: 'Laptop Parts & Spares',
     slug: 'laptop-parts',
-    image: 'https://cdn.dotpe.in/longtail/item_collection/8473996/cJZR0B6A.webp',
-    imageUrl: 'https://cdn.dotpe.in/longtail/item_collection/8473996/cJZR0B6A.webp',
+    image: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794676574/lapiez/categories/ejv9y4jzyhc6ntvhjhlp.jpg',
+    imageUrl: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794676574/lapiez/categories/ejv9y4jzyhc6ntvhjhlp.jpg',
     position: 1,
     status: 'active',
-    href: '/shop?cat=Laptop%20Parts',
+    href: '/shop?cat=Laptop%20Parts%20%26%20Spares',
   },
   {
     id: 'cat-peripherals',
     name: 'Computer Peripherals',
     slug: 'peripherals',
-    image: 'https://cdn.dotpe.in/longtail/item_collection/8473996/q1ZdCuDa.webp',
-    imageUrl: 'https://cdn.dotpe.in/longtail/item_collection/8473996/q1ZdCuDa.webp',
+    image: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794677271/lapiez/categories/h3n0l67t65a9qnvjhl2m.jpg',
+    imageUrl: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794677271/lapiez/categories/h3n0l67t65a9qnvjhl2m.jpg',
     position: 2,
     status: 'active',
-    href: '/shop?cat=Peripherals',
+    href: '/shop?cat=Computer%20Peripherals',
   },
   {
     id: 'cat-printers',
@@ -420,27 +420,87 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
     imageUrl: 'https://cdn.dotpe.in/longtail/item_collection/8473996/M0Si0HDm.webp',
     position: 6,
     status: 'active',
-    href: '/shop?search=Antivirus',
+    href: '/shop?cat=Antivirus%20%26%20Software',
   },
   {
     id: 'cat-electronics',
-    name: 'Electronics & Audio',
-    slug: 'electronics',
-    image: 'https://cdn.dotpe.in/longtail/item_collection/8473996/bYcAegxA.webp',
-    imageUrl: 'https://cdn.dotpe.in/longtail/item_collection/8473996/bYcAegxA.webp',
+    name: 'Electronic',
+    slug: 'screen',
+    image: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794676310/lapiez/categories/jqvgihs1ezsxsgbca4lr.jpg',
+    imageUrl: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794676310/lapiez/categories/jqvgihs1ezsxsgbca4lr.jpg',
     position: 7,
     status: 'active',
-    href: '/shop?search=Speaker',
+    href: '/shop?cat=Electronic',
   },
   {
     id: 'cmvhvzqln0000l507w15zkg57',
     name: 'Toner & ink',
     slug: 'toner---ink',
-    image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=600&auto=format&fit=crop&q=80',
-    imageUrl: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=600&auto=format&fit=crop&q=80',
+    image: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794677916/lapiez/categories/t2crpmqkeegtwrwwygjv.jpg',
+    imageUrl: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794677916/lapiez/categories/t2crpmqkeegtwrwwygjv.jpg',
     position: 8,
     status: 'active',
-    href: '/shop?search=Toner',
+    href: '/shop?cat=Toner%20%26%20ink',
+  },
+  {
+    id: 'cmweetc8x0002l1084bkacugq',
+    name: 'Refurbished',
+    slug: 'r',
+    image: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794545038/lapiez/categories/n97cwmemaykpi7sw8mqw.jpg',
+    imageUrl: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794545038/lapiez/categories/n97cwmemaykpi7sw8mqw.jpg',
+    position: 9,
+    status: 'active',
+    href: '/shop?cat=Refurbished',
+  },
+  {
+    id: 'cmweeusjv0000jp08sfqy641e',
+    name: 'Paper &Sticker',
+    slug: 'paper--sticker',
+    image: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794677051/lapiez/categories/uktafkupju6iruvmiqmc.jpg',
+    imageUrl: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794677051/lapiez/categories/uktafkupju6iruvmiqmc.jpg',
+    position: 10,
+    status: 'active',
+    href: '/shop?cat=Paper%20%26Sticker',
+  },
+  {
+    id: 'cmweev64j0001jp08le6ikuyw',
+    name: 'Battery',
+    slug: 'battery',
+    image: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794548667/lapiez/categories/gllf6xzxjb43yuqdohuo.jpg',
+    imageUrl: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794548667/lapiez/categories/gllf6xzxjb43yuqdohuo.jpg',
+    position: 11,
+    status: 'active',
+    href: '/shop?cat=Battery',
+  },
+  {
+    id: 'cmweevtwk0003l1083g37q35n',
+    name: 'Cable & Connector',
+    slug: 'cable---connector',
+    image: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794675985/lapiez/categories/czfa9jplqk0wqvzvwraz.jpg',
+    imageUrl: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794675985/lapiez/categories/czfa9jplqk0wqvzvwraz.jpg',
+    position: 12,
+    status: 'active',
+    href: '/shop?cat=Cable%20%26%20Connector',
+  },
+  {
+    id: 'cmweexco90004l108zxzfyoee',
+    name: 'Adapters',
+    slug: 'adapters',
+    image: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794548466/lapiez/categories/tupjzxf2np2l2bhyek2l.jpg',
+    imageUrl: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794548466/lapiez/categories/tupjzxf2np2l2bhyek2l.jpg',
+    position: 13,
+    status: 'active',
+    href: '/shop?cat=Adapters',
+  },
+  {
+    id: 'cmwek9x5c0000l207qu12qn1l',
+    name: 'Keyboard',
+    slug: 'keyboard',
+    image: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794549218/lapiez/categories/q7tmxodgyvdg27f0fkib.jpg',
+    imageUrl: 'https://res.cloudinary.com/ydugu2xq/image/upload/v1794549218/lapiez/categories/q7tmxodgyvdg27f0fkib.jpg',
+    position: 14,
+    status: 'active',
+    href: '/shop?cat=Keyboard',
   },
 ];
 
@@ -638,7 +698,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return DEFAULT_HOMEPAGE_SECTIONS;
   });
@@ -646,7 +706,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [blogPosts, setBlogPosts] = useState<CMSBlogPost[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
   const [brands, setBrands] = useState<CMSBrand[]>(DEFAULT_BRANDS);
-  const [categories, setCategories] = useState<CMSCategory[]>(DEFAULT_CMS_CATEGORIES);
+  const [categories, setCategories] = useState<CMSCategory[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('ls_categories');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) { }
+    }
+    return DEFAULT_CMS_CATEGORIES;
+  });
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponDiscount, setCouponDiscount] = useState<number>(0);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -666,7 +737,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const saved = localStorage.getItem('lapiez_customer_location');
         if (saved) return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     return {
       area: 'Garhwa Town Core',
@@ -684,7 +755,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const saved = localStorage.getItem('ls_delivery_settings');
         if (saved) return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     return null;
   });
@@ -699,11 +770,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (typeof window !== 'undefined') {
             try {
               localStorage.setItem('ls_delivery_settings', JSON.stringify(data.settings));
-            } catch (e) {}
+            } catch (e) { }
           }
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Realtime Delivery Fee calculation based on customer distance & cart total
@@ -729,14 +800,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCustomerLocation(loc);
     try {
       localStorage.setItem('lapiez_customer_location', JSON.stringify(loc));
-    } catch (e) {}
+    } catch (e) { }
 
     // Realtime sync to backend so admin can view active customer location immediately
     fetch('/api/customer/location', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(loc),
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const updateDeliverySettingsInStore = useCallback(async (newSettings: any): Promise<boolean> => {
@@ -745,7 +816,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('ls_delivery_settings', JSON.stringify(newSettings));
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const res = await adminFetch('/api/delivery/rates', {
@@ -759,7 +830,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (typeof window !== 'undefined') {
             try {
               localStorage.setItem('ls_delivery_settings', JSON.stringify(data.settings));
-            } catch (e) {}
+            } catch (e) { }
           }
         }
         setToast('Delivery rates updated successfully!');

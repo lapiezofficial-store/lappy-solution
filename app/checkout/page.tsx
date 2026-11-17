@@ -204,6 +204,42 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'upi_qr' | 'cod' | 'netbanking' | 'store_pickup'>('upi_qr');
   const [pickupPaymentMode, setPickupPaymentMode] = useState<'cash' | 'online'>('cash');
   const [pickupHandedBy, setPickupHandedBy] = useState('');
+  const [staffCodeInput, setStaffCodeInput] = useState('');
+  const [isVerifyingStaff, setIsVerifyingStaff] = useState(false);
+  const [verifiedStaff, setVerifiedStaff] = useState<{ id: string; name: string; staffCode: string; role: string } | null>(null);
+  const [staffVerifyError, setStaffVerifyError] = useState<string | null>(null);
+
+  const handleVerifyStaff = async (codeToVerify?: string) => {
+    const code = (codeToVerify ?? staffCodeInput).trim();
+    if (!code) {
+      setStaffVerifyError('Please enter Staff Code, ID, or PIN.');
+      return;
+    }
+    setIsVerifyingStaff(true);
+    setStaffVerifyError(null);
+    try {
+      const res = await fetch('/api/staff/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (res.ok && data.valid && data.staff) {
+        setVerifiedStaff(data.staff);
+        setPickupHandedBy(`${data.staff.name} (${data.staff.staffCode})`);
+        setStaffVerifyError(null);
+        showToast(`Staff Verified: ${data.staff.name} (${data.staff.staffCode})`);
+      } else {
+        setVerifiedStaff(null);
+        setPickupHandedBy('');
+        setStaffVerifyError(data.error || 'Invalid Staff Code or PIN.');
+      }
+    } catch (e: any) {
+      setStaffVerifyError('Could not verify staff code. Try again.');
+    } finally {
+      setIsVerifyingStaff(false);
+    }
+  };
   const [utrNumber, setUtrNumber] = useState('');
   const [selectedBank, setSelectedBank] = useState('State Bank of India (SBI)');
   const [copiedUpi, setCopiedUpi] = useState(false);
@@ -414,10 +450,14 @@ export default function CheckoutPage() {
       }
     }
 
-    // Strict mandatory staff name check for showroom pickup orders
-    if (isPickup && !pickupHandedBy.trim()) {
-      showToast('Handovered By / Staff Name is MANDATORY! Please enter staff name.');
-      return;
+    // Strict mandatory staff verification check for showroom pickup orders
+    if (isPickup) {
+      if (!verifiedStaff && !pickupHandedBy.trim()) {
+        showToast('Store Pickup requires verified Staff Code / PIN to cut bill!');
+        const el = document.getElementById('pickup-staff-code');
+        if (el) el.focus();
+        return;
+      }
     }
 
     if (paymentMethod === 'upi_qr') {
@@ -1495,31 +1535,88 @@ export default function CheckoutPage() {
                       </div>
                     )}
 
-                    {/* Handed Over By / Staff Name Input Field (STRICTLY MANDATORY) */}
-                    <div className="p-4 rounded-xl bg-white border border-purple-200 space-y-2">
+                    {/* Handed Over By / Staff Passcode Verification (STRICTLY MANDATORY) */}
+                    <div className="p-4 rounded-xl bg-white border border-purple-200 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <UserCheck className="w-4 h-4 text-purple-700 flex-shrink-0" />
-                          <label htmlFor="pickup-handed-by" className="text-xs font-black text-slate-900">
-                            Handed Over By / Staff Name <span className="text-rose-600">*</span>
+                          <label htmlFor="pickup-staff-code" className="text-xs font-black text-slate-900">
+                            Staff Verification / Passcode <span className="text-rose-600">*</span>
                           </label>
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white px-2 py-0.5 rounded-full">
-                          MANDATORY
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-purple-700 text-white px-2 py-0.5 rounded-full">
+                          STAFF PIN REQUIRED
                         </span>
                       </div>
-                      <input
-                        id="pickup-handed-by"
-                        type="text"
-                        required
-                        value={pickupHandedBy}
-                        onChange={(e) => setPickupHandedBy(e.target.value)}
-                        placeholder="e.g. Sonu Kumar (Staff) or Counter Manager"
-                        className="w-full bg-[#F8FAFC] border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 focus:bg-white focus:border-purple-600 focus:outline-none"
-                      />
-                      <p className="text-[10.5px] text-slate-500">
-                        Staff person who verified hardware and handed items to the customer. Strictly required to finalize counter order &amp; print official GST invoice.
-                      </p>
+
+                      {verifiedStaff ? (
+                        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+                              <Check className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="text-xs font-extrabold text-emerald-900">
+                                {verifiedStaff.name} <span className="text-emerald-700 font-mono">({verifiedStaff.staffCode})</span>
+                              </div>
+                              <div className="text-[10px] text-emerald-700 font-medium">
+                                Role: {verifiedStaff.role} • Authorized Counter Bill
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setVerifiedStaff(null);
+                              setPickupHandedBy('');
+                              setStaffCodeInput('');
+                            }}
+                            className="text-xs font-bold text-slate-500 hover:text-rose-600 underline cursor-pointer"
+                          >
+                            Change
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              id="pickup-staff-code"
+                              type="password"
+                              autoComplete="off"
+                              value={staffCodeInput}
+                              onChange={(e) => {
+                                setStaffCodeInput(e.target.value);
+                                if (staffVerifyError) setStaffVerifyError(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleVerifyStaff();
+                                }
+                              }}
+                              placeholder="Enter Staff Code / Password / PIN (e.g. 1234 or STF-01)"
+                              className="flex-1 bg-[#F8FAFC] border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 focus:bg-white focus:border-purple-600 focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleVerifyStaff()}
+                              disabled={isVerifyingStaff || !staffCodeInput.trim()}
+                              className="h-9 px-4 rounded-lg bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                            >
+                              {isVerifyingStaff ? 'Verifying...' : 'Verify Staff'}
+                            </button>
+                          </div>
+                          {staffVerifyError && (
+                            <p className="text-[11px] font-bold text-rose-600 flex items-center gap-1">
+                              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>{staffVerifyError}</span>
+                            </p>
+                          )}
+                          <p className="text-[10.5px] text-slate-500">
+                            Only authorized showroom staff with valid PIN can finalize counter pickup orders &amp; print tax invoice.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Showroom Details */}
