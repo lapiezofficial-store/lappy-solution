@@ -16,6 +16,7 @@ export const MobileBottomNav: React.FC = () => {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleSearchClick = () => {
+    // If on homepage or shop, smoothly scroll to top and focus mobile search input
     const searchInput = document.getElementById('mobile-header-search-input') as HTMLInputElement | null;
     if (searchInput) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -36,103 +37,107 @@ export const MobileBottomNav: React.FC = () => {
   if (pathname === '/checkout') return null;
 
   return (
-    <aside 
-      aria-label="Mobile Navigation Dock"
-      className="md:hidden fixed bottom-2.5 inset-x-0 z-40 flex justify-center px-3 pointer-events-none"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 4px)' }}
+    <nav 
+      aria-label="Mobile Bottom Navigation"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-t border-[#E5E7EB] px-1 pt-1.5 flex items-center justify-around shadow-[0_-2px_12px_rgba(0,0,0,0.06)]"
+      style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom, 16px))' }}
     >
-      <nav 
-        className="pointer-events-auto w-full max-w-sm bg-slate-950/92 dark:bg-black/95 text-white backdrop-blur-2xl border border-white/12 shadow-[0_14px_40px_rgba(0,0,0,0.45)] rounded-full px-2 py-1.5 flex items-center justify-between gap-1 transition-all duration-200"
+      {/* 1. Home */}
+      <Link
+        href="/"
+        className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-all active:scale-95 ${
+          isHomeActive
+            ? 'text-[#EA580C] font-extrabold'
+            : 'text-[#64748B] hover:text-[#0F172A]'
+        }`}
       >
-        {/* 1. Home */}
-        <Link
-          href="/"
-          className={`flex-1 flex flex-col items-center justify-center py-1 rounded-full transition-all duration-200 active:scale-95 ${
-            isHomeActive
-              ? 'bg-white/15 text-white font-extrabold shadow-inner'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Home className={`w-4 h-4 ${isHomeActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[9.5px] mt-0.5 tracking-tight font-medium leading-tight">
-            Home
-          </span>
-        </Link>
+        <div className="relative w-6 h-6 flex items-center justify-center">
+          <Home className={`w-5 h-5 ${isHomeActive ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        </div>
+        <span className={`text-[10px] mt-0.5 tracking-tight ${isHomeActive ? 'font-bold' : 'font-medium'}`}>
+          Home
+        </span>
+      </Link>
 
-        {/* 2. Search */}
-        <button
-          type="button"
-          onClick={handleSearchClick}
-          className={`flex-1 flex flex-col items-center justify-center py-1 rounded-full transition-all duration-200 active:scale-95 cursor-pointer ${
-            isSearchActive
-              ? 'bg-white/15 text-white font-extrabold shadow-inner'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Search className={`w-4 h-4 ${isSearchActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[9.5px] mt-0.5 tracking-tight font-medium leading-tight">
-            Search
-          </span>
-        </button>
+      {/* 2. Search */}
+      <button
+        type="button"
+        onClick={handleSearchClick}
+        className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-all active:scale-95 cursor-pointer ${
+          isSearchActive
+            ? 'text-[#EA580C] font-extrabold'
+            : 'text-[#64748B] hover:text-[#0F172A]'
+        }`}
+      >
+        <div className="relative w-6 h-6 flex items-center justify-center">
+          <Search className={`w-5 h-5 ${isSearchActive ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        </div>
+        <span className={`text-[10px] mt-0.5 tracking-tight ${isSearchActive ? 'font-bold' : 'font-medium'}`}>
+          Search
+        </span>
+      </button>
 
-        {/* 3. Categories */}
-        <Link
-          href="/shop"
-          className={`flex-1 flex flex-col items-center justify-center py-1 rounded-full transition-all duration-200 active:scale-95 ${
-            isCategoriesActive
-              ? 'bg-white/15 text-white font-extrabold shadow-inner'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <LayoutGrid className={`w-4 h-4 ${isCategoriesActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[9.5px] mt-0.5 tracking-tight font-medium leading-tight">
-            Categories
-          </span>
-        </Link>
+      {/* 3. Categories */}
+      <Link
+        href="/shop"
+        className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-all active:scale-95 ${
+          isCategoriesActive
+            ? 'text-[#EA580C] font-extrabold'
+            : 'text-[#64748B] hover:text-[#0F172A]'
+        }`}
+      >
+        <div className="relative w-6 h-6 flex items-center justify-center">
+          <LayoutGrid className={`w-5 h-5 ${isCategoriesActive ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        </div>
+        <span className={`text-[10px] mt-0.5 tracking-tight ${isCategoriesActive ? 'font-bold' : 'font-medium'}`}>
+          Categories
+        </span>
+      </Link>
 
-        {/* 4. Cart */}
-        <button
-          type="button"
-          onClick={() => setIsCartOpen(true)}
-          className="flex-1 flex flex-col items-center justify-center py-1 rounded-full transition-all duration-200 active:scale-95 text-slate-400 hover:text-white cursor-pointer relative"
-          aria-label="View Shopping Cart"
-        >
-          <div className="relative">
-            <ShoppingCart className="w-4 h-4 stroke-[1.8]" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-2.5 bg-orange-500 text-white text-[8.5px] font-black min-w-3.5 h-3.5 px-1 rounded-full flex items-center justify-center shadow-xs">
-                {cartCount > 99 ? '99+' : cartCount}
-              </span>
-            )}
-          </div>
-          <span className="text-[9.5px] mt-0.5 tracking-tight font-medium leading-tight">
-            Cart
-          </span>
-        </button>
+      {/* 4. Cart */}
+      <button
+        type="button"
+        onClick={() => setIsCartOpen(true)}
+        className="flex flex-col items-center justify-center flex-1 py-1 text-center transition-all active:scale-95 text-[#64748B] hover:text-[#0F172A] cursor-pointer"
+        aria-label="View Shopping Cart"
+      >
+        <div className="relative w-6 h-6 flex items-center justify-center">
+          <ShoppingCart className="w-5 h-5 stroke-[1.8]" />
+          {cartCount > 0 && (
+            <span className="absolute -top-1.5 -right-2 bg-[#EA580C] text-white text-[9px] font-extrabold min-w-4 h-4 px-1 rounded-full flex items-center justify-center shadow-xs">
+              {cartCount > 99 ? '99+' : cartCount}
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] font-medium text-[#64748B] mt-0.5 tracking-tight">
+          Cart
+        </span>
+      </button>
 
-        {/* 5. Account */}
-        <Link
-          href="/account"
-          className={`flex-1 flex flex-col items-center justify-center py-1 rounded-full transition-all duration-200 active:scale-95 ${
-            isAccountActive
-              ? 'bg-white/15 text-white font-extrabold shadow-inner'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
+      {/* 5. Account / Customer */}
+      <Link
+        href="/account"
+        className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-all active:scale-95 ${
+          isAccountActive
+            ? 'text-[#EA580C] font-extrabold'
+            : 'text-[#64748B] hover:text-[#0F172A]'
+        }`}
+      >
+        <div className="relative w-6 h-6 flex items-center justify-center">
           {customer?.user_metadata?.avatar_url ? (
             <img 
               src={customer.user_metadata.avatar_url} 
               alt="Account" 
-              className="w-4 h-4 rounded-full object-cover border border-white/40" 
+              className="w-5 h-5 rounded-full object-cover border border-gray-300" 
             />
           ) : (
-            <User className={`w-4 h-4 ${isAccountActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+            <User className={`w-5 h-5 ${isAccountActive ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
           )}
-          <span className="text-[9.5px] mt-0.5 tracking-tight font-medium leading-tight">
-            Account
-          </span>
-        </Link>
-      </nav>
-    </aside>
+        </div>
+        <span className={`text-[10px] mt-0.5 tracking-tight ${isAccountActive ? 'font-bold' : 'font-medium'}`}>
+          Account
+        </span>
+      </Link>
+    </nav>
   );
 };
