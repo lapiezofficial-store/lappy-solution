@@ -361,27 +361,60 @@ export default function CheckoutPage() {
 
   const handleValidateStep1 = (e: React.FormEvent) => {
     e.preventDefault();
-    // Direct frictionless checkout without login requirement
     if (!customerName.trim() || !phone.trim()) {
       showToast('Please enter your full name and phone number');
       return;
     }
-    if (deliveryType === 'delivery' && (!streetAddress.trim() || !pincode.trim())) {
-      showToast('Please enter your delivery street address and pincode');
-      return;
+    if (deliveryType === 'delivery') {
+      const hasLiveCoordinates = Boolean(customerLocation?.lat && customerLocation?.lng);
+      if (!hasLiveCoordinates) {
+        showToast('Live GPS location is mandatory for doorstep delivery. Please allow location access.');
+        handleUseLiveGps();
+        return;
+      }
+      if (!streetAddress.trim() || !pincode.trim()) {
+        showToast('Please enter your delivery street address and pincode');
+        return;
+      }
     }
     setStep(2);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleProceedToPayment = () => {
-    // Direct proceed to payment
+    if (deliveryType === 'delivery') {
+      const hasLiveCoordinates = Boolean(customerLocation?.lat && customerLocation?.lng);
+      if (!hasLiveCoordinates) {
+        showToast('Live GPS location is mandatory for doorstep delivery. Please allow location access.');
+        setStep(1);
+        handleUseLiveGps();
+        return;
+      }
+    }
     setStep(3);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleFinalOrderSubmit = async () => {
-    // Direct order placement without login restriction
+    const isPickup = deliveryType === 'pickup' || paymentMethod === 'store_pickup';
+    
+    // Strict mandatory GPS check for doorstep delivery
+    if (!isPickup) {
+      const hasLiveCoordinates = Boolean(customerLocation?.lat && customerLocation?.lng);
+      if (!hasLiveCoordinates) {
+        showToast('Live GPS location is mandatory for doorstep delivery. Please turn on GPS.');
+        setStep(1);
+        handleUseLiveGps();
+        return;
+      }
+    }
+
+    // Strict mandatory staff name check for showroom pickup orders
+    if (isPickup && !pickupHandedBy.trim()) {
+      showToast('Handovered By / Staff Name is MANDATORY! Please enter staff name.');
+      return;
+    }
+
     if (paymentMethod === 'upi_qr') {
       if (isTimerExpired) {
         showToast('UPI payment session timed out. Please tap "Regenerate QR & Restart Timer" to proceed.');
@@ -403,7 +436,6 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
 
     const showroomAddr = siteSettings?.address || `${STORE_INFO.address}, ${STORE_INFO.city}, ${STORE_INFO.state} - ${STORE_INFO.pincode}`;
-    const isPickup = deliveryType === 'pickup' || paymentMethod === 'store_pickup';
     const pickupStaffText = pickupHandedBy.trim() ? ` • Handed Over By: ${pickupHandedBy.trim()}` : '';
     const fullAddress = isPickup
       ? `Showroom Counter Pickup (${showroomAddr})${pickupStaffText}`
@@ -707,41 +739,79 @@ export default function CheckoutPage() {
                   {deliveryType === 'delivery' ? (
                     <div className="space-y-4 pt-2">
 
-                      {/* Live Location & Delivery Status Card (Clean, no slider) */}
-                      <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#1A56DB] flex items-center justify-center flex-shrink-0">
-                            <Truck className="w-5 h-5" />
+                      {/* Live GPS Location Gate (Strictly Mandatory for Doorstep Delivery) */}
+                      {Boolean(customerLocation?.lat && customerLocation?.lng) ? (
+                        <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                              <CheckCircle2 className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-slate-900 block">
+                                  Live Location Verified: {customerLocation?.area || 'Garhwa Area'}
+                                </span>
+                                <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                                  GPS Verified
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-slate-500">
+                                {customerLocation?.distanceKm ?? 0} km from Garhwa Showroom • Direct courier / rider handover
+                              </span>
+                            </div>
                           </div>
-                          <div>
-                            <span className="text-xs font-bold text-slate-900 block">
-                              Doorstep Delivery to Your Address
-                            </span>
-                            <span className="text-[11px] text-slate-500">
-                              Dispatched from Garhwa Showroom • Direct courier / rider handover
-                            </span>
+
+                          <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                            <button
+                              type="button"
+                              onClick={handleUseLiveGps}
+                              disabled={isDetectingGps}
+                              className="h-8 px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200 disabled:opacity-60"
+                              title="Update GPS coordinates"
+                            >
+                              <Navigation className={`w-3.5 h-3.5 ${isDetectingGps ? 'animate-spin' : ''}`} />
+                              <span>{isDetectingGps ? 'Updating...' : 'Update GPS'}</span>
+                            </button>
+                            <div className="text-right">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Delivery Charge</span>
+                              <span className={`text-xs font-black ${currentDeliveryFee === 0 ? 'text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 inline-block' : 'text-slate-900'}`}>
+                                {currentDeliveryFee === 0 ? 'FREE' : `₹${currentDeliveryFee}`}
+                              </span>
+                            </div>
                           </div>
                         </div>
+                      ) : (
+                        <div className="p-4 rounded-2xl bg-amber-50/90 border-2 border-amber-300 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0 animate-pulse">
+                              <Navigation className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-amber-950 block">
+                                  Live Location Access Required
+                                </span>
+                                <span className="text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white px-2 py-0.5 rounded-full">
+                                  MANDATORY
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-amber-800">
+                                Please turn on GPS location to verify delivery route &amp; calculate distance from showroom.
+                              </span>
+                            </div>
+                          </div>
 
-                        <div className="flex items-center gap-2.5 self-end sm:self-auto">
                           <button
                             type="button"
                             onClick={handleUseLiveGps}
                             disabled={isDetectingGps}
-                            className="h-8 px-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1A56DB] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-blue-200 disabled:opacity-60"
-                            title="Auto-detect current GPS location"
+                            className="h-9 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-95 transition-all self-stretch sm:self-auto flex-shrink-0 disabled:opacity-60"
                           >
                             <Navigation className={`w-3.5 h-3.5 ${isDetectingGps ? 'animate-spin' : ''}`} />
-                            <span>{isDetectingGps ? 'Detecting...' : 'Auto-Fill via GPS'}</span>
+                            <span>{isDetectingGps ? 'Detecting GPS...' : 'Turn On Live Location'}</span>
                           </button>
-                          <div className="text-right">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Delivery Charge</span>
-                            <span className={`text-xs font-black ${currentDeliveryFee === 0 ? 'text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 inline-block' : 'text-slate-900'}`}>
-                              {currentDeliveryFee === 0 ? 'FREE' : `₹${currentDeliveryFee}`}
-                            </span>
-                          </div>
                         </div>
-                      </div>
+                      )}
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-slate-700">Street Address / Mohalla / Village *</label>
                         <input
@@ -1464,24 +1534,30 @@ export default function CheckoutPage() {
                       </div>
                     )}
 
-                    {/* Handed Over By / Staff Name Input Field */}
+                    {/* Handed Over By / Staff Name Input Field (STRICTLY MANDATORY) */}
                     <div className="p-4 rounded-xl bg-white border border-purple-200 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <UserCheck className="w-4 h-4 text-purple-700 flex-shrink-0" />
-                        <label htmlFor="pickup-handed-by" className="text-xs font-extrabold text-slate-900">
-                          Handed Over By / Staff Name
-                        </label>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="w-4 h-4 text-purple-700 flex-shrink-0" />
+                          <label htmlFor="pickup-handed-by" className="text-xs font-black text-slate-900">
+                            Handed Over By / Staff Name <span className="text-rose-600">*</span>
+                          </label>
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white px-2 py-0.5 rounded-full">
+                          MANDATORY
+                        </span>
                       </div>
                       <input
                         id="pickup-handed-by"
                         type="text"
+                        required
                         value={pickupHandedBy}
                         onChange={(e) => setPickupHandedBy(e.target.value)}
-                        placeholder="e.g. Sonu Kumar (Staff) or Showroom Counter Representative"
+                        placeholder="e.g. Sonu Kumar (Staff) or Counter Manager"
                         className="w-full bg-[#F8FAFC] border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 focus:bg-white focus:border-purple-600 focus:outline-none"
                       />
                       <p className="text-[10.5px] text-slate-500">
-                        Staff / counter person who delivered the item and confirmed payment will be displayed on the order invoice &amp; admin record.
+                        Staff person who verified hardware and handed items to the customer. Strictly required to finalize counter order &amp; print official GST invoice.
                       </p>
                     </div>
 

@@ -1018,9 +1018,13 @@ export default function AdminPage() {
   };
 
   const handleHandoverPickupOrder = (orderId: string, currentStaffName?: string, currentApprover?: string) => {
-    const staff = typeof window !== 'undefined' ? window.prompt("Enter Seller / Staff Name who sold & handed over items:", currentStaffName || "Sonu Kumar") : "Sonu Kumar";
+    const staff = typeof window !== 'undefined' ? window.prompt("Enter Seller / Staff Name who sold & handed over items (MANDATORY):", currentStaffName || "") : "";
     if (staff === null) return;
-    const finalStaff = staff.trim() || "Sonu Kumar";
+    const finalStaff = staff.trim();
+    if (!finalStaff) {
+      alert("Staff Name / Handovered By is MANDATORY! Order cannot be handed over without entering a staff name.");
+      return;
+    }
 
     const approver = typeof window !== 'undefined' ? window.prompt("Enter Approver / Store Manager Name:", currentApprover && currentApprover !== 'Jay Prakash Chaubey' && currentApprover !== 'Jay Prakash' ? currentApprover : "Lapiez") : "Lapiez";
     if (approver === null) return;
@@ -9886,9 +9890,9 @@ export default function AdminPage() {
                               const timing = formatProductTiming(prod.createdAt);
                               const isRecent = timing.relative.includes('now') || timing.relative.includes('m ago') || timing.relative.includes('h ago') || timing.relative === 'Yesterday';
                               return (
-                                <div key={prod.id} className="py-2.5 flex items-center justify-between gap-2.5 hover:bg-slate-50/70 transition-colors rounded-xl px-2">
+                                <div key={prod.id} className="py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors rounded-xl px-2">
                                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                    <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-200 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                    <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-200 p-1 shrink-0 flex items-center justify-center overflow-hidden">
                                       <img
                                         src={prod.image || '/images/product-placeholder.svg'}
                                         alt={prod.name}
@@ -9898,30 +9902,30 @@ export default function AdminPage() {
                                     <div className="min-w-0 flex-1">
                                       <div
                                         onClick={() => setPreviewProduct(prod)}
-                                        className="font-bold text-gray-900 truncate max-w-[140px] sm:max-w-xs md:max-w-md hover:text-[#1A56DB] cursor-pointer text-xs"
+                                        className="font-bold text-gray-900 truncate hover:text-[#1A56DB] cursor-pointer text-xs"
                                         title={prod.name}
                                       >
                                         {prod.name}
                                       </div>
-                                      <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5 flex-wrap sm:flex-nowrap">
-                                        <span className="font-semibold text-[#1A56DB] truncate max-w-[80px] sm:max-w-none">{prod.category}</span>
+                                      <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5 whitespace-nowrap">
+                                        <span className="font-semibold text-[#1A56DB] truncate max-w-[90px]">{prod.category}</span>
                                         <span className="text-gray-300">•</span>
-                                        <span className="font-bold text-gray-900">₹{prod.price.toLocaleString('en-IN')}</span>
+                                        <span className="font-bold text-gray-900 shrink-0">₹{prod.price.toLocaleString('en-IN')}</span>
                                         <span className="hidden sm:inline text-gray-300">•</span>
-                                        <span className="hidden sm:inline font-mono text-gray-400 text-[10px]">SKU: {prod.sku || 'N/A'}</span>
+                                        <span className="hidden sm:inline font-mono text-gray-400 text-[10px] truncate max-w-[120px]">SKU: {prod.sku || 'N/A'}</span>
                                       </div>
                                     </div>
                                   </div>
 
-                                  <div className="text-right flex-shrink-0">
+                                  <div className="text-right shrink-0">
                                     {/* Mobile: Single clean pill */}
                                     <div className="sm:hidden">
-                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${
                                         isRecent
                                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                           : 'bg-slate-100 text-slate-600 border border-slate-200'
                                       }`}>
-                                        <Clock className="w-2.5 h-2.5" />
+                                        <Clock className="w-2.5 h-2.5 shrink-0" />
                                         <span>{isRecent ? timing.relative : timing.dateOnly}</span>
                                       </span>
                                     </div>

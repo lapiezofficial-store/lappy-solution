@@ -163,6 +163,17 @@ export interface CMSSection {
   isVisible: boolean;
 }
 
+export const DEFAULT_HOMEPAGE_SECTIONS: CMSSection[] = [
+  { id: 'sec-1', sectionKey: 'banners', title: 'Banner Slider', position: 1, isVisible: true },
+  { id: 'sec-2', sectionKey: 'categories', title: 'Categories', position: 2, isVisible: true },
+  { id: 'sec-3', sectionKey: 'brands', title: 'Brands Showcase', position: 3, isVisible: true },
+  { id: 'sec-4', sectionKey: 'trending', title: 'Trending Products', position: 4, isVisible: true },
+  { id: 'sec-5', sectionKey: 'bestsellers', title: 'Best Sellers', position: 5, isVisible: true },
+  { id: 'sec-6', sectionKey: 'premium', title: 'Premium Segment', position: 6, isVisible: true },
+  { id: 'sec-7', sectionKey: 'refurbished_laptops', title: 'Refurbished Laptops & Printers', position: 7, isVisible: true },
+  { id: 'sec-8', sectionKey: 'cctv_spotlight', title: 'CCTV & Security Surveillance', position: 8, isVisible: true },
+];
+
 export interface CMSCustomPage {
   id: string;
   slug: string;
@@ -619,7 +630,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     return INITIAL_BANNERS;
   });
-  const [homepageSections, setHomepageSections] = useState<CMSSection[]>([]);
+  const [homepageSections, setHomepageSections] = useState<CMSSection[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('ls_homepage_sections');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_HOMEPAGE_SECTIONS;
+  });
   const [customPages, setCustomPages] = useState<CMSCustomPage[]>([]);
   const [blogPosts, setBlogPosts] = useState<CMSBlogPost[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
@@ -667,24 +689,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (data?.settings) setDeliverySettings(data.settings);
       })
       .catch(() => {});
-  }, []);
-
-  // Auto-prompt on app open if customer location has not been confirmed yet
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const isSpecialRoute = window.location.pathname.startsWith('/admin') || 
-                           window.location.pathname.startsWith('/rider') || 
-                           window.location.pathname.startsWith('/staff') ||
-                           window.location.pathname.startsWith('/portal');
-    if (isSpecialRoute) return;
-
-    const hasConfirmed = localStorage.getItem('lapiez_loc_confirmed');
-    if (!hasConfirmed) {
-      const timer = setTimeout(() => {
-        setIsLocationModalOpen(true);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
   }, []);
 
   // Realtime Delivery Fee calculation based on customer distance & cart total

@@ -20,23 +20,10 @@ export const TopBannerSlider: React.FC = () => {
   const { banners: cmsBanners } = useStore();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
-  // Detect mobile viewport (SSR safe)
-  useEffect(() => {
-    setIsMounted(true);
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Filter active banners and target device
+  // Filter active banners - deterministic on both SSR and Client to prevent layout shift or flicker
   const slides: SlideItem[] = useMemo(() => {
     const rawList: (CMSBanner | typeof INITIAL_BANNERS[0])[] = 
       (cmsBanners && cmsBanners.length > 0) ? cmsBanners : INITIAL_BANNERS;
@@ -45,20 +32,7 @@ export const TopBannerSlider: React.FC = () => {
       .filter((b) => b.status !== 'inactive')
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
-    // Device filtering (only after client mount to prevent SSR hydration mismatch)
-    const deviceFiltered = isMounted
-      ? activeList.filter((b) => {
-          const { targetDevice } = decodeBannerConfig(b.bgGradient);
-          if (!targetDevice || targetDevice === 'all') return true;
-          if (isMobile && targetDevice === 'mobile') return true;
-          if (!isMobile && targetDevice === 'desktop') return true;
-          return false;
-        })
-      : activeList;
-
-    const finalBanners = deviceFiltered.length > 0 ? deviceFiltered : activeList;
-
-    return finalBanners.map((b, idx) => {
+    return activeList.map((b, idx) => {
       const { targetDevice } = decodeBannerConfig(b.bgGradient);
       const isCloudinaryDesktop = b.desktopImage && (b.desktopImage.startsWith('http://') || b.desktopImage.startsWith('https://'));
       const pcImage = b.desktopImage || b.mobileImage || '/images/banners/refurbished-laptops-printers.png';
@@ -66,19 +40,18 @@ export const TopBannerSlider: React.FC = () => {
       const phoneImage = (b.mobileImage && !b.mobileImage.startsWith('/images/banners/'))
         ? b.mobileImage
         : (isCloudinaryDesktop ? b.desktopImage : (b.mobileImage || pcImage));
-      const chosenImage = isMobile ? phoneImage : pcImage;
 
       return {
         id: b.id || `banner-${idx}`,
         title: b.title || 'Promotional Banner',
         ctaLink: b.buttonUrl || '/shop',
-        image: chosenImage,
+        image: pcImage,
         desktopImage: pcImage,
         mobileImage: phoneImage,
         targetDevice,
       };
     });
-  }, [cmsBanners, isMounted, isMobile]);
+  }, [cmsBanners]);
 
   const totalSlides = slides.length;
 
@@ -160,13 +133,16 @@ export const TopBannerSlider: React.FC = () => {
                   aria-label={slide.title}
                   className="block w-full h-full relative group cursor-pointer"
                 >
-                  <img
-                    src={slide.image}
-                    alt={slide.title}
-                    className="w-full h-full object-cover object-center"
-                    loading={index === 0 ? 'eager' : 'lazy'}
-                    decoding="async"
-                  />
+                  <picture className="w-full h-full block">
+                    <source media="(max-width: 767px)" srcSet={slide.mobileImage} />
+                    <img
+                      src={slide.desktopImage}
+                      alt={slide.title}
+                      className="w-full h-full object-cover object-center"
+                      loading={index === 0 ? 'eager' : 'lazy'}
+                      decoding="async"
+                    />
+                  </picture>
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none" />
                 </Link>
               </div>

@@ -150,15 +150,19 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    const effectiveStaff = staffName?.trim() || session.staffName || 'Showroom Staff';
+    const effectiveStaff = staffName?.trim() || session.staffName;
+    if (orderStatus === 'Delivered' && !effectiveStaff) {
+      return NextResponse.json({ error: 'Staff Name / Handovered By is mandatory to complete delivery' }, { status: 400 });
+    }
+    const finalStaff = effectiveStaff || 'Showroom Staff';
     let updatedAddress = existingOrder.address || '';
 
     // If order is delivered or handed over, stamp the staff name in order notes/address
     if (orderStatus === 'Delivered' || staffName) {
       if (updatedAddress.includes('Handed Over By:')) {
-        updatedAddress = updatedAddress.replace(/Handed Over By:\s*([^•\n]+)/i, `Handed Over By: ${effectiveStaff}`);
+        updatedAddress = updatedAddress.replace(/Handed Over By:\s*([^•\n]+)/i, `Handed Over By: ${finalStaff}`);
       } else {
-        updatedAddress = `${updatedAddress} • Handed Over By: ${effectiveStaff}`;
+        updatedAddress = `${updatedAddress} • Handed Over By: ${finalStaff}`;
       }
     }
 

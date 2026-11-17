@@ -238,12 +238,16 @@ export default function StaffPage() {
     }
   };
 
-  // Submit Handover to Customer
+  // Submit Handover to Customer (MANDATORY STAFF NAME)
   const handleConfirmHandover = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!handoverModalOrder) return;
 
-    const staff = handoverStaffName.trim() || currentStaffName;
+    const staff = handoverStaffName.trim() || currentStaffName.trim();
+    if (!staff) {
+      showToast('Staff Name / Handovered By is MANDATORY! Please enter staff name.');
+      return;
+    }
     setIsSubmittingHandover(true);
 
     try {
