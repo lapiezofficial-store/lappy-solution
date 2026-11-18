@@ -53,13 +53,20 @@ export default function StaffManager() {
     canHandleWarranty: true,
   });
 
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+
   const fetchStaff = async () => {
     try {
-      setLoading(true);
       const res = await adminFetch('/api/admin/staff', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        setStaffList(Array.isArray(data) ? data : []);
+        setStaffList(Array.isArray(data) ? data : (data?.staff || []));
+      } else {
+        const fallback = await fetch('/api/admin/staff');
+        if (fallback.ok) {
+          const fbData = await fallback.json();
+          setStaffList(Array.isArray(fbData) ? fbData : (fbData?.staff || []));
+        }
       }
     } catch (err) {
       console.error('Failed to fetch staff:', err);
@@ -70,6 +77,8 @@ export default function StaffManager() {
 
   useEffect(() => {
     fetchStaff();
+    const interval = setInterval(fetchStaff, 10000); // 10s auto refresh
+    return () => clearInterval(interval);
   }, []);
 
   const getStaffMetrics = (staff: StaffAccount) => {
@@ -278,9 +287,11 @@ export default function StaffManager() {
               Billing counter staff aur workers ke liye direct Staff ID aur PIN generate karein.
             </p>
           </div>
-          <span className="text-[10px] font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200 self-start">
-            Instant Counter Billing &amp; Staff App Login
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200">
+              Instant Counter Billing &amp; Staff App Login
+            </span>
+          </div>
         </div>
 
         <form onSubmit={handleCreateStaff} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
@@ -289,7 +300,7 @@ export default function StaffManager() {
             <input
               type="text"
               required
-              placeholder="e.g. Rahul Kumar"
+              placeholder="e.g. Rahul Kumar, Sonu"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="w-full h-9 px-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-blue-500 font-medium"
@@ -302,7 +313,7 @@ export default function StaffManager() {
             </label>
             <input
               type="text"
-              placeholder="e.g. STF-01 (or auto)"
+              placeholder="e.g. STF-01 or leave blank for auto"
               value={form.customStaffCode}
               onChange={(e) => setForm({ ...form, customStaffCode: e.target.value })}
               className="w-full h-9 px-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-blue-500 font-mono uppercase font-bold"
@@ -322,10 +333,12 @@ export default function StaffManager() {
           </div>
 
           <div>
-            <label className="font-bold text-gray-700 block mb-1">10-Digit Mobile Number</label>
+            <label className="font-bold text-gray-700 block mb-1">
+              Mobile Number <span className="text-gray-400 font-normal">(Optional)</span>
+            </label>
             <input
               type="tel"
-              placeholder="e.g. 9876543210 (Optional)"
+              placeholder="Mobile number (e.g. 9876543210)"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               className="w-full h-9 px-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-blue-500 font-mono"
@@ -374,10 +387,59 @@ export default function StaffManager() {
               className="w-full h-9 px-4 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
             >
               <Plus className="w-4 h-4" />
-              <span>{isSubmitting ? 'Creating...' : '+ Save Staff Account'}</span>
+              <span>{isSubmitting ? 'Saving...' : '+ Save Staff Account'}</span>
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Staff Statistics Overview Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Total Staff</span>
+          <span className="text-xl font-black text-slate-900 mt-1 block">{staffList.length}</span>
+          <span className="text-[10px] font-semibold text-blue-600 mt-0.5 block">Accounts created</span>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Active Accounts</span>
+          <span className="text-xl font-black text-emerald-600 mt-1 block">
+            {staffList.filter((s) => !s.isBlocked).length}
+          </span>
+          <span className="text-[10px] font-semibold text-emerald-600 mt-0.5 block">Ready for billing</span>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Counter Billing</span>
+          <span className="text-xl font-black text-blue-700 mt-1 block">
+            {staffList.filter((s) => s.role === 'COUNTER').length}
+          </span>
+          <span className="text-[10px] font-semibold text-slate-500 mt-0.5 block">Showroom desk</span>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Technicians</span>
+          <span className="text-xl font-black text-amber-600 mt-1 block">
+            {staffList.filter((s) => s.role === 'TECHNICIAN').length}
+          </span>
+          <span className="text-[10px] font-semibold text-slate-500 mt-0.5 block">Warranty repair</span>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Orders Billed</span>
+          <span className="text-xl font-black text-slate-900 mt-1 block">
+            {staffList.reduce((acc, s) => acc + getStaffMetrics(s).orderCount, 0)}
+          </span>
+          <span className="text-[10px] font-semibold text-slate-500 mt-0.5 block">Staff counter bills</span>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Total Billed ₹</span>
+          <span className="text-xl font-black text-emerald-700 mt-1 block truncate">
+            ₹{staffList.reduce((acc, s) => acc + getStaffMetrics(s).totalSales, 0).toLocaleString('en-IN')}
+          </span>
+          <span className="text-[10px] font-semibold text-emerald-600 mt-0.5 block">Total volume</span>
+        </div>
       </div>
 
       {/* Role Filters & Search */}
@@ -417,6 +479,26 @@ export default function StaffManager() {
               className="w-full h-9 pl-9 pr-3 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
             />
           </div>
+          <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-xl border border-gray-200">
+            <button
+              type="button"
+              onClick={() => setViewMode('cards')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'cards' ? 'bg-white text-blue-700 shadow-2xs' : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              Cards
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'table' ? 'bg-white text-blue-700 shadow-2xs' : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              Table
+            </button>
+          </div>
           <button
             type="button"
             onClick={fetchStaff}
@@ -438,6 +520,107 @@ export default function StaffManager() {
           <Users className="w-10 h-10 text-gray-300 mx-auto" />
           <p className="text-sm font-bold text-gray-700">No Staff accounts found</p>
           <p className="text-xs text-gray-500">Tap &quot;+ Create Staff ID&quot; to assign custom ID and passcode to each employee.</p>
+        </div>
+      ) : viewMode === 'table' ? (
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-gray-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th className="py-3 px-4">Staff ID</th>
+                  <th className="py-3 px-4">Name</th>
+                  <th className="py-3 px-4">Phone</th>
+                  <th className="py-3 px-4">Role</th>
+                  <th className="py-3 px-4">Orders</th>
+                  <th className="py-3 px-4">Volume (₹)</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.map((s) => {
+                  const metrics = getStaffMetrics(s);
+                  return (
+                    <tr key={s.id} className="hover:bg-blue-50/40 transition-colors">
+                      <td className="py-3 px-4 font-mono font-black text-blue-700">
+                        {s.staffCode}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-gray-900">
+                        {s.name}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-gray-600">
+                        {s.phone}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                          {s.role}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-bold text-slate-800">
+                        {metrics.orderCount}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-emerald-700">
+                        ₹{metrics.totalSales.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3 px-4">
+                        {s.isBlocked ? (
+                          <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">Blocked</span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Active</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => shareOnWhatsApp(s)}
+                            className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 cursor-pointer"
+                            title="Share on WhatsApp"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => copyCredentials(s)}
+                            className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 cursor-pointer"
+                            title="Copy Login Info"
+                          >
+                            {copiedId === s.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(s)}
+                            className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold cursor-pointer"
+                            title="Edit / Reset PIN"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleBlock(s)}
+                            className={`p-1.5 rounded-lg font-bold cursor-pointer ${
+                              s.isBlocked ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                            }`}
+                            title={s.isBlocked ? 'Unblock' : 'Block'}
+                          >
+                            {s.isBlocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(s)}
+                            className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 cursor-pointer"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

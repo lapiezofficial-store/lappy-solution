@@ -348,22 +348,22 @@ export default function StaffPage() {
   // LOGIN SCREEN FOR STAFF
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#070D1E] via-[#0A1432] to-[#060B18] flex items-center justify-center p-4 relative font-sans">
-        <div className="max-w-md w-full bg-[#0F1D3D] border border-blue-900/60 rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 text-white space-y-5">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 relative font-sans">
+        <div className="max-w-md w-full bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xl relative z-10 text-slate-900 space-y-6">
           <div className="text-center space-y-2">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-400/30 flex items-center justify-center mx-auto shadow-xl">
-              <Store className="w-8 h-8 text-emerald-400" />
+            <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto shadow-2xs">
+              <Store className="w-7 h-7 text-[#1A56DB]" />
             </div>
-            <h1 className="text-2xl font-black text-white tracking-tight">Lapiez Staff App</h1>
-            <p className="text-xs text-blue-200/75">Showroom Dispatch &amp; Warranty Terminal</p>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Lapiez Staff Portal</h1>
+            <p className="text-xs text-slate-500 font-medium">Showroom Counter Billing &amp; Dispatch Console</p>
           </div>
 
           {/* Login Mode Toggle */}
-          <div className="grid grid-cols-2 bg-[#070D1E] p-1 rounded-xl border border-blue-900/60 text-xs font-bold">
+          <div className="grid grid-cols-2 bg-slate-100 p-1 rounded-2xl border border-slate-200/80 text-xs font-bold">
             <button
               type="button"
               onClick={() => { setLoginMode('credentials'); setAuthError(''); }}
-              className={`py-2 rounded-lg transition-all cursor-pointer ${loginMode === 'credentials' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-blue-200/70 hover:text-white'
+              className={`py-2 rounded-xl transition-all cursor-pointer ${loginMode === 'credentials' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-500 hover:text-slate-900'
                 }`}
             >
               Staff ID &amp; Password
@@ -371,10 +371,10 @@ export default function StaffPage() {
             <button
               type="button"
               onClick={() => { setLoginMode('pin'); setAuthError(''); }}
-              className={`py-2 rounded-lg transition-all cursor-pointer ${loginMode === 'pin' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-blue-200/70 hover:text-white'
+              className={`py-2 rounded-xl transition-all cursor-pointer ${loginMode === 'pin' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-500 hover:text-slate-900'
                 }`}
             >
-              Counter PIN
+              Quick Counter PIN
             </button>
           </div>
 
@@ -382,36 +382,36 @@ export default function StaffPage() {
             {loginMode === 'credentials' ? (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-blue-200 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Staff ID ya Mobile Number
                   </label>
                   <div className="relative">
-                    <User className="w-4 h-4 text-blue-300/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       required
                       placeholder="e.g. LAP-STF-001 ya 9876543210"
                       value={staffIdentifier}
                       onChange={(e) => setStaffIdentifier(e.target.value)}
-                      className="w-full bg-[#070D1E] border border-blue-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-blue-300/40 focus:outline-none focus:border-emerald-400"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-blue-100"
                       autoFocus
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-blue-200 mb-1.5">
-                    Password
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Password / PIN
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-blue-300/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="password"
                       required
                       placeholder="Apna password dalein"
                       value={staffPassword}
                       onChange={(e) => setStaffPassword(e.target.value)}
-                      className="w-full bg-[#070D1E] border border-blue-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-blue-300/40 focus:outline-none focus:border-emerald-400"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
                 </div>
@@ -419,7 +419,7 @@ export default function StaffPage() {
             ) : (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-blue-200 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Staff Name
                   </label>
                   <input
@@ -427,28 +427,28 @@ export default function StaffPage() {
                     placeholder="e.g. Counter 1 / Jay Prakash"
                     value={staffNameInput}
                     onChange={(e) => setStaffNameInput(e.target.value)}
-                    className="w-full bg-[#070D1E] border border-blue-800 rounded-xl px-4 py-3 text-sm text-white placeholder-blue-300/40 focus:outline-none focus:border-emerald-400"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-blue-200 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Counter PIN / Admin Key
                   </label>
                   <input
                     type="password"
                     required
-                    placeholder="Enter PIN"
+                    placeholder="Enter PIN (e.g. 1234)"
                     value={staffPin}
                     onChange={(e) => setStaffPin(e.target.value)}
-                    className="w-full bg-[#070D1E] border border-blue-800 rounded-xl px-4 py-3 text-center text-lg font-mono tracking-widest text-white placeholder-blue-300/40 focus:outline-none focus:border-emerald-400"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center text-lg font-mono tracking-widest text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
               </>
             )}
 
             {authError && (
-              <div className="p-3 bg-rose-950/70 border border-rose-700/60 rounded-xl text-rose-300 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
                 <span>{authError}</span>
               </div>
             )}
@@ -456,7 +456,7 @@ export default function StaffPage() {
             <button
               type="submit"
               disabled={isAuthenticating}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-extrabold text-sm shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-[#1A56DB] hover:bg-[#1545B0] text-white font-extrabold text-sm shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.99]"
             >
               {isAuthenticating ? (
                 <>
@@ -466,7 +466,7 @@ export default function StaffPage() {
               ) : (
                 <>
                   <Key className="w-4 h-4" />
-                  <span>Login to Staff App</span>
+                  <span>Login to Staff Console</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -474,19 +474,19 @@ export default function StaffPage() {
           </form>
 
           {/* Direct APK & Return links */}
-          <div className="pt-4 border-t border-white/10 space-y-2.5 text-center">
+          <div className="pt-4 border-t border-slate-100 space-y-2.5 text-center">
             <a
               href="/downloads/lapiez-staff.apk"
               download="Lapiez-Staff-App.apk"
-              className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-bold text-emerald-300 flex items-center justify-center gap-2 transition-colors"
+              className="w-full py-2.5 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center justify-center gap-2 transition-colors"
             >
-              <Smartphone className="w-4 h-4" />
+              <Smartphone className="w-4 h-4 text-emerald-600" />
               <span>Download Android Staff App (.APK)</span>
             </a>
 
             <div className="flex items-center justify-between text-xs pt-1">
-              <Link href="/" className="text-slate-400 hover:text-white">← Storefront</Link>
-              <Link href="/admin" className="text-blue-400 hover:text-blue-300 font-semibold">Admin Panel →</Link>
+              <Link href="/" className="text-slate-500 hover:text-slate-900 font-semibold">← Storefront</Link>
+              <Link href="/admin" className="text-blue-600 hover:text-blue-800 font-bold">Admin Console →</Link>
             </div>
           </div>
         </div>
@@ -499,31 +499,31 @@ export default function StaffPage() {
     <div className="min-h-screen bg-[#F1F5F9] text-slate-900 font-sans pb-24 sm:pb-12">
 
       {/* Top Executive App Header */}
-      <header className="bg-[#0A1328] text-white border-b border-blue-900/60 sticky top-0 z-30 shadow-md">
+      <header className="bg-white text-slate-900 border-b border-slate-200/90 sticky top-0 z-30 shadow-2xs">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center flex-shrink-0 shadow-xs">
-              <Store className="w-5 h-5 text-emerald-400" />
+            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+              <Store className="w-5 h-5 text-[#1A56DB]" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-black text-sm sm:text-base tracking-tight truncate">LAPIEZ STAFF</span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                <span className="font-black text-sm sm:text-base tracking-tight truncate text-slate-900">LAPIEZ STAFF</span>
+                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-extrabold font-mono">
                   {currentStaffCode}
                 </span>
               </div>
-              <p className="text-[11px] text-blue-200/75 truncate">
+              <p className="text-[11px] text-slate-500 font-medium truncate">
                 {currentStaffName} • {currentStaffRole}
               </p>
             </div>
           </div>
 
           {/* Desktop Mode Switcher */}
-          <div className="hidden md:flex items-center gap-1.5 bg-white/10 p-1 rounded-xl border border-white/10">
+          <div className="hidden md:flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
             <button
               type="button"
               onClick={() => setActiveSection('orders')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${activeSection === 'orders' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-blue-100 hover:text-white'
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${activeSection === 'orders' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
             >
               <Package className="w-3.5 h-3.5" />
@@ -533,7 +533,7 @@ export default function StaffPage() {
               <button
                 type="button"
                 onClick={() => setActiveSection('warranty')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${activeSection === 'warranty' ? 'bg-emerald-600 text-white shadow-xs' : 'text-blue-100 hover:text-white'
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${activeSection === 'warranty' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
@@ -546,10 +546,10 @@ export default function StaffPage() {
             <a
               href="/downloads/lapiez-staff.apk"
               download="Lapiez-Staff-App.apk"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-300 text-xs font-bold border border-white/10 transition-colors"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-colors"
               title="Download Staff Android APK"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 text-emerald-600" />
               <span>APK</span>
             </a>
 
@@ -558,17 +558,17 @@ export default function StaffPage() {
                 type="button"
                 onClick={() => fetchStaffOrders(true)}
                 disabled={isRefreshing}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
                 title="Refresh Orders"
               >
-                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-emerald-400' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
               </button>
             )}
 
             <button
               type="button"
               onClick={handleLogout}
-              className="px-3 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-bold border border-rose-800/40 flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Logout</span>
@@ -615,8 +615,8 @@ export default function StaffPage() {
             <div
               onClick={() => setActiveTab('aaya')}
               className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${activeTab === 'aaya'
-                  ? 'bg-[#1A56DB] text-white border-[#1A56DB] shadow-md'
-                  : 'bg-white text-slate-800 border-slate-200 hover:border-blue-300'
+                ? 'bg-[#1A56DB] text-white border-[#1A56DB] shadow-md'
+                : 'bg-white text-slate-800 border-slate-200 hover:border-blue-300'
                 }`}
             >
               <div className="flex items-center justify-between">
@@ -636,8 +636,8 @@ export default function StaffPage() {
             <div
               onClick={() => setActiveTab('gya')}
               className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${activeTab === 'gya'
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
-                  : 'bg-white text-slate-800 border-slate-200 hover:border-emerald-300'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                : 'bg-white text-slate-800 border-slate-200 hover:border-emerald-300'
                 }`}
             >
               <div className="flex items-center justify-between">
@@ -657,8 +657,8 @@ export default function StaffPage() {
             <div
               onClick={() => { setActiveTab('all'); setFilterType('all'); }}
               className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${activeTab === 'all' && filterType === 'all'
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-                  : 'bg-white text-slate-800 border-slate-200 hover:border-slate-400'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+                : 'bg-white text-slate-800 border-slate-200 hover:border-slate-400'
                 }`}
             >
               <div className="flex items-center justify-between">
@@ -674,8 +674,8 @@ export default function StaffPage() {
             <div
               onClick={() => { setActiveTab('all'); setFilterType('pickup'); }}
               className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs ${filterType === 'pickup'
-                  ? 'bg-purple-700 text-white border-purple-700 shadow-md'
-                  : 'bg-white text-slate-800 border-slate-200 hover:border-purple-300'
+                ? 'bg-purple-700 text-white border-purple-700 shadow-md'
+                : 'bg-white text-slate-800 border-slate-200 hover:border-purple-300'
                 }`}
             >
               <div className="flex items-center justify-between">
@@ -791,12 +791,12 @@ export default function StaffPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-sm font-black text-blue-700">#{order.orderId}</span>
                           <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase ${isDelivered
-                              ? 'bg-slate-200 text-slate-700'
-                              : isOutForDelivery
-                                ? 'bg-purple-100 text-purple-800'
-                                : isPacked
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : 'bg-blue-100 text-blue-800'
+                            ? 'bg-slate-200 text-slate-700'
+                            : isOutForDelivery
+                              ? 'bg-purple-100 text-purple-800'
+                              : isPacked
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-blue-100 text-blue-800'
                             }`}>
                             {order.orderStatus}
                           </span>
