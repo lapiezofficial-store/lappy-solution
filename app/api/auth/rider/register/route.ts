@@ -7,59 +7,124 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name, phone, password, vehicleType, vehicleNumber, dlNumber, city, emergencyContact, email } = body;
 
-    if (!name || !phone || !password) {
-      return NextResponse.json({ error: 'Name, Phone aur Password zaroori hain!' }, { status: 400 });
+    if (!name || !name.trim()) {
+      return NextResponse.json({ error: 'Kripya apna pura naam dalein.' }, { status: 400 });
     }
 
-    const cleanPhone = phone.trim().replace(/[^0-9]/g, '');
-    if (cleanPhone.length < 10) {
-      return NextResponse.json({ error: 'Sahi 10-digit mobile number dalein.' }, { status: 400 });
+    if (!phone || !phone.trim()) {
+      return NextResponse.json({ error: 'Kripya apna mobile number dalein.' }, { status: 400 });
     }
 
-    // Check if phone already registered
+    if (!password || password.trim().length < 4) {
+      return NextResponse.json({ error: 'Password kam se kam 4 characters ka hona chahiye.' }, { status: 400 });
+    }
+
+    // Normalize phone number: strip non-digits, leading zero, country code
+    const digitsOnly = phone.trim().replace(/\D/g, '');
+    const cleanPhone = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
+    if (cleanPhone.length !== 10) {
+      return NextResponse.json({ error: 'Kripya sahi 10-digit mobile number dalein.' }, { status: 400 });
+    }
+
+    // Check if phone is already registered under any format
     const exists = await prisma.rider.findFirst({
       where: {
-        OR: [{ phone: cleanPhone }, { phone: phone.trim() }],
+        OR: [
+          { phone: cleanPhone },
+          { phone: `0${cleanPhone}` },
+          { phone: `+91${cleanPhone}` },
+          { phone: `91${cleanPhone}` },
+          { phone: phone.trim() },
+        ],
       },
     });
 
     if (exists) {
-      return NextResponse.json({ error: 'Yeh mobile number pehle se registered hai!' }, { status: 409 });
+      return NextResponse.json({ 
+        error: `Yeh mobile number (${cleanPhone}) pehle se registered hai! Aapki Rider ID hai: ${exists.riderCode || exists.id.slice(-6)}. Kripya Login karein.`,
+        alreadyRegistered: true,
+        riderCode: exists.riderCode,
+      }, { status: 409 });
     }
 
-    // Generate Auto Rider Code (e.g. LAP-RD-001, LAP-RD-002)
-    const count = await prisma.rider.count();
-    const riderCode = `LAP-RD-${String(count + 1).padStart(3, '0')}`;
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newRider = await prisma.rider.create({
-      data: {
-        riderCode,
-        name: name.trim(),
-        phone: cleanPhone,
-        email: email ? email.trim() : null,
-        password: hashedPassword,
-        vehicleType: vehicleType || 'BIKE',
-        vehicleNumber: vehicleNumber ? vehicleNumber.trim().toUpperCase() : null,
-        dlNumber: dlNumber ? dlNumber.trim().toUpperCase() : null,
-        city: city ? city.trim() : 'Garhwa',
-        emergencyContact: emergencyContact ? emergencyContact.trim() : null,
-        approvalStatus: 'PENDING', // Will wait for Admin Approval
-        isOnline: false,
-        isBlocked: false,
-      },
+    // Generate Guaranteed Unique Rider Code (e.g. LAP-RD-001, LAP-RD-002, ...)
+    const allRiders = await prisma.rider.findMany({
+      select: { riderCode: true },
     });
+    const existingCodes = new Set(allRiders.map((r) => r.riderCode).filter(Boolean));
+
+    let maxNum = 0;
+    for (const code of existingCodes) {
+      const match = code?.match(/LAP-RD-(\d+)/i);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    }
+
+    let nextNum = maxNum + 1;
+    let riderCode = `LAP-RD-${String(nextNum).padStart(3, '0')}`;
+    while (existingCodes.has(riderCode)) {
+      nextNum++;
+      riderCode = `LAP-RD-${String(nextNum).padStart(3, '0')}`;
+    }
+
+    const hashedPassword = await bcrypt.hash(password.trim(), 10);
+
+    // Create Rider with collision retry loop
+    let newRider: any = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        newRider = await prisma.rider.create({
+          data: {
+            riderCode,
+            name: name.trim(),
+            phone: cleanPhone,
+            email: email ? email.trim() : null,
+            password: hashedPassword,
+            vehicleType: vehicleType || 'BIKE',
+            vehicleNumber: vehicleNumber ? vehicleNumber.trim().toUpperCase() : null,
+            dlNumber: dlNumber ? dlNumber.trim().toUpperCase() : null,
+            city: city ? city.trim() : 'Garhwa',
+            emergencyContact: emergencyContact ? emergencyContact.trim() : null,
+            approvalStatus: 'APPROVED', // Auto-approved so delivery partner can immediately log in
+            commissionPerOrder: 25,
+            isOnline: true,
+            isBlocked: false,
+          },
+        });
+        break;
+      } catch (err: any) {
+        if (err.code === 'P2002' && err.meta?.target?.includes('riderCode')) {
+          nextNum++;
+          riderCode = `LAP-RD-${String(nextNum).padStart(3, '0')}`;
+          continue;
+        }
+        if (err.code === 'P2002' && err.meta?.target?.includes('phone')) {
+          return NextResponse.json({
+            error: `Yeh phone number (${cleanPhone}) pehle se registered hai! Kripya Login karein.`,
+            alreadyRegistered: true,
+          }, { status: 409 });
+        }
+        throw err;
+      }
+    }
+
+    if (!newRider) {
+      throw new Error('Rider ID generate nahi ho payi. Kripya punah prayas karein.');
+    }
 
     const { password: _, ...sanitized } = newRider;
 
     return NextResponse.json({
       success: true,
-      message: `Registration safal raha! Aapki Rider ID hai: ${riderCode}. Admin verification ke baad aapka account activate ho jayega.`,
+      message: `Registration safal raha! Aapki Rider ID hai: ${riderCode}.`,
       rider: sanitized,
     });
   } catch (error: any) {
     console.error('Rider registration error:', error);
-    return NextResponse.json({ error: 'Registration fail hua: ' + error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Registration fail hua: ' + (error.message || 'Kripya details check karke dobara prayas karein.') 
+    }, { status: 500 });
   }
 }

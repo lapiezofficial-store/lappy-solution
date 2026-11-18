@@ -14,12 +14,20 @@ export async function POST(req: Request) {
     }
 
     const input = (phone || '').trim();
-    const cleanPhone = input.replace(/[^0-9]/g, '');
+    const digitsOnly = input.replace(/\D/g, '');
+    const clean10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
+
     const rider = await prisma.rider.findFirst({
       where: {
         OR: [
           { riderCode: input.toUpperCase() },
-          ...(cleanPhone ? [{ phone: cleanPhone }] : []),
+          ...(clean10 ? [
+            { phone: clean10 },
+            { phone: `0${clean10}` },
+            { phone: `+91${clean10}` },
+            { phone: `91${clean10}` },
+          ] : []),
+          ...(digitsOnly ? [{ phone: digitsOnly }] : []),
           { phone: input },
         ],
       },
