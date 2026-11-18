@@ -336,10 +336,10 @@ export default function StaffPage() {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-[#070D1E] flex items-center justify-center text-white">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-slate-800">
         <div className="text-center space-y-3">
-          <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-400" />
-          <p className="text-sm font-semibold text-blue-200">Loading Lapiez Staff App...</p>
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#1A56DB]" />
+          <p className="text-sm font-semibold text-slate-500">Loading Lapiez Staff Portal...</p>
         </div>
       </div>
     );

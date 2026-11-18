@@ -268,6 +268,9 @@ model Rider {
   documents          RiderDocument[]
   payouts            RiderPayout[]
   orders             Order[]
+  activities         RiderActivity[]
+  callLogs           RiderCallLog[]
+  chatMessages       OrderChatMessage[]
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
@@ -385,5 +388,58 @@ model StaffUser {
 
   @@index([phone])
   @@index([isBlocked])
+}
+
+model RiderActivity {
+  id           String   @id @default(cuid())
+  riderId      String
+  rider        Rider    @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  orderId      String?
+  activityType String   // ONLINE | OFFLINE | LOCATION_PING | ORDER_ACCEPTED | CALL_CUSTOMER | CHAT_MESSAGE | ARRIVED_STORE | ARRIVED_CUSTOMER | ORDER_DELIVERED
+  title        String
+  description  String
+  lat          Float?
+  lng          Float?
+  locationText String?
+  metadata     String?  // JSON string
+  createdAt    DateTime @default(now())
+
+  @@index([riderId])
+  @@index([orderId])
+  @@index([activityType])
+  @@index([createdAt])
+}
+
+model RiderCallLog {
+  id            String   @id @default(cuid())
+  riderId       String
+  rider         Rider    @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  orderId       String?
+  customerName  String?
+  customerPhone String
+  callStatus    String   @default("INITIATED") // INITIATED | CONNECTED | NOT_REACHABLE | WRONG_NUMBER
+  outcomeNote   String?
+  durationSec   Int?     @default(0)
+  createdAt     DateTime @default(now())
+
+  @@index([riderId])
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+model OrderChatMessage {
+  id         String   @id @default(cuid())
+  orderId    String
+  riderId    String?
+  rider      Rider?   @relation(fields: [riderId], references: [id], onDelete: SetNull)
+  senderType String   // RIDER | CUSTOMER | ADMIN
+  senderName String
+  message    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([orderId])
+  @@index([riderId])
+  @@index([createdAt])
 }
 

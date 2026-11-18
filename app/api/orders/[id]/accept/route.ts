@@ -53,6 +53,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return { order: updatedOrder, riderName: rider.name };
     });
 
+    // Record in RiderActivity timeline
+    await prisma.riderActivity.create({
+      data: {
+        riderId,
+        orderId: result.order.orderId,
+        activityType: 'ORDER_ACCEPTED',
+        title: `Accepted Order #${result.order.orderId}`,
+        description: `Order #${result.order.orderId} (${result.order.customerName}) accept kiya. Status: Out For Delivery.`,
+        metadata: JSON.stringify({
+          orderId: result.order.orderId,
+          customerName: result.order.customerName,
+          customerPhone: result.order.phone,
+          address: result.order.address,
+          totalAmount: result.order.totalAmount,
+        }),
+      },
+    }).catch(() => {});
+
     // 1. Notify Admin Panel
     await triggerPusherEvent('admin-channel', 'order-accepted', {
       orderId: result.order.orderId,

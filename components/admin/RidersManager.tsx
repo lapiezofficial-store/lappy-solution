@@ -7,9 +7,12 @@ import {
   Check, MapPin, Truck, Edit2,
   Trash2, Ban, UserCheck, UserX,
   Navigation, AlertTriangle, Radar,
-  Compass, Copy, Download, ExternalLink
+  Compass, Copy, Download, ExternalLink,
+  History, MessageSquare
 } from 'lucide-react';
 import { WhatsAppIcon } from '../WhatsAppIcon';
+import RiderActivityModal from './RiderActivityModal';
+import OrderChatModal from '../OrderChatModal';
 
 interface Rider {
   id: string;
@@ -80,6 +83,8 @@ export default function RidersManager() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
+  const [activeRiderForActivity, setActiveRiderForActivity] = useState<Rider | null>(null);
+  const [chatOrderId, setChatOrderId] = useState<string | null>(null);
 
   // Forms
   const [addForm, setAddForm] = useState({
@@ -666,31 +671,31 @@ export default function RidersManager() {
         </div>
       </div>
 
-      {/* SPECIAL VIEW: LIVE GPS RADAR & TRACKING VIEW */}
+      {/* SPECIAL VIEW: LIVE GPS RADAR & TRACKING VIEW (CLEAN WHITE THEME) */}
       {filterTab === 'tracking' && (
-        <div className="bg-gradient-to-br from-gray-900 to-black text-white rounded-3xl p-6 shadow-xl border border-gray-800 space-y-4 animate-in fade-in">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-gray-800 pb-4">
+        <div className="bg-white text-slate-900 rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5 animate-in fade-in">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
-                <Radar className="w-6 h-6 text-emerald-400" />
+              <div className="p-3 bg-blue-50 text-[#1A56DB] rounded-2xl border border-blue-200">
+                <Radar className="w-6 h-6 text-[#1A56DB]" />
               </div>
               <div>
-                <h3 className="text-base font-black text-white flex items-center gap-2">
+                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                   <span>Live Delivery Fleet Radar</span>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-full font-bold border border-emerald-500/30">
+                  <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold border border-emerald-200">
                     REALTIME GPS
                   </span>
                 </h3>
-                <p className="text-xs text-gray-400">Track kon rider kahan hai, kab active hua, aur unki live location</p>
+                <p className="text-xs text-slate-500 font-medium">Realtime GPS locations, active duty status, and live route navigation</p>
               </div>
             </div>
 
-            <span className="text-xs text-gray-400 bg-gray-800/80 px-3 py-1.5 rounded-xl border border-gray-700/80 font-mono">
+            <span className="text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 font-mono font-bold">
               Auto-sync: 30s
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
             {riders.map((rider) => {
               const mapsUrl = rider.currentLat && rider.currentLng 
                 ? `https://www.google.com/maps?q=${rider.currentLat},${rider.currentLng}`
@@ -701,73 +706,78 @@ export default function RidersManager() {
                   key={rider.id}
                   className={`rounded-2xl p-4 border transition-all ${
                     rider.isOnline
-                      ? 'bg-gray-800/80 border-emerald-500/40 shadow-lg'
-                      : 'bg-gray-800/40 border-gray-700/60 opacity-80'
+                      ? 'bg-slate-50 border-emerald-300 shadow-xs'
+                      : 'bg-white border-slate-200 opacity-80'
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[11px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                           {rider.riderCode}
                         </span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          rider.isOnline ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-gray-700 text-gray-400'
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                          rider.isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'
                         }`}>
-                          {rider.isOnline ? '● LIVE ON-ROAD' : '○ OFFLINE'}
+                          <span className={`w-1.5 h-1.5 rounded-full ${rider.isOnline ? 'bg-emerald-600 animate-pulse' : 'bg-slate-400'}`} />
+                          <span>{rider.isOnline ? 'DUTY ON' : 'DUTY OFF'}</span>
                         </span>
                       </div>
-                      <h4 className="font-black text-white text-base mt-1.5">{rider.name}</h4>
-                      <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3 text-gray-500" />{rider.phone}</p>
+                      <h4 className="font-extrabold text-slate-900 text-base mt-1.5">{rider.name}</h4>
+                      <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5 font-medium"><Phone className="w-3 h-3 text-slate-400" />{rider.phone}</p>
                     </div>
 
                     <div className="text-right">
-                      <span className="text-xs font-bold text-amber-300 block">
+                      <span className="text-xs font-bold text-slate-700 block">
                         {rider.vehicleType}
                       </span>
-                      <span className="text-[10px] font-mono text-gray-400">
+                      <span className="text-[10px] font-mono text-slate-400">
                         {rider.vehicleNumber || 'No plate'}
                       </span>
                     </div>
                   </div>
 
                   {/* Location Strip */}
-                  <div className="mt-3 bg-gray-900/80 p-3 rounded-xl border border-gray-700/60 space-y-1.5 text-xs">
-                    <div className="flex items-start gap-2 text-gray-200">
-                      <MapPin className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-semibold text-white block">
+                  <div className="mt-3 bg-white p-3 rounded-xl border border-slate-200 space-y-1 text-xs">
+                    <div className="flex items-start gap-2 text-slate-700">
+                      <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <span className="font-bold text-slate-900 block truncate">
                           {rider.lastLocationText || rider.city || 'Garhwa Area'}
                         </span>
                         {rider.currentLat && rider.currentLng && (
-                          <span className="text-[10px] font-mono text-gray-500 block">
+                          <span className="text-[10px] font-mono text-slate-400 block">
                             GPS: {rider.currentLat.toFixed(4)}, {rider.currentLng.toFixed(4)}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-gray-400 pt-1 border-t border-gray-800">
-                      <span>Kab Active Hua:</span>
-                      <strong className="text-emerald-400 font-mono">{formatTimeAgo(rider.lastActiveAt)}</strong>
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                      <span>Last Ping:</span>
+                      <strong className="text-emerald-700 font-mono font-bold">{formatTimeAgo(rider.lastActiveAt)}</strong>
                     </div>
                   </div>
 
                   {/* Active Delivery Status */}
                   {rider.orders && rider.orders.length > 0 ? (
-                    <div className="mt-2 bg-amber-500/20 border border-amber-500/30 rounded-xl p-2 text-xs flex items-center justify-between text-amber-200">
+                    <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-2 text-xs flex items-center justify-between text-amber-900 font-medium">
                       <span className="flex items-center gap-1.5 font-bold truncate max-w-[190px]">
-                        <Truck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <Truck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                         <span>Delivering #{rider.orders[0].orderId}</span>
                       </span>
-                      <span className="text-[10px] bg-amber-400 text-black font-extrabold px-1.5 py-0.2 rounded shrink-0">
-                        ₹{rider.orders[0].totalAmount || ''}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setChatOrderId(rider.orders![0].orderId)}
+                        className="text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-0.5 rounded transition-colors cursor-pointer"
+                      >
+                        Chat
+                      </button>
                     </div>
                   ) : rider.isOnline ? (
-                    <div className="mt-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-1.5 text-[11px] text-emerald-300 flex items-center gap-1.5 font-semibold">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Ready for Delivery (No Active Orders)</span>
+                    <div className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-1.5 text-[11px] text-emerald-700 flex items-center gap-1.5 font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+                      <span>Ready for Dispatch</span>
                     </div>
                   ) : null}
 
@@ -777,17 +787,27 @@ export default function RidersManager() {
                       href={mapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                      className="flex-1 bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all"
                     >
                       <Navigation className="w-3.5 h-3.5" />
-                      <span>Live Google Maps</span>
+                      <span>Live Maps</span>
                     </a>
 
+                    <button
+                      type="button"
+                      onClick={() => setActiveRiderForActivity(rider)}
+                      className="px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-slate-200"
+                      title="View Activity History"
+                    >
+                      <History className="w-3.5 h-3.5 text-[#1A56DB]" />
+                      <span>Timeline</span>
+                    </button>
+
                     <a
-                      href={`https://wa.me/91${rider.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${rider.name}, Lapiez Admin here regarding order delivery dispatch.`)}`}
+                      href={`https://wa.me/91${rider.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${rider.name}, Lapiez Admin regarding delivery dispatch.`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 bg-emerald-600/20 hover:bg-emerald-600/40 rounded-xl flex items-center justify-center"
+                      className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl flex items-center justify-center transition-colors"
                       title="Chat on WhatsApp"
                     >
                       <WhatsAppIcon className="w-4 h-4" />
@@ -795,10 +815,10 @@ export default function RidersManager() {
 
                     <a
                       href={`tel:${rider.phone}`}
-                      className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl text-xs font-bold"
+                      className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold flex items-center justify-center transition-colors"
                       title="Direct Call Rider"
                     >
-                      <Phone className="w-3.5 h-3.5" />
+                      <Phone className="w-3.5 h-3.5 text-[#1A56DB]" />
                     </a>
                   </div>
                 </div>
@@ -1127,6 +1147,26 @@ export default function RidersManager() {
                         <DollarSign className="w-3.5 h-3.5 shrink-0" />
                         <span>Payout</span>
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveRiderForActivity(rider)}
+                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shrink-0 transition-colors"
+                        title="View Live Activity Timeline & Calls"
+                      >
+                        <History className="w-3.5 h-3.5 text-[#1A56DB]" />
+                      </button>
+
+                      {rider.orders && rider.orders.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setChatOrderId(rider.orders![0].orderId)}
+                          className="p-2 bg-blue-50 hover:bg-blue-100 text-[#1A56DB] rounded-xl text-xs font-bold shrink-0 transition-colors"
+                          title="Open Order Chat"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </button>
+                      )}
 
                       <button
                         type="button"
@@ -1563,6 +1603,26 @@ export default function RidersManager() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Rider Activity Timeline Modal */}
+      {activeRiderForActivity && (
+        <RiderActivityModal
+          rider={activeRiderForActivity}
+          isOpen={!!activeRiderForActivity}
+          onClose={() => setActiveRiderForActivity(null)}
+        />
+      )}
+
+      {/* Order Chat Modal for Admin */}
+      {chatOrderId && (
+        <OrderChatModal
+          orderId={chatOrderId}
+          isOpen={!!chatOrderId}
+          onClose={() => setChatOrderId(null)}
+          currentUserType="ADMIN"
+          currentUserName="Store Admin"
+        />
       )}
     </div>
   );

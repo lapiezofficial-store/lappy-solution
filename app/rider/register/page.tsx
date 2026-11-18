@@ -91,7 +91,7 @@ export default function RiderRegisterPage() {
   };
 
   const shareOnWhatsApp = (riderCode: string, name: string) => {
-    const text = `🎉 *Lapiez Delivery Partner Account Created!*\n\n👤 *Name:* ${name}\n🆔 *Rider ID:* ${riderCode}\n🛵 *Vehicle:* ${form.vehicleType} (${form.vehicleNumber || 'Registered'})\n📍 *City:* ${form.city || 'Garhwa'}\n\n📲 *Login Link:* https://www.lapiez.com/rider/login\n📦 *Garhwa Showroom Dispatch System*`;
+    const text = `Lapiez Delivery Partner Account Created\n\nName: ${name}\nRider ID: ${riderCode}\nVehicle: ${form.vehicleType} (${form.vehicleNumber || 'Registered'})\nCity: ${form.city || 'Garhwa'}\n\nLogin Link: https://www.lapiez.com/rider/login\nGarhwa Showroom Dispatch System`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -123,10 +123,10 @@ export default function RiderRegisterPage() {
             </div>
 
             <div className="space-y-1">
-              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                <Sparkles className="w-3 h-3" /> Registration Successful
+              <span className="inline-flex items-center text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                Registration Successful
               </span>
-              <h2 className="text-2xl font-black text-slate-900">Rider Account Created!</h2>
+              <h2 className="text-2xl font-black text-slate-900">Rider Account Created</h2>
               <p className="text-xs text-slate-500 font-medium">
                 Welcome to Lapiez Delivery Fleet, <strong>{registeredRider.name}</strong>
               </p>
@@ -214,21 +214,8 @@ export default function RiderRegisterPage() {
               </div>
               <h1 className="text-2xl font-black text-slate-900 tracking-tight">Create Rider Account</h1>
               <p className="text-xs text-slate-500 font-medium">
-                Lapiez Delivery Partner Bano • Har delivery ₹25+ cash
+                Delivery Partner Registration
               </p>
-
-              {/* Perks Pills */}
-              <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-                <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  ✓ Instant Approval
-                </span>
-                <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-                  ✓ Garhwa Local
-                </span>
-                <span className="text-[10px] font-extrabold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
-                  ✓ Zero Investment
-                </span>
-              </div>
             </div>
 
             {/* Error Message Box */}

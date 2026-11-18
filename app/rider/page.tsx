@@ -6,9 +6,11 @@ import Link from 'next/link';
 import Pusher from 'pusher-js';
 import {
   Bike, Power, MapPin, Phone, CheckCircle, Navigation,
-  Wallet, RefreshCw, User, ExternalLink, Bell, Package, Download
+  Wallet, RefreshCw, User, ExternalLink, Bell, Package, Download,
+  MessageSquare, Radio, Check
 } from 'lucide-react';
 import { WhatsAppIcon } from '../../components/WhatsAppIcon';
+import OrderChatModal from '../../components/OrderChatModal';
 
 interface OrderItem {
   id?: string;
@@ -61,6 +63,13 @@ export default function RiderApp() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const hasLoadedOnceRef = useRef(false);
+
+  // Rapido-Style Live Chat, Call Logging & Real-time GPS State
+  const [chatOrderId, setChatOrderId] = useState<string | null>(null);
+  const [callModalOrder, setCallModalOrder] = useState<Order | null>(null);
+  const [callOutcomeNote, setCallOutcomeNote] = useState('');
+  const [isSavingCallOutcome, setIsSavingCallOutcome] = useState(false);
+  const [currentCoordsText, setCurrentCoordsText] = useState('');
 
   // 1. Check Login
   useEffect(() => {
@@ -176,48 +185,62 @@ export default function RiderApp() {
     };
   }, [rider?.id, fetchOrders]);
 
-  // 4. Live GPS Location Ping to Admin
+  // 4. Live Continuous GPS Location Streaming (Rapido Captain Style)
   useEffect(() => {
     if (!rider?.id || !isOnline) return;
 
-    const pingLocation = () => {
-      if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          async (pos) => {
-            try {
-              await fetch('/api/rider/location', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  riderId: rider.id,
-                  lat: pos.coords.latitude,
-                  lng: pos.coords.longitude,
-                  locationText: `GPS: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`,
-                }),
-              });
-            } catch {}
-          },
-          () => {
-            fetch('/api/rider/location', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                riderId: rider.id,
-                locationText: rider.city ? `Near ${rider.city}` : 'Garhwa Active',
-              }),
-            }).catch(() => {});
-          },
-          { enableHighAccuracy: false, timeout: 8000 }
-        );
-      }
+    let watchId: number | null = null;
+
+    const sendCoords = (lat: number, lng: number) => {
+      const coordsString = `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      setCurrentCoordsText(coordsString);
+      fetch('/api/rider/location', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riderId: rider.id,
+          lat,
+          lng,
+          locationText: coordsString,
+        }),
+      }).catch(() => {});
     };
 
-    pingLocation();
-    const interval = setInterval(pingLocation, 30000);
-    return () => clearInterval(interval);
-  }, [rider?.id, rider?.city, isOnline]);
+    if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => sendCoords(pos.coords.latitude, pos.coords.longitude),
+        () => {},
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
 
-  // Toggle Online/Offline
+      try {
+        watchId = navigator.geolocation.watchPosition(
+          (pos) => sendCoords(pos.coords.latitude, pos.coords.longitude),
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 }
+        );
+      } catch {}
+    }
+
+    const interval = setInterval(() => {
+      if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => sendCoords(pos.coords.latitude, pos.coords.longitude),
+          () => {},
+          { enableHighAccuracy: false, timeout: 5000 }
+        );
+      }
+    }, 15000);
+
+    return () => {
+      if (watchId !== null && typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+      clearInterval(interval);
+    };
+  }, [rider?.id, isOnline]);
+
+  // Toggle Online/Offline Duty (With Activity Logging)
   const handleToggleOnline = async () => {
     if (!rider) return;
     const nextState = !isOnline;
@@ -229,11 +252,75 @@ export default function RiderApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isOnline: nextState }),
       });
+
+      await fetch('/api/rider/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riderId: rider.id,
+          activityType: nextState ? 'ONLINE' : 'OFFLINE',
+          title: nextState ? 'Duty Switched ON' : 'Duty Switched OFF',
+          description: nextState
+            ? 'Rider is now online, transmitting live GPS, and ready to accept deliveries.'
+            : 'Rider switched duty off.',
+          locationText: currentCoordsText || rider.city || 'Garhwa',
+        }),
+      }).catch(() => {});
+
       const updated = { ...rider, isOnline: nextState };
       setRider(updated);
       localStorage.setItem('lapiez-rider', JSON.stringify(updated));
     } catch (err) {
       console.error('Failed to sync online status:', err);
+    }
+  };
+
+  // Handle Call Customer
+  const handleCallCustomer = async (order: Order) => {
+    if (!rider) return;
+    try {
+      await fetch('/api/rider/call-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riderId: rider.id,
+          orderId: order.orderId,
+          customerName: order.customerName,
+          customerPhone: order.phone,
+          callStatus: 'INITIATED',
+        }),
+      });
+    } catch (err) {
+      console.error('Error logging call:', err);
+    }
+
+    window.location.href = `tel:${order.phone}`;
+    setCallModalOrder(order);
+    setCallOutcomeNote('');
+  };
+
+  const handleSaveCallOutcome = async (status: string, note?: string) => {
+    if (!callModalOrder || !rider) return;
+    try {
+      setIsSavingCallOutcome(true);
+      await fetch('/api/rider/call-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riderId: rider.id,
+          orderId: callModalOrder.orderId,
+          customerName: callModalOrder.customerName,
+          customerPhone: callModalOrder.phone,
+          callStatus: status,
+          outcomeNote: note || callOutcomeNote,
+        }),
+      });
+      setCallModalOrder(null);
+      setCallOutcomeNote('');
+    } catch (err) {
+      console.error('Failed to update call log:', err);
+    } finally {
+      setIsSavingCallOutcome(false);
     }
   };
 
@@ -355,6 +442,35 @@ export default function RiderApp() {
 
       {/* Main Body */}
       <main className="flex-1 max-w-lg w-full mx-auto p-4 space-y-4">
+        {/* Rapido-Style Duty ON / Live GPS Streaming Indicator */}
+        <div className={`p-3.5 rounded-2xl border text-xs flex items-center justify-between transition-all ${
+          isOnline
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+            : 'bg-slate-100 border-slate-200 text-slate-600'
+        }`}>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className={`w-3 h-3 rounded-full flex-shrink-0 ${isOnline ? 'bg-emerald-600 animate-pulse' : 'bg-slate-400'}`} />
+            <div className="min-w-0">
+              <strong className="block font-bold truncate">
+                {isOnline ? 'Duty Online • Realtime GPS Active' : 'Duty Offline • Go Online to receive orders'}
+              </strong>
+              <span className="text-[11px] text-slate-500 font-mono block truncate">
+                {isOnline ? (currentCoordsText || 'Broadcasting live GPS to Admin') : 'GPS tracking paused while offline'}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleOnline}
+            className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer shrink-0 ${
+              isOnline
+                ? 'bg-slate-800 text-white shadow-xs hover:bg-slate-900'
+                : 'bg-emerald-600 text-white shadow-xs hover:bg-emerald-700'
+            }`}
+          >
+            {isOnline ? 'Duty OFF' : 'Duty ON'}
+          </button>
+        </div>
         {/* Wallet & Today Stats Card (Clean White Executive Theme) */}
         <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-xs text-slate-900 space-y-3">
           <div className="flex items-center justify-between">
@@ -582,33 +698,46 @@ export default function RiderApp() {
                       </a>
                     </div>
 
-                    <div className="flex gap-2">
-                      <a
-                        href={`tel:${order.phone}`}
-                        className="px-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 border border-gray-200 transition-colors"
+                    <div className="grid grid-cols-4 gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleCallCustomer(order)}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl text-xs flex flex-col items-center justify-center gap-1 border border-slate-200 transition-colors cursor-pointer"
+                        title="Call Customer Directly"
                       >
                         <Phone className="w-4 h-4 text-[#1A56DB]" />
-                        <span>Call</span>
-                      </a>
+                        <span className="text-[10px]">Call</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setChatOrderId(order.orderId)}
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 rounded-xl text-xs flex flex-col items-center justify-center gap-1 border border-blue-200 transition-colors cursor-pointer"
+                        title="In-App Live Chat"
+                      >
+                        <MessageSquare className="w-4 h-4 text-[#1A56DB]" />
+                        <span className="text-[10px]">Chat</span>
+                      </button>
 
                       <a
                         href={`https://wa.me/91${cleanCustPhone}?text=${encodeURIComponent(`Namaste ${order.customerName} ji, main Lapiez Delivery Rider (${rider.name}) aapka Order #${order.orderId} lekar aa raha hu.`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 border border-emerald-200 transition-colors"
-                        title="Message Customer on WhatsApp"
+                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-3 rounded-xl text-xs flex flex-col items-center justify-center gap-1 border border-emerald-200 transition-colors"
+                        title="WhatsApp Message"
                       >
-                        <WhatsAppIcon className="w-4 h-4" />
+                        <WhatsAppIcon className="w-4 h-4 text-emerald-600" />
+                        <span className="text-[10px]">WhatsApp</span>
                       </a>
 
                       <button
                         type="button"
                         onClick={() => handleMarkDelivered(order)}
                         disabled={actionLoading === order.id}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl text-xs flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                       >
                         <CheckCircle className="w-4 h-4" />
-                        <span>{actionLoading === order.id ? 'Saving...' : `Delivered (+₹${rate})`}</span>
+                        <span className="text-[10px]">{actionLoading === order.id ? 'Saving...' : `Delivered`}</span>
                       </button>
                     </div>
                   </div>
@@ -687,6 +816,92 @@ export default function RiderApp() {
           </button>
         </div>
       </footer>
+
+      {/* Live In-App Chat Modal */}
+      {chatOrderId && (
+        <OrderChatModal
+          orderId={chatOrderId}
+          isOpen={!!chatOrderId}
+          onClose={() => setChatOrderId(null)}
+          currentUserType="RIDER"
+          currentUserName={rider?.name || 'Rider'}
+          riderId={rider?.id}
+        />
+      )}
+
+      {/* Call Outcome Quick Logger Modal */}
+      {callModalOrder && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-[#1A56DB]">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">Call Outcome Log</h3>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Order #{callModalOrder.orderId} • {callModalOrder.customerName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCallModalOrder(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 font-medium">
+              Customer se call par kya baat hui? Select karein:
+            </p>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {[
+                { status: 'CONNECTED', label: 'Connected • On the way' },
+                { status: 'NOT_REACHABLE', label: 'Not Reachable / Busy' },
+                { status: 'UNANSWERED', label: 'Did Not Answer' },
+                { status: 'WRONG_NUMBER', label: 'Wrong Number' },
+              ].map((opt) => (
+                <button
+                  key={opt.status}
+                  type="button"
+                  onClick={() => handleSaveCallOutcome(opt.status, opt.label)}
+                  disabled={isSavingCallOutcome}
+                  className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-200 text-slate-700 hover:text-blue-700 font-bold text-left transition-colors cursor-pointer text-xs"
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <label className="text-[11px] font-bold text-slate-500 block">
+                Ya custom note likhein (Optional):
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g. 5 baje pahunchne ko bola"
+                  value={callOutcomeNote}
+                  onChange={(e) => setCallOutcomeNote(e.target.value)}
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSaveCallOutcome('CUSTOM_NOTE', callOutcomeNote)}
+                  disabled={isSavingCallOutcome || !callOutcomeNote.trim()}
+                  className="px-3.5 py-2 bg-[#1A56DB] hover:bg-[#1E40AF] text-white rounded-xl text-xs font-bold transition-all disabled:opacity-40 cursor-pointer"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

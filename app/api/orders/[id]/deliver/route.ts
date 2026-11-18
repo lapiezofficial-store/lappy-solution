@@ -57,6 +57,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return { order: updatedOrder, rider: updatedRider, earned: earnedAmount };
     });
 
+    // Record in RiderActivity timeline
+    await prisma.riderActivity.create({
+      data: {
+        riderId: result.rider.id,
+        orderId: result.order.orderId,
+        activityType: 'ORDER_DELIVERED',
+        title: `Delivered Order #${result.order.orderId}`,
+        description: `Order #${result.order.orderId} safalata se deliver hua. Commission: +₹${result.earned}. Payment: ${result.order.paymentMethod} (${result.order.paymentStatus}).`,
+        metadata: JSON.stringify({
+          orderId: result.order.orderId,
+          customerName: result.order.customerName,
+          totalAmount: result.order.totalAmount,
+          commissionEarned: result.earned,
+          newWalletBalance: result.rider.walletBalance,
+        }),
+      },
+    }).catch(() => {});
+
     // Notify Admin Panel
     await triggerPusherEvent('admin-channel', 'order-delivered', {
       orderId: result.order.orderId,

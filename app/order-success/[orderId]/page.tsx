@@ -6,12 +6,13 @@ import Link from 'next/link';
 import { 
   CheckCircle2, Printer, ArrowRight, ArrowLeft,
   MapPin, Phone, ShieldCheck, Store, Clock, Package, Navigation, Check,
-  FileText, ExternalLink, Download, QrCode, Building2
+  FileText, ExternalLink, Download, QrCode, Building2, Bike, MessageSquare
 } from 'lucide-react';
 import { WhatsAppIcon } from '../../../components/WhatsAppIcon';
 import { useStore } from '../../../context/StoreContext';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../../../data/storeData';
 import { getHsnCodeForCategory, convertAmountToWords } from '../../../lib/invoiceUtils';
+import OrderChatModal from '../../../components/OrderChatModal';
 
 export default function OrderSuccessPage() {
   const params = useParams();
@@ -21,6 +22,7 @@ export default function OrderSuccessPage() {
   const { orders, siteSettings, paymentSettings, products } = useStore();
   const [localOrder, setLocalOrder] = useState<any>(null);
   const [loadingOrder, setLoadingOrder] = useState<boolean>(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Read order from localStorage or fetch from server API
   useEffect(() => {
@@ -362,6 +364,62 @@ export default function OrderSuccessPage() {
             ))}
           </div>
         </div>
+
+        {/* 3B. LIVE DELIVERY PARTNER & IN-APP CHAT */}
+        <div className="rounded-2xl bg-white border border-slate-200 p-5 sm:p-6 shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-[#1A56DB]">
+                <Bike className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {order.rider ? `Delivery Partner: ${order.rider.name}` : 'Lapiez Showroom Express Dispatch'}
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  {order.orderStatus === 'Delivered'
+                    ? 'Order delivered successfully to your address.'
+                    : order.orderStatus === 'Out For Delivery'
+                    ? 'Rider is currently on the way to your location.'
+                    : 'Showroom staff is packing your items for dispatch.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setIsChatOpen(true)}
+                className="flex-1 sm:flex-initial px-4 py-2 bg-blue-50 hover:bg-blue-100 text-[#1A56DB] font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 border border-blue-200 transition-colors cursor-pointer"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Live Chat with Rider</span>
+              </button>
+
+              {order.rider?.phone && (
+                <a
+                  href={`tel:${order.rider.phone}`}
+                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1 border border-slate-200 transition-colors"
+                  title="Call Delivery Partner"
+                >
+                  <Phone className="w-3.5 h-3.5 text-[#1A56DB]" />
+                  <span>Call</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Live Chat Modal */}
+        {isChatOpen && (
+          <OrderChatModal
+            orderId={order.orderId}
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+            currentUserType="CUSTOMER"
+            currentUserName={order.customerName || 'Customer'}
+          />
+        )}
 
         {/* 4. RETURN TO SHOP CTA */}
         <div className="text-center pt-2">
