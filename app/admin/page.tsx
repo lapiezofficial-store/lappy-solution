@@ -4440,6 +4440,52 @@ export default function AdminPage() {
         <main className="flex-1 min-w-0 p-3 sm:p-6 pb-24 md:pb-6 bg-[#F8FAFC] overflow-x-hidden">
           <div className="max-w-7xl mx-auto space-y-6">
 
+            {/* BREADCRUMB NAVIGATION */}
+            <nav aria-label="Admin Breadcrumb" className="flex items-center gap-1.5 text-xs text-slate-500">
+              <button
+                type="button"
+                onClick={() => setActiveTab('dashboard')}
+                className="hover:text-[#1A56DB] transition-colors font-semibold cursor-pointer flex items-center gap-1 text-slate-600"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5 text-slate-400" />
+                <span>Admin</span>
+              </button>
+              <ChevronRight className="w-3 h-3 text-slate-400" />
+              <span className="text-slate-500 font-medium">
+                {['inventory', 'trash', 'categories', 'brands', 'coupons', 'scraper'].includes(activeTab) && 'Store & Catalog'}
+                {['orders', 'billing', 'mybillbook', 'bank', 'leads'].includes(activeTab) && 'Sales & Operations'}
+                {['homepage', 'banners', 'header_footer', 'theme', 'pages', 'blogs', 'media'].includes(activeTab) && 'Appearance & CMS'}
+                {['delivery', 'security', 'settings', 'tools', 'warranty', 'dashboard'].includes(activeTab) && 'Management'}
+              </span>
+              <ChevronRight className="w-3 h-3 text-slate-400" />
+              <span className="font-extrabold text-[#1A56DB] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200/70">
+                {activeTab === 'brands' && 'Top Brands Showcase'}
+                {activeTab === 'dashboard' && 'Dashboard'}
+                {activeTab === 'inventory' && 'All Products'}
+                {activeTab === 'categories' && 'Categories'}
+                {activeTab === 'delivery' && 'Delivery Rates'}
+                {activeTab === 'security' && 'Security'}
+                {activeTab === 'orders' && 'Orders & UTR'}
+                {activeTab === 'billing' && 'GST Invoices'}
+                {activeTab === 'coupons' && 'Coupons'}
+                {activeTab === 'leads' && 'Quotes & Leads'}
+                {activeTab === 'homepage' && 'Homepage Builder'}
+                {activeTab === 'banners' && 'Hero Banners'}
+                {activeTab === 'pages' && 'CMS Pages'}
+                {activeTab === 'blogs' && 'Tech Blogs'}
+                {activeTab === 'warranty' && 'Warranty Desk'}
+                {activeTab === 'settings' && 'Store Settings'}
+                {activeTab === 'tools' && 'System Tools'}
+                {activeTab === 'bank' && 'Bank Accounts'}
+                {activeTab === 'mybillbook' && 'Billing POS'}
+                {activeTab === 'trash' && 'Recycle Bin'}
+                {activeTab === 'scraper' && 'Web Scraper'}
+                {activeTab === 'media' && 'Media Assets'}
+                {activeTab === 'theme' && 'Theme Customizer'}
+                {activeTab === 'header_footer' && 'Header & Footer'}
+              </span>
+            </nav>
+
             {/* PAGE TITLE & ACTION BAR */}
             <div className="mb-5 pb-3 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -7088,7 +7134,7 @@ export default function AdminPage() {
                         type="button"
                         onClick={handleResetCarouselToDefault}
                         className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-all cursor-pointer border border-gray-200"
-                        title="Reset carousel settings to default (28s dual rotation)"
+                        title="Reset carousel settings to default (65s smooth dual rotation)"
                       >
                         Reset Defaults
                       </button>
@@ -7155,11 +7201,11 @@ export default function AdminPage() {
                             Rotation Speed
                           </span>
                           <span className="text-xs font-extrabold text-[#1A56DB] font-mono">
-                            {activeCarouselConfig.speedSeconds || 28}s / loop
+                            {activeCarouselConfig.speedSeconds || 65}s / loop
                           </span>
                         </div>
                         <p className="text-xs text-slate-600 mb-2.5">
-                          Set how fast brand logos rotate across rows.
+                          Set how fast brand logos rotate across rows (Smooth &amp; Relaxed).
                         </p>
                       </div>
 
@@ -7167,12 +7213,12 @@ export default function AdminPage() {
                       <div className="space-y-2">
                         <div className="grid grid-cols-4 gap-1.5">
                           {[
-                            { key: 'slow', label: 'Slow', sec: 45 },
-                            { key: 'normal', label: 'Normal', sec: 28 },
-                            { key: 'fast', label: 'Fast', sec: 16 },
-                            { key: 'superfast', label: 'Super', sec: 10 },
+                            { key: 'slow', label: 'Slow (90s)', sec: 90 },
+                            { key: 'normal', label: 'Normal (65s)', sec: 65 },
+                            { key: 'fast', label: 'Fast (45s)', sec: 45 },
+                            { key: 'superfast', label: 'Express (30s)', sec: 30 },
                           ].map((p) => {
-                            const isSelected = (activeCarouselConfig.speedSeconds || 28) === p.sec || activeCarouselConfig.speed === p.key;
+                            const isSelected = (activeCarouselConfig.speedSeconds || 65) === p.sec || activeCarouselConfig.speed === p.key;
                             return (
                               <button
                                 key={p.key}
@@ -7183,7 +7229,7 @@ export default function AdminPage() {
                                     speedSeconds: p.sec,
                                   })
                                 }
-                                className={`py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                                className={`py-1.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
                                   isSelected
                                     ? 'bg-[#1A56DB] text-white shadow-2xs'
                                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
@@ -7197,24 +7243,24 @@ export default function AdminPage() {
 
                         {/* Speed Range Slider */}
                         <div className="flex items-center gap-2 pt-1">
-                          <span className="text-[10px] font-bold text-slate-400">Fast (8s)</span>
+                          <span className="text-[10px] font-bold text-slate-400">Fast (20s)</span>
                           <input
                             type="range"
-                            min="8"
-                            max="60"
-                            step="2"
-                            value={activeCarouselConfig.speedSeconds || 28}
+                            min="20"
+                            max="120"
+                            step="5"
+                            value={activeCarouselConfig.speedSeconds || 65}
                             onChange={(e) => {
                               const val = parseInt(e.target.value, 10);
                               let speedName: any = 'normal';
-                              if (val <= 12) speedName = 'superfast';
-                              else if (val <= 20) speedName = 'fast';
-                              else if (val >= 40) speedName = 'slow';
+                              if (val <= 35) speedName = 'superfast';
+                              else if (val <= 50) speedName = 'fast';
+                              else if (val >= 80) speedName = 'slow';
                               handleUpdateCarouselDraft({ speedSeconds: val, speed: speedName });
                             }}
                             className="flex-1 accent-[#1A56DB] cursor-pointer"
                           />
-                          <span className="text-[10px] font-bold text-slate-400">Slow (60s)</span>
+                          <span className="text-[10px] font-bold text-slate-400">Slow (120s)</span>
                         </div>
                       </div>
                     </div>
@@ -7272,7 +7318,7 @@ export default function AdminPage() {
                       <div className="flex items-center gap-1.5">
                         <Eye className="w-3.5 h-3.5 text-[#1A56DB]" />
                         <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                          Live Marquee Preview ({activeCarouselConfig.autoScroll ? `Rotating at ${activeCarouselConfig.speedSeconds || 28}s` : 'Static Grid'})
+                          Live Marquee Preview ({activeCarouselConfig.autoScroll ? `Rotating at ${activeCarouselConfig.speedSeconds || 65}s` : 'Static Grid'})
                         </span>
                       </div>
                       <span className="text-[10px] text-slate-500">
@@ -7291,7 +7337,7 @@ export default function AdminPage() {
                             className={`flex items-center gap-2 ${
                               activeCarouselConfig.direction === 'right' ? 'animate-marquee-right' : 'animate-marquee-left'
                             } ${activeCarouselConfig.pauseOnHover !== false ? 'hover:[animation-play-state:paused]' : ''}`}
-                            style={{ '--marquee-duration': `${activeCarouselConfig.speedSeconds || 28}s` } as React.CSSProperties}
+                            style={{ '--marquee-duration': `${activeCarouselConfig.speedSeconds || 65}s` } as React.CSSProperties}
                           >
                             {[...brands.filter(b => b.isVisible !== false), ...brands.filter(b => b.isVisible !== false)].slice(0, 24).map((b, i) => (
                               <div
@@ -7315,7 +7361,7 @@ export default function AdminPage() {
                             className={`flex items-center gap-2 ${
                               activeCarouselConfig.direction === 'left' ? 'animate-marquee-left' : 'animate-marquee-right'
                             } ${activeCarouselConfig.pauseOnHover !== false ? 'hover:[animation-play-state:paused]' : ''}`}
-                            style={{ '--marquee-duration': `${activeCarouselConfig.speedSeconds || 28}s` } as React.CSSProperties}
+                            style={{ '--marquee-duration': `${activeCarouselConfig.speedSeconds || 65}s` } as React.CSSProperties}
                           >
                             {[...brands.filter(b => b.isVisible !== false), ...brands.filter(b => b.isVisible !== false)].slice(12, 36).map((b, i) => (
                               <div

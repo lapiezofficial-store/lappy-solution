@@ -45,19 +45,19 @@ export const BrandShowcase: React.FC = () => {
 
   // Speed duration in seconds (lower is faster, higher is slower)
   const durationSeconds = useMemo(() => {
-    if (brandsConfig?.speedSeconds && brandsConfig.speedSeconds >= 5) {
+    if (brandsConfig?.speedSeconds && brandsConfig.speedSeconds >= 10) {
       return brandsConfig.speedSeconds;
     }
     switch (brandsConfig?.speed) {
       case 'slow':
-        return 45;
+        return 90;
       case 'fast':
-        return 16;
+        return 45;
       case 'superfast':
-        return 10;
+        return 30;
       case 'normal':
       default:
-        return 28;
+        return 65;
     }
   }, [brandsConfig]);
 

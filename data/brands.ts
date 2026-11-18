@@ -22,7 +22,7 @@ export interface BrandsCarouselConfig {
 export const DEFAULT_BRANDS_CAROUSEL_CONFIG: BrandsCarouselConfig = {
   autoScroll: true,
   speed: 'normal',
-  speedSeconds: 28,
+  speedSeconds: 65,
   direction: 'dual',
   pauseOnHover: true,
 };

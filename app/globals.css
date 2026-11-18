@@ -228,14 +228,14 @@ nextjs-portal,
 .animate-marquee-left {
   display: flex;
   width: max-content;
-  animation: marquee-scroll-left var(--marquee-duration, 28s) linear infinite;
+  animation: marquee-scroll-left var(--marquee-duration, 65s) linear infinite;
   will-change: transform;
 }
 
 .animate-marquee-right {
   display: flex;
   width: max-content;
-  animation: marquee-scroll-right var(--marquee-duration, 28s) linear infinite;
+  animation: marquee-scroll-right var(--marquee-duration, 65s) linear infinite;
   will-change: transform;
 }
 
