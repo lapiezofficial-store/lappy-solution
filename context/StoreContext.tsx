@@ -13,7 +13,7 @@ import {
 } from '../lib/invoiceUtils';
 import { supabase, signInWithGoogle, signOutCustomer, User } from '../lib/supabase';
 import { Coupon, INITIAL_COUPONS, calculateCouponDiscount } from '../data/coupons';
-import { CMSBrand, DEFAULT_BRANDS } from '../data/brands';
+import { CMSBrand, DEFAULT_BRANDS, BrandsCarouselConfig, DEFAULT_BRANDS_CAROUSEL_CONFIG } from '../data/brands';
 import { CATEGORIES } from '../data/categories';
 import { INITIAL_BANNERS, encodeBannerConfig, decodeBannerConfig } from '../data/banners';
 import { adminFetch, broadcastCmsUpdate, subscribeToCmsUpdates } from '../lib/adminApi';
@@ -49,7 +49,8 @@ export interface CMSCategory {
   subcategories?: CMSSubcategory[];
 }
 
-export type { Coupon, CMSBrand };
+export type { Coupon, CMSBrand, BrandsCarouselConfig };
+export { DEFAULT_BRANDS_CAROUSEL_CONFIG };
 
 
 export interface SiteSettings {
@@ -334,6 +335,8 @@ interface StoreContextType {
   deleteBrand: (id: string) => Promise<boolean>;
   reorderBrands: (newBrands: CMSBrand[]) => Promise<boolean>;
   resetBrandsToDefault: () => Promise<boolean>;
+  brandsConfig: BrandsCarouselConfig;
+  updateBrandsConfig: (config: Partial<BrandsCarouselConfig>) => Promise<boolean>;
   categories: CMSCategory[];
   addCategory: (catData: Partial<CMSCategory>) => Promise<CMSCategory | null>;
   updateCategory: (id: string, updates: Partial<CMSCategory>) => Promise<boolean>;
@@ -706,6 +709,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [blogPosts, setBlogPosts] = useState<CMSBlogPost[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
   const [brands, setBrands] = useState<CMSBrand[]>(DEFAULT_BRANDS);
+  const [brandsConfig, setBrandsConfig] = useState<BrandsCarouselConfig>(DEFAULT_BRANDS_CAROUSEL_CONFIG);
   const [categories, setCategories] = useState<CMSCategory[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -1281,6 +1285,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                   localStorage.setItem('ls_brands', JSON.stringify(data.brands));
                 } catch (e) { }
               }
+              if (data.config) {
+                setBrandsConfig(data.config);
+                try {
+                  localStorage.setItem('ls_brands_config', JSON.stringify(data.config));
+                } catch (e) { }
+              }
             }
           } catch (e) { }
         }
@@ -1345,6 +1355,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       } else {
         setBrands(DEFAULT_BRANDS);
+      }
+
+      const savedBrandsConfig = localStorage.getItem('ls_brands_config');
+      if (savedBrandsConfig) {
+        try {
+          const parsedConfig = JSON.parse(savedBrandsConfig);
+          if (parsedConfig && typeof parsedConfig.autoScroll === 'boolean') {
+            setBrandsConfig(parsedConfig);
+          }
+        } catch (e) { }
       }
 
       const savedCats = localStorage.getItem('ls_categories');
@@ -3300,6 +3320,38 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const updateBrandsConfig = async (updates: Partial<BrandsCarouselConfig>): Promise<boolean> => {
+    const prev = brandsConfig;
+    const merged: BrandsCarouselConfig = { ...prev, ...updates };
+    setBrandsConfig(merged);
+    try {
+      localStorage.setItem('ls_brands_config', JSON.stringify(merged));
+    } catch (e) { }
+
+    try {
+      const res = await adminFetch('/api/cms/brands', {
+        method: 'PUT',
+        body: JSON.stringify({ config: merged }),
+      });
+      if (res.ok) {
+        broadcastCmsUpdate('brands');
+        showToast('Brands carousel settings saved!');
+        return true;
+      } else {
+        setBrandsConfig(prev);
+        localStorage.setItem('ls_brands_config', JSON.stringify(prev));
+        showToast('Failed to save brands carousel settings');
+        return false;
+      }
+    } catch (e) {
+      console.error('Failed to save brands config:', e);
+      setBrandsConfig(prev);
+      localStorage.setItem('ls_brands_config', JSON.stringify(prev));
+      showToast('Error saving carousel settings');
+      return false;
+    }
+  };
+
   // Categories & Subcategories CMS Methods
   const fetchCategories = async () => {
     try {
@@ -3830,6 +3882,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deleteBrand,
         reorderBrands,
         resetBrandsToDefault,
+        brandsConfig,
+        updateBrandsConfig,
         categories,
         addCategory,
         updateCategory,

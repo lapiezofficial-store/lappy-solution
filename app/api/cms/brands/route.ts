@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hasAdminSession } from '@/lib/adminAuth';
-import { DEFAULT_BRANDS, CMSBrand } from '@/data/brands';
+import { DEFAULT_BRANDS, CMSBrand, BrandsCarouselConfig, DEFAULT_BRANDS_CAROUSEL_CONFIG } from '@/data/brands';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -91,14 +91,83 @@ async function saveStoredBrands(brands: CMSBrand[]): Promise<boolean> {
   }
 }
 
-// GET: Fetch all brands
+// Helper to get stored brands carousel config
+async function getStoredBrandsConfig(): Promise<BrandsCarouselConfig> {
+  try {
+    const cp = await prisma.customPage.findUnique({
+      where: { slug: '_system_brands_config' },
+    });
+    if (cp?.content) {
+      const parsed = JSON.parse(cp.content);
+      if (parsed && typeof parsed.autoScroll === 'boolean') {
+        return {
+          ...DEFAULT_BRANDS_CAROUSEL_CONFIG,
+          ...parsed,
+        };
+      }
+    }
+
+    const section = await prisma.homepageSection.findUnique({
+      where: { sectionKey: 'brands' },
+    });
+    if (section?.subtitle) {
+      try {
+        const parsed = JSON.parse(section.subtitle);
+        if (parsed && typeof parsed.autoScroll === 'boolean') {
+          return {
+            ...DEFAULT_BRANDS_CAROUSEL_CONFIG,
+            ...parsed,
+          };
+        }
+      } catch {}
+    }
+  } catch (e) {
+    console.error('Error reading brands config from DB:', e);
+  }
+  return DEFAULT_BRANDS_CAROUSEL_CONFIG;
+}
+
+// Helper to save brands carousel config
+async function saveStoredBrandsConfig(config: Partial<BrandsCarouselConfig>): Promise<boolean> {
+  try {
+    const current = await getStoredBrandsConfig();
+    const merged: BrandsCarouselConfig = { ...current, ...config };
+    const jsonStr = JSON.stringify(merged);
+
+    await Promise.all([
+      prisma.customPage.upsert({
+        where: { slug: '_system_brands_config' },
+        update: { content: jsonStr, status: 'published' },
+        create: {
+          slug: '_system_brands_config',
+          title: 'System Brands Carousel Config',
+          content: jsonStr,
+          status: 'published',
+        },
+      }),
+      prisma.homepageSection.updateMany({
+        where: { sectionKey: 'brands' },
+        data: { subtitle: jsonStr },
+      }),
+    ]);
+    return true;
+  } catch (e) {
+    console.error('Error saving brands config to DB:', e);
+    return false;
+  }
+}
+
+// GET: Fetch all brands and carousel config
 export async function GET() {
   try {
-    const brands = await getStoredBrands();
-    return NextResponse.json({ brands });
+    const [brands, config] = await Promise.all([
+      getStoredBrands(),
+      getStoredBrandsConfig(),
+    ]);
+    return NextResponse.json({ brands, config });
   } catch (error) {
     console.error('Error in GET /api/cms/brands:', error);
-    return NextResponse.json({ brands: DEFAULT_BRANDS });
+    return NextResponse.json({ brands: DEFAULT_BRANDS, config: DEFAULT_BRANDS_CAROUSEL_CONFIG });
   }
 }
 
@@ -143,6 +212,14 @@ export async function PUT(request: Request) {
 
   try {
     const body = await request.json();
+
+    // Case 0: Update brands carousel config (Auto-scroll, speed, direction)
+    if (body.config) {
+      await saveStoredBrandsConfig(body.config);
+      if (!body.brands && !body.brand && !body.resetToDefaults && !body.id) {
+        return NextResponse.json({ success: true, config: body.config });
+      }
+    }
 
     // Case 1: Bulk array of brands (e.g. after reordering or drag-and-drop)
     if (Array.isArray(body.brands)) {

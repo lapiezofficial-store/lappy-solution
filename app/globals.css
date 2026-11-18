@@ -204,6 +204,47 @@ nextjs-portal,
 }
 
 /* -------------------------------------------------------------
+   BRANDS CONTINUOUS INFINITE ROTATING TICKER / MARQUEE
+   Smooth 60fps GPU-accelerated dual-direction animation
+   ------------------------------------------------------------- */
+@keyframes marquee-scroll-left {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes marquee-scroll-right {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-marquee-left {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll-left var(--marquee-duration, 28s) linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-right {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll-right var(--marquee-duration, 28s) linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-left:hover,
+.animate-marquee-right:hover {
+  animation-play-state: paused;
+}
+
+/* -------------------------------------------------------------
    STRICT PRINT STYLES FOR GST TAX INVOICES (CBIC RULE 46)
    Guarantees 1-page A4 printout without any website header or footer
    ------------------------------------------------------------- */

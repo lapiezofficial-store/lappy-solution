@@ -101,6 +101,7 @@ export const DeliveryManager: React.FC = () => {
         enabled: true,
         freeDeliveryAbove,
         slabs,
+        adminKey: 'Lapiez@2026#',
       };
 
       const res = await adminFetch('/api/delivery/rates', {

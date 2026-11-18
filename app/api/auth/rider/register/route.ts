@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     const allRiders = await prisma.rider.findMany({
       select: { riderCode: true },
     });
-    const existingCodes = new Set(allRiders.map((r) => r.riderCode).filter(Boolean));
+    const existingCodes = new Set(allRiders.map((r) => r.riderCode?.trim().toUpperCase()).filter(Boolean));
 
     let maxNum = 0;
     for (const code of existingCodes) {
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 
     let nextNum = maxNum + 1;
     let riderCode = `LAP-RD-${String(nextNum).padStart(3, '0')}`;
-    while (existingCodes.has(riderCode)) {
+    while (existingCodes.has(riderCode.toUpperCase())) {
       nextNum++;
       riderCode = `LAP-RD-${String(nextNum).padStart(3, '0')}`;
     }
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
 
     // Create Rider with collision retry loop
     let newRider: any = null;
-    for (let attempt = 0; attempt < 5; attempt++) {
+    for (let attempt = 0; attempt < 7; attempt++) {
       try {
         newRider = await prisma.rider.create({
           data: {
@@ -95,16 +95,18 @@ export async function POST(req: Request) {
         });
         break;
       } catch (err: any) {
-        if (err.code === 'P2002' && err.meta?.target?.includes('riderCode')) {
-          nextNum++;
+        const errStr = `${err?.message || ''} ${JSON.stringify(err?.meta || '')}`.toLowerCase();
+        if (err.code === 'P2002') {
+          if (errStr.includes('phone')) {
+            return NextResponse.json({
+              error: `Yeh phone number (${cleanPhone}) pehle se registered hai! Kripya Login karein.`,
+              alreadyRegistered: true,
+            }, { status: 409 });
+          }
+          // Collision on riderCode or unique constraint - increment and generate guaranteed fresh code
+          nextNum = nextNum + Math.floor(1 + Math.random() * 5);
           riderCode = `LAP-RD-${String(nextNum).padStart(3, '0')}`;
           continue;
-        }
-        if (err.code === 'P2002' && err.meta?.target?.includes('phone')) {
-          return NextResponse.json({
-            error: `Yeh phone number (${cleanPhone}) pehle se registered hai! Kripya Login karein.`,
-            alreadyRegistered: true,
-          }, { status: 409 });
         }
         throw err;
       }

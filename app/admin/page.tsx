@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { playOrderAlertSound, triggerDesktopNotification } from '../../lib/soundAlert';
-import { useStore, CMSBanner, CMSSection, CMSCustomPage, CMSBlogPost, CMSBrand, CMSCategory, CMSSubcategory, DEFAULT_SHOP_BY_CATEGORIES } from '../../context/StoreContext';
+import { useStore, CMSBanner, CMSSection, CMSCustomPage, CMSBlogPost, CMSBrand, CMSCategory, CMSSubcategory, DEFAULT_SHOP_BY_CATEGORIES, BrandsCarouselConfig, DEFAULT_BRANDS_CAROUSEL_CONFIG } from '../../context/StoreContext';
 import { BrandLogoRenderer, PRESET_BRANDS_CONFIG } from '../../components/BrandLogoRenderer';
 import { STORE_INFO } from '../../data/storeData';
 import { encodeBannerConfig, decodeBannerConfig } from '../../data/banners';
@@ -100,6 +100,8 @@ export default function AdminPage() {
     deleteCoupon,
     fetchCoupons,
     brands,
+    brandsConfig,
+    updateBrandsConfig,
     addBrand,
     updateBrand,
     deleteBrand,
@@ -2076,6 +2078,34 @@ export default function AdminPage() {
   const [brandPositionInput, setBrandPositionInput] = useState<number>(1);
   const [brandUploading, setBrandUploading] = useState(false);
   const [brandSearchFilter, setBrandSearchFilter] = useState('');
+  const [carouselDraft, setCarouselDraft] = useState<BrandsCarouselConfig | null>(null);
+  const [isSavingCarouselConfig, setIsSavingCarouselConfig] = useState(false);
+
+  const activeCarouselConfig = carouselDraft || brandsConfig || DEFAULT_BRANDS_CAROUSEL_CONFIG;
+
+  const handleUpdateCarouselDraft = (updates: Partial<BrandsCarouselConfig>) => {
+    setCarouselDraft((prev) => ({
+      ...(prev || brandsConfig || DEFAULT_BRANDS_CAROUSEL_CONFIG),
+      ...updates,
+    }));
+  };
+
+  const handleSaveCarouselConfig = async () => {
+    setIsSavingCarouselConfig(true);
+    try {
+      const ok = await updateBrandsConfig(activeCarouselConfig);
+      if (ok) {
+        setCarouselDraft(null);
+      }
+    } finally {
+      setIsSavingCarouselConfig(false);
+    }
+  };
+
+  const handleResetCarouselToDefault = async () => {
+    setCarouselDraft(DEFAULT_BRANDS_CAROUSEL_CONFIG);
+    await updateBrandsConfig(DEFAULT_BRANDS_CAROUSEL_CONFIG);
+  };
 
   const handleOpenAddBrand = () => {
     setEditingBrandId(null);
@@ -7027,47 +7057,287 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* Live Storefront Preview */}
-                <div className="bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-purple-50/50 border border-blue-100 rounded-2xl p-4 shadow-2xs">
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-[#1A56DB]" />
-                      <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">
-                        Live Storefront Preview (Customer View)
-                      </span>
+                {/* ======================================================== */}
+                {/* BRANDS CONTINUOUS 60FPS ROTATION & SPEED CONTROLLER CARD */}
+                {/* ======================================================== */}
+                <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 shadow-2xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#1A56DB] flex items-center justify-center font-bold">
+                        <SlidersHorizontal className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-sm sm:text-base text-gray-900 flex items-center gap-2">
+                          <span>Brand Logos Rotation &amp; Speed Controller</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                            activeCarouselConfig.autoScroll
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-gray-100 text-gray-600 border border-gray-200'
+                          }`}>
+                            {activeCarouselConfig.autoScroll ? '● Rotation Active' : '○ Static Grid (Off)'}
+                          </span>
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Control live 2-row continuous rotation, animation speed (slow/fast), and direction across the storefront.
+                        </p>
+                      </div>
                     </div>
-                    <span className="text-[11px] text-gray-500">
-                      {brands.filter((b) => b.isVisible !== false).length} Active on Homepage
-                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleResetCarouselToDefault}
+                        className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-all cursor-pointer border border-gray-200"
+                        title="Reset carousel settings to default (28s dual rotation)"
+                      >
+                        Reset Defaults
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveCarouselConfig}
+                        disabled={isSavingCarouselConfig}
+                        className="px-4 py-2 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] disabled:opacity-50 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                      >
+                        {isSavingCarouselConfig ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Save className="w-3.5 h-3.5" />
+                        )}
+                        <span>Save Carousel Settings</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-2xs">
-                    <div className="flex items-center gap-2 mb-2.5">
-                      <Award className="w-4 h-4 text-[#1A56DB]" />
-                      <span className="text-sm font-bold text-gray-900">Top Brands We Deal In</span>
-                      <span className="text-[10px] text-gray-400 ml-auto hidden sm:inline">
-                        Direct Official Brand Warranty Across India
+                  {/* Settings Control Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                    
+                    {/* 1. On / Off Toggle */}
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-col justify-between">
+                      <div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                          Auto-Scroll Rotation
+                        </span>
+                        <p className="text-xs text-slate-600 mb-3">
+                          Turn continuous rotating animation on or off on homepage.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateCarouselDraft({ autoScroll: true })}
+                          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            activeCarouselConfig.autoScroll
+                              ? 'bg-[#1A56DB] text-white shadow-xs'
+                              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          ON (Rotate)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateCarouselDraft({ autoScroll: false })}
+                          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            !activeCarouselConfig.autoScroll
+                              ? 'bg-slate-800 text-white shadow-xs'
+                              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          OFF (Static)
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 2. Speed Presets & Slider */}
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                            Rotation Speed
+                          </span>
+                          <span className="text-xs font-extrabold text-[#1A56DB] font-mono">
+                            {activeCarouselConfig.speedSeconds || 28}s / loop
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 mb-2.5">
+                          Set how fast brand logos rotate across rows.
+                        </p>
+                      </div>
+
+                      {/* Speed Presets */}
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[
+                            { key: 'slow', label: 'Slow', sec: 45 },
+                            { key: 'normal', label: 'Normal', sec: 28 },
+                            { key: 'fast', label: 'Fast', sec: 16 },
+                            { key: 'superfast', label: 'Super', sec: 10 },
+                          ].map((p) => {
+                            const isSelected = (activeCarouselConfig.speedSeconds || 28) === p.sec || activeCarouselConfig.speed === p.key;
+                            return (
+                              <button
+                                key={p.key}
+                                type="button"
+                                onClick={() =>
+                                  handleUpdateCarouselDraft({
+                                    speed: p.key as any,
+                                    speedSeconds: p.sec,
+                                  })
+                                }
+                                className={`py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-[#1A56DB] text-white shadow-2xs'
+                                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                {p.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Speed Range Slider */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-[10px] font-bold text-slate-400">Fast (8s)</span>
+                          <input
+                            type="range"
+                            min="8"
+                            max="60"
+                            step="2"
+                            value={activeCarouselConfig.speedSeconds || 28}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              let speedName: any = 'normal';
+                              if (val <= 12) speedName = 'superfast';
+                              else if (val <= 20) speedName = 'fast';
+                              else if (val >= 40) speedName = 'slow';
+                              handleUpdateCarouselDraft({ speedSeconds: val, speed: speedName });
+                            }}
+                            className="flex-1 accent-[#1A56DB] cursor-pointer"
+                          />
+                          <span className="text-[10px] font-bold text-slate-400">Slow (60s)</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. Direction & Pause on Hover */}
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-col justify-between">
+                      <div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                          Scroll Direction &amp; Hover
+                        </span>
+                        <p className="text-xs text-slate-600 mb-2.5">
+                          Dual direction: Row 1 moves left (&larr;), Row 2 moves right (&rarr;).
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { key: 'dual', label: '⇄ Dual Row' },
+                            { key: 'left', label: '← All Left' },
+                            { key: 'right', label: '→ All Right' },
+                          ].map((d) => (
+                            <button
+                              key={d.key}
+                              type="button"
+                              onClick={() => handleUpdateCarouselDraft({ direction: d.key as any })}
+                              className={`py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                                (activeCarouselConfig.direction || 'dual') === d.key
+                                  ? 'bg-[#1A56DB] text-white shadow-2xs'
+                                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {d.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <label className="flex items-center gap-2 pt-1 text-xs font-semibold text-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={activeCarouselConfig.pauseOnHover !== false}
+                            onChange={(e) => handleUpdateCarouselDraft({ pauseOnHover: e.target.checked })}
+                            className="w-4 h-4 rounded text-[#1A56DB] focus:ring-0"
+                          />
+                          <span>Pause rotation on hover</span>
+                        </label>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Live Interactive Marquee Preview Strip */}
+                  <div className="mt-2 p-3.5 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <Eye className="w-3.5 h-3.5 text-[#1A56DB]" />
+                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                          Live Marquee Preview ({activeCarouselConfig.autoScroll ? `Rotating at ${activeCarouselConfig.speedSeconds || 28}s` : 'Static Grid'})
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500">
+                        Row 1: &larr; Left &bull; Row 2: &rarr; Right
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-9 xl:grid-cols-10 gap-2">
-                      {brands
-                        .filter((b) => b.isVisible !== false)
-                        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-                        .map((b) => (
+                    {activeCarouselConfig.autoScroll ? (
+                      <div className="relative w-full overflow-hidden py-1">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-slate-50 to-transparent z-10" />
+                        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-50 to-transparent z-10" />
+
+                        {/* Preview Row 1 */}
+                        <div className="flex overflow-hidden mb-2">
                           <div
-                            key={b.id}
-                            className="flex flex-col items-center justify-center p-1"
+                            className={`flex items-center gap-2 ${
+                              activeCarouselConfig.direction === 'right' ? 'animate-marquee-right' : 'animate-marquee-left'
+                            } ${activeCarouselConfig.pauseOnHover !== false ? 'hover:[animation-play-state:paused]' : ''}`}
+                            style={{ '--marquee-duration': `${activeCarouselConfig.speedSeconds || 28}s` } as React.CSSProperties}
                           >
-                            <div className="w-12 h-12 rounded-full bg-white border border-[#E5E7EB] p-2 flex items-center justify-center shadow-2xs">
-                              <BrandLogoRenderer brand={b} />
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-700 mt-1 truncate max-w-[65px] text-center">
-                              {b.name}
-                            </span>
+                            {[...brands.filter(b => b.isVisible !== false), ...brands.filter(b => b.isVisible !== false)].slice(0, 24).map((b, i) => (
+                              <div
+                                key={`prev-r1-${b.id}-${i}`}
+                                className="flex-shrink-0 w-24 p-1.5 rounded-xl bg-white border border-slate-200 flex flex-col items-center justify-center shadow-2xs"
+                              >
+                                <div className="h-6 w-full flex items-center justify-center overflow-hidden">
+                                  <BrandLogoRenderer brand={b} />
+                                </div>
+                                <span className="text-[9px] font-bold text-slate-700 mt-0.5 truncate max-w-full">
+                                  {b.name}
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                    </div>
+                        </div>
+
+                        {/* Preview Row 2 */}
+                        <div className="flex overflow-hidden">
+                          <div
+                            className={`flex items-center gap-2 ${
+                              activeCarouselConfig.direction === 'left' ? 'animate-marquee-left' : 'animate-marquee-right'
+                            } ${activeCarouselConfig.pauseOnHover !== false ? 'hover:[animation-play-state:paused]' : ''}`}
+                            style={{ '--marquee-duration': `${activeCarouselConfig.speedSeconds || 28}s` } as React.CSSProperties}
+                          >
+                            {[...brands.filter(b => b.isVisible !== false), ...brands.filter(b => b.isVisible !== false)].slice(12, 36).map((b, i) => (
+                              <div
+                                key={`prev-r2-${b.id}-${i}`}
+                                className="flex-shrink-0 w-24 p-1.5 rounded-xl bg-white border border-slate-200 flex flex-col items-center justify-center shadow-2xs"
+                              >
+                                <div className="h-6 w-full flex items-center justify-center overflow-hidden">
+                                  <BrandLogoRenderer brand={b} />
+                                </div>
+                                <span className="text-[9px] font-bold text-slate-700 mt-0.5 truncate max-w-full">
+                                  {b.name}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 text-center text-xs text-slate-500 font-medium bg-white rounded-lg border border-dashed border-slate-300">
+                        Rotation is currently OFF. Brands will display as a static grid on the homepage.
+                      </div>
+                    )}
                   </div>
                 </div>
 

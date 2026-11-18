@@ -134,7 +134,7 @@ export async function POST(req: Request) {
     const allRiders = await prisma.rider.findMany({
       select: { riderCode: true },
     });
-    const existingCodes = new Set(allRiders.map((r) => r.riderCode).filter(Boolean));
+    const existingCodes = new Set(allRiders.map((r) => r.riderCode?.trim().toUpperCase()).filter(Boolean));
 
     let riderCode = customRiderCode ? customRiderCode.trim().toUpperCase() : null;
     if (riderCode && existingCodes.has(riderCode)) {
@@ -152,7 +152,7 @@ export async function POST(req: Request) {
       }
       let nextNum = maxNum + 1;
       riderCode = `LAP-RD-${String(nextNum).padStart(3, '0')}`;
-      while (existingCodes.has(riderCode)) {
+      while (existingCodes.has(riderCode.toUpperCase())) {
         nextNum++;
         riderCode = `LAP-RD-${String(nextNum).padStart(3, '0')}`;
       }
@@ -161,7 +161,7 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password.trim(), 10);
     let newRider: any = null;
 
-    for (let attempt = 0; attempt < 5; attempt++) {
+    for (let attempt = 0; attempt < 7; attempt++) {
       try {
         newRider = await prisma.rider.create({
           data: {
@@ -183,7 +183,14 @@ export async function POST(req: Request) {
         });
         break;
       } catch (err: any) {
-        if (err.code === 'P2002' && err.meta?.target?.includes('riderCode') && !customRiderCode) {
+        const errStr = `${err?.message || ''} ${JSON.stringify(err?.meta || '')}`.toLowerCase();
+        if (err.code === 'P2002' && !customRiderCode) {
+          if (errStr.includes('phone')) {
+            return NextResponse.json({ 
+              error: `Yeh phone number (${cleanPhone}) pehle se registered hai!`,
+              alreadyRegistered: true,
+            }, { status: 409 });
+          }
           const rand = Math.floor(100 + Math.random() * 900);
           riderCode = `LAP-RD-${rand}`;
           continue;

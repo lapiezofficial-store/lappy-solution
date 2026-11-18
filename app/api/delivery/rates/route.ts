@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDeliverySettings, saveDeliverySettings } from '@/lib/deliveryService';
-import { hasAdminSession } from '@/lib/adminAuth';
+import { hasAdminSession, isMasterAdminSecret } from '@/lib/adminAuth';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -33,12 +33,19 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    // Verify admin authentication using universal session check
-    if (!hasAdminSession(req)) {
+    const body = await req.json().catch(() => ({}));
+
+    // Multi-factor authorization: Session cookie, Auth header, x-admin-key, or payload adminKey
+    const isAuthorized =
+      hasAdminSession(req) ||
+      isMasterAdminSecret(req.headers.get('x-admin-key')) ||
+      isMasterAdminSecret(req.headers.get('x-admin-token')) ||
+      isMasterAdminSecret(body?.adminKey) ||
+      isMasterAdminSecret(body?.adminPassword);
+
+    if (!isAuthorized) {
       return NextResponse.json({ success: false, error: 'Unauthorized: Admin login required' }, { status: 401 });
     }
-
-    const body = await req.json();
     if (body && Array.isArray(body.slabs)) {
       body.slabs = body.slabs.map((s: any) => ({
         ...s,

@@ -11,6 +11,22 @@ export interface CMSBrand {
   isVisible: boolean;
 }
 
+export interface BrandsCarouselConfig {
+  autoScroll: boolean;
+  speed: 'slow' | 'normal' | 'fast' | 'superfast';
+  speedSeconds: number;
+  direction: 'dual' | 'left' | 'right';
+  pauseOnHover: boolean;
+}
+
+export const DEFAULT_BRANDS_CAROUSEL_CONFIG: BrandsCarouselConfig = {
+  autoScroll: true,
+  speed: 'normal',
+  speedSeconds: 28,
+  direction: 'dual',
+  pauseOnHover: true,
+};
+
 export const DEFAULT_BRANDS: CMSBrand[] = [
   // 1. HP (New Modern Logo)
   { id: 'brand-hp', name: 'HP', query: 'HP', logoType: 'preset', presetKey: 'hp', position: 0, isVisible: true },
