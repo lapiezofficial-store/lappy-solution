@@ -67,7 +67,7 @@ interface UndispatchedOrder {
   orderStatus: string;
 }
 
-export default function RidersManager() {
+export default function RidersManager({ initialTab }: { initialTab?: 'all' | 'tracking' | 'payouts' | 'pending' } = {}) {
   const [riders, setRiders] = useState<Rider[]>([]);
   const [undispatchedOrders, setUndispatchedOrders] = useState<UndispatchedOrder[]>([]);
   const [quickAssignSelection, setQuickAssignSelection] = useState<Record<string, string>>({});
@@ -76,7 +76,45 @@ export default function RidersManager() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState('');
-  const [filterTab, setFilterTab] = useState<'all' | 'tracking' | 'pending' | 'approved' | 'blocked'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'tracking' | 'payouts' | 'pending' | 'approved' | 'blocked'>(() => {
+    if (initialTab) return initialTab;
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      const sub = p.get('sub')?.toLowerCase();
+      if (sub === 'payouts' || sub === 'tracking' || sub === 'pending') return sub as any;
+      const tab = p.get('tab')?.toLowerCase();
+      if (tab === 'payouts') return 'payouts';
+    }
+    return 'all';
+  });
+
+  useEffect(() => {
+    if (initialTab && initialTab !== filterTab) {
+      setFilterTab(initialTab);
+      if (initialTab === 'payouts') {
+        fetchAllPayouts();
+      }
+    }
+  }, [initialTab]);
+
+  // All Payouts state
+  const [allPayouts, setAllPayouts] = useState<any[]>([]);
+  const [loadingAllPayouts, setLoadingAllPayouts] = useState(false);
+
+  const fetchAllPayouts = async () => {
+    try {
+      setLoadingAllPayouts(true);
+      const res = await fetch('/api/admin/payouts');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) setAllPayouts(data);
+      }
+    } catch (err) {
+      console.error('Error fetching all payouts:', err);
+    } finally {
+      setLoadingAllPayouts(false);
+    }
+  };
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -670,6 +708,18 @@ export default function RidersManager() {
             >
               Blocked ({blockedCount})
             </button>
+
+            <button
+              onClick={() => {
+                setFilterTab('payouts');
+                fetchAllPayouts();
+              }}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${filterTab === 'payouts' ? 'bg-slate-900 text-white shadow-xs font-bold' : 'text-slate-700 hover:text-slate-900'
+                }`}
+            >
+              <Wallet className="w-3.5 h-3.5" />
+              <span>Payouts &amp; Settlements</span>
+            </button>
           </div>
 
           <button
@@ -681,6 +731,128 @@ export default function RidersManager() {
           </button>
         </div>
       </div>
+
+      {/* SPECIAL VIEW: RIDER PAYOUTS & SETTLEMENTS */}
+      {filterTab === 'payouts' && (
+        <div className="bg-white text-slate-900 rounded-3xl p-6 shadow-sm border border-slate-200 space-y-6 animate-in fade-in">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-slate-900 text-white rounded-2xl">
+                <Wallet className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <span>Rider Payout Settlements &amp; Commission History</span>
+                  <span className="text-[10px] bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-bold border border-blue-200">
+                    DIRECT SETTLEMENT
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">Record and track rider commission payouts, UPI UTR numbers, and wallet balances</p>
+              </div>
+            </div>
+
+            <button
+              onClick={fetchAllPayouts}
+              className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingAllPayouts ? 'animate-spin text-blue-600' : ''}`} />
+              <span>Refresh Payouts</span>
+            </button>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/90">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Total Settled Payouts</span>
+              <span className="text-2xl font-black text-slate-900 mt-1 block">
+                ₹{allPayouts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0).toLocaleString('en-IN')}
+              </span>
+              <span className="text-[11px] text-slate-500 mt-0.5 block">{allPayouts.length} successful settlements</span>
+            </div>
+
+            <div className="bg-emerald-50/70 rounded-2xl p-4 border border-emerald-200">
+              <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">Total Outstanding Wallets</span>
+              <span className="text-2xl font-black text-emerald-700 mt-1 block">
+                ₹{riders.reduce((sum, r) => sum + (Number(r.walletBalance) || 0), 0).toLocaleString('en-IN')}
+              </span>
+              <span className="text-[11px] text-emerald-700 mt-0.5 block">Across {riders.length} registered riders</span>
+            </div>
+
+            <div className="bg-blue-50/70 rounded-2xl p-4 border border-blue-200">
+              <span className="text-[11px] font-bold text-blue-800 uppercase tracking-wider block">Deliveries Completed</span>
+              <span className="text-2xl font-black text-[#1A56DB] mt-1 block">
+                {riders.reduce((sum, r) => sum + (Number(r.deliveredCount) || 0), 0)}
+              </span>
+              <span className="text-[11px] text-blue-700 mt-0.5 block">Delivered by active fleet</span>
+            </div>
+          </div>
+
+          {/* Table of all payouts */}
+          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200 text-[10px]">
+                <tr>
+                  <th className="py-3 px-4">Date &amp; Time</th>
+                  <th className="py-3 px-4">Rider</th>
+                  <th className="py-3 px-4">Amount</th>
+                  <th className="py-3 px-4">Mode</th>
+                  <th className="py-3 px-4">UTR / Ref No</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Note</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loadingAllPayouts && allPayouts.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-400">Loading payout records...</td>
+                  </tr>
+                ) : allPayouts.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-400">
+                      Abhi tak koi payout record nahi hai. Riders list se &quot;Settle Payout&quot; button daba kar payout record karein.
+                    </td>
+                  </tr>
+                ) : (
+                  allPayouts.map((p) => (
+                    <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-3 px-4 font-mono text-[11px] text-slate-600 whitespace-nowrap">
+                        {new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-slate-900">
+                        {p.rider?.name || 'Rider'}
+                        {p.rider?.phone && <span className="block text-[10px] font-mono font-normal text-slate-400">{p.rider.phone}</span>}
+                      </td>
+                      <td className="py-3 px-4 font-black text-emerald-600 text-sm">
+                        ₹{Number(p.amount).toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-slate-700">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px]">
+                          {p.paymentMode || 'UPI'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-mono text-slate-800">
+                        {p.referenceNo ? (
+                          <span className="bg-slate-100 px-2 py-0.5 rounded font-bold border border-slate-200">
+                            {p.referenceNo}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-extrabold text-[10px]">
+                          ✓ {p.status || 'PAID'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-slate-500 max-w-xs truncate">
+                        {p.notes || '—'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* SPECIAL VIEW: LIVE GPS RADAR & TRACKING VIEW (CLEAN WHITE THEME) */}
       {filterTab === 'tracking' && (
@@ -715,11 +887,10 @@ export default function RidersManager() {
               return (
                 <div
                   key={rider.id}
-                  className={`rounded-2xl p-4 border transition-all ${
-                    rider.isOnline
-                      ? 'bg-slate-50 border-emerald-300 shadow-xs'
-                      : 'bg-white border-slate-200 opacity-80'
-                  }`}
+                  className={`rounded-2xl p-4 border transition-all ${rider.isOnline
+                    ? 'bg-slate-50 border-emerald-300 shadow-xs'
+                    : 'bg-white border-slate-200 opacity-80'
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -727,9 +898,8 @@ export default function RidersManager() {
                         <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                           {rider.riderCode}
                         </span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                          rider.isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'
-                        }`}>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${rider.isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'
+                          }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${rider.isOnline ? 'bg-emerald-600 animate-pulse' : 'bg-slate-400'}`} />
                           <span>{rider.isOnline ? 'DUTY ON' : 'DUTY OFF'}</span>
                         </span>
@@ -839,16 +1009,18 @@ export default function RidersManager() {
       )}
 
       {/* RIDERS LIST / GRID */}
-      {loading && riders.length === 0 ? (
-        <div className="py-20 text-center text-gray-400">Loading delivery fleet...</div>
-      ) : filteredRiders.length === 0 ? (
-        <div className="py-16 text-center bg-white border border-gray-200 rounded-2xl p-8">
-          <Bike className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-gray-700">No Riders Found</h3>
-          <p className="text-gray-400 text-xs mt-1">Use the "+ Add New Rider" button above to add a rider to the fleet.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
+      {filterTab !== 'payouts' && (
+        <>
+          {loading && riders.length === 0 ? (
+            <div className="py-20 text-center text-gray-400">Loading delivery fleet...</div>
+          ) : filteredRiders.length === 0 ? (
+            <div className="py-16 text-center bg-white border border-gray-200 rounded-2xl p-8">
+              <Bike className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-gray-700">No Riders Found</h3>
+              <p className="text-gray-400 text-xs mt-1">Use the "+ Add New Rider" button above to add a rider to the fleet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
           {filteredRiders.map((rider) => {
             const mapsUrl = rider.currentLat && rider.currentLng
               ? `https://www.google.com/maps?q=${rider.currentLat},${rider.currentLng}`
@@ -1228,7 +1400,9 @@ export default function RidersManager() {
               </div>
             );
           })}
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* MODAL 1: ADD / CREATE RIDER ID */}

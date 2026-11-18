@@ -1054,10 +1054,19 @@ export default function RiderApp() {
             <span>Orders</span>
           </button>
 
-          <Link href="/rider/portal" className="flex flex-col items-center gap-1 font-bold text-gray-400 hover:text-gray-700">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('payouts');
+              if (rider?.id) fetchPayouts(rider.id);
+            }}
+            className={`flex flex-col items-center gap-1 font-bold cursor-pointer transition-colors ${
+              activeTab === 'payouts' ? 'text-[#1A56DB]' : 'text-gray-400 hover:text-gray-700'
+            }`}
+          >
             <Wallet className="w-5 h-5" />
             <span>Kamai / Payout</span>
-          </Link>
+          </button>
 
           <a
             href="/downloads/lapiez-rider.apk"

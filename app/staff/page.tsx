@@ -137,11 +137,14 @@ export default function StaffPage() {
   // Per-Rider Isolated Activity Filter
   const [selectedFleetRiderId, setSelectedFleetRiderId] = useState<string>('ALL');
 
-  // Attendance Punch-In State
+  // Attendance Punch-In & History State
   const [currentStaffId, setCurrentStaffId] = useState('');
   const [attendanceStatus, setAttendanceStatus] = useState<string>('NOT_MARKED');
   const [attendanceCheckInTime, setAttendanceCheckInTime] = useState<string | null>(null);
   const [isPunchingIn, setIsPunchingIn] = useState(false);
+  const [showAttendanceHistoryModal, setShowAttendanceHistoryModal] = useState(false);
+  const [myAttendanceRecords, setMyAttendanceRecords] = useState<any[]>([]);
+  const [loadingAttendanceHistory, setLoadingAttendanceHistory] = useState(false);
 
   // Active Order View Tab
   const [activeTab, setActiveTab] = useState<'aaya' | 'gya' | 'all'>('aaya');
@@ -204,6 +207,28 @@ export default function StaffPage() {
       showToast('Network error punching in.');
     } finally {
       setIsPunchingIn(false);
+    }
+  };
+
+  const fetchMyAttendanceHistory = async () => {
+    try {
+      setLoadingAttendanceHistory(true);
+      const res = await fetch(`/api/admin/staff/attendance?month=${new Date().toISOString().slice(0, 7)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.records)) {
+          const mine = data.records.filter(
+            (r: any) =>
+              (currentStaffCode && r.staffCode?.toLowerCase() === currentStaffCode.toLowerCase()) ||
+              (currentStaffName && r.staffName?.toLowerCase() === currentStaffName.toLowerCase())
+          );
+          setMyAttendanceRecords(mine);
+        }
+      }
+    } catch {
+      // Ignore background log fetch error
+    } finally {
+      setLoadingAttendanceHistory(false);
     }
   };
 
@@ -1012,6 +1037,18 @@ export default function StaffPage() {
                 <span>Duty Checked In</span>
               </span>
             )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowAttendanceHistoryModal(true);
+                fetchMyAttendanceHistory();
+              }}
+              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Calendar className="w-3.5 h-3.5 text-blue-600" />
+              <span>My Attendance Log</span>
+            </button>
           </div>
         </div>
       </div>
@@ -2015,6 +2052,81 @@ export default function StaffPage() {
           currentUserType="ADMIN"
           currentUserName={currentStaffName}
         />
+      )}
+
+      {/* ATTENDANCE HISTORY LOG MODAL */}
+      {showAttendanceHistoryModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[88vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#1A56DB] flex items-center justify-center font-bold">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900">Attendance Log</h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {currentStaffName} ({currentStaffCode})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAttendanceHistoryModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Monthly Summary */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-200 text-center">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">Days Present</span>
+                <span className="text-2xl font-black text-emerald-700 mt-0.5 block">
+                  {myAttendanceRecords.filter((r) => r.status === 'PRESENT').length}
+                </span>
+              </div>
+              <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200 text-center">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Total Marked</span>
+                <span className="text-2xl font-black text-slate-800 mt-0.5 block">
+                  {myAttendanceRecords.length}
+                </span>
+              </div>
+            </div>
+
+            {/* Attendance Days List */}
+            <div className="space-y-2 max-h-72 overflow-y-auto">
+              {loadingAttendanceHistory && myAttendanceRecords.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">Loading attendance records...</div>
+              ) : myAttendanceRecords.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  Is month ke liye koi attendance records nahi hain.
+                </div>
+              ) : (
+                myAttendanceRecords.map((r, i) => (
+                  <div key={i} className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-bold text-slate-900 block font-mono">
+                        {r.date}
+                      </span>
+                      {r.checkInTime && (
+                        <span className="text-[10px] text-slate-500 block">Checked In: {r.checkInTime}</span>
+                      )}
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                      r.status === 'PRESENT' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                      r.status === 'HALF_DAY' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                      'bg-rose-100 text-rose-800 border border-rose-300'
+                    }`}>
+                      {r.status}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

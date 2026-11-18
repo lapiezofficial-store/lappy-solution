@@ -147,16 +147,41 @@ export default function AdminPage() {
     | 'security'
     | 'delivery';
 
+  const [staffSubTab, setStaffSubTab] = useState<'ROSTER' | 'ATTENDANCE' | 'SALARY'>('ROSTER');
+  const [riderSubTab, setRiderSubTab] = useState<'all' | 'tracking' | 'payouts' | 'pending'>('all');
+
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get('tab') as AdminTab | null;
+      const tabParam = params.get('tab') as string | null;
+      if (tabParam === 'attendance' || tabParam === 'salary') {
+        return 'staff';
+      }
+      if (tabParam === 'payouts') {
+        return 'riders';
+      }
       if (tabParam && ['dashboard', 'orders', 'inventory', 'trash', 'categories', 'brands', 'scraper', 'billing', 'mybillbook', 'bank', 'coupons', 'banners', 'homepage', 'pages', 'blogs', 'media', 'theme', 'header_footer', 'tools', 'settings', 'leads', 'riders', 'warranty', 'staff', 'security', 'delivery'].includes(tabParam)) {
-        return tabParam;
+        return tabParam as AdminTab;
       }
     }
     return 'inventory';
   });
+
+  // Synchronize sub-tabs from URL search params on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab')?.toLowerCase();
+      const sub = params.get('sub')?.toUpperCase();
+      if (tab === 'attendance' || sub === 'ATTENDANCE') setStaffSubTab('ATTENDANCE');
+      else if (tab === 'salary' || sub === 'SALARY') setStaffSubTab('SALARY');
+      else if (sub === 'ROSTER') setStaffSubTab('ROSTER');
+
+      if (tab === 'payouts' || sub === 'PAYOUTS') setRiderSubTab('payouts');
+      else if (sub === 'TRACKING') setRiderSubTab('tracking');
+      else if (sub === 'PENDING') setRiderSubTab('pending');
+    }
+  }, []);
   const [assigningOrder, setAssigningOrder] = useState<any | null>(null);
 
   // Mobile Shell & Drawer State
@@ -3742,16 +3767,42 @@ export default function AdminPage() {
                     )}
                   </button>
 
-                  <button
-                    onClick={() => { setActiveTab('riders'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'riders' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
-                      }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Bike className="w-4 h-4 text-slate-500" />
-                      <span>Delivery Riders</span>
-                    </div>
-                  </button>
+                  {/* Delivery Riders with Sub-Sections */}
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => { setActiveTab('riders'); setRiderSubTab('all'); setIsMobileMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'riders' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
+                        }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Bike className="w-4 h-4 text-slate-500" />
+                        <span>Delivery Riders &amp; Fleet</span>
+                      </div>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded">GPS / Payout</span>
+                    </button>
+                    {activeTab === 'riders' && (
+                      <div className="pl-9 pr-2 space-y-1 text-xs">
+                        <button
+                          onClick={() => { setRiderSubTab('all'); setIsMobileMenuOpen(false); }}
+                          className={`w-full text-left py-1.5 px-2 rounded font-medium transition-colors ${riderSubTab === 'all' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          • All Fleet Roster
+                        </button>
+                        <button
+                          onClick={() => { setRiderSubTab('tracking'); setIsMobileMenuOpen(false); }}
+                          className={`w-full text-left py-1.5 px-2 rounded font-medium transition-colors ${riderSubTab === 'tracking' ? 'text-emerald-700 font-bold bg-emerald-50' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          • Live GPS Radar Tracking
+                        </button>
+                        <button
+                          onClick={() => { setRiderSubTab('payouts'); setIsMobileMenuOpen(false); }}
+                          className={`w-full text-left py-1.5 px-2 rounded font-medium transition-colors ${riderSubTab === 'payouts' ? 'text-slate-900 font-bold bg-slate-100' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          • Rider Payout Settlements
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   <button
                     onClick={() => { setActiveTab('warranty'); setIsMobileMenuOpen(false); }}
@@ -3764,19 +3815,44 @@ export default function AdminPage() {
                     </div>
                   </button>
 
-                  <button
-                    onClick={() => { setActiveTab('staff'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'staff' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
-                      }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-3">
-                        <User className="w-4 h-4 text-slate-500" />
-                        <span>Staff &amp; Passwords</span>
+                  {/* Staff Management Suite with Sub-Sections */}
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => { setActiveTab('staff'); setStaffSubTab('ROSTER'); setIsMobileMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'staff' ? 'bg-blue-50 text-[#1A56DB] font-bold' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
+                        }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-3">
+                          <User className="w-4 h-4 text-slate-500" />
+                          <span>Staff Management</span>
+                        </div>
+                        <span className="text-[10px] bg-blue-100 text-blue-700 font-extrabold px-2 py-0.5 rounded">Roster &amp; Attd</span>
                       </div>
-                      <span className="text-[10px] bg-blue-100 text-blue-700 font-extrabold px-2 py-0.5 rounded">ID/PIN</span>
-                    </div>
-                  </button>
+                    </button>
+                    {activeTab === 'staff' && (
+                      <div className="pl-9 pr-2 space-y-1 text-xs">
+                        <button
+                          onClick={() => { setStaffSubTab('ROSTER'); setIsMobileMenuOpen(false); }}
+                          className={`w-full text-left py-1.5 px-2 rounded font-medium transition-colors ${staffSubTab === 'ROSTER' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          • Staff Accounts &amp; PINs
+                        </button>
+                        <button
+                          onClick={() => { setStaffSubTab('ATTENDANCE'); setIsMobileMenuOpen(false); }}
+                          className={`w-full text-left py-1.5 px-2 rounded font-medium transition-colors ${staffSubTab === 'ATTENDANCE' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          • Daily Attendance Register
+                        </button>
+                        <button
+                          onClick={() => { setStaffSubTab('SALARY'); setIsMobileMenuOpen(false); }}
+                          className={`w-full text-left py-1.5 px-2 rounded font-medium transition-colors ${staffSubTab === 'SALARY' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          • Salary &amp; Payroll Tracker
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   <Link
                     href="/staff"
@@ -4063,19 +4139,47 @@ export default function AdminPage() {
                 )}
               </button>
 
-              <button
-                onClick={() => setActiveTab('riders')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'riders'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                title="Delivery Fleet & Rider Management"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Bike className="w-4 h-4 flex-shrink-0 text-slate-500" />
-                  {!isWpSidebarCollapsed && <span>Delivery Riders</span>}
-                </div>
-              </button>
+              {/* Delivery Riders with Sub-Sections */}
+              <div className="space-y-0.5">
+                <button
+                  onClick={() => { setActiveTab('riders'); setRiderSubTab('all'); }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'riders'
+                      ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  title="Delivery Fleet, Live GPS & Rider Payouts"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Bike className="w-4 h-4 flex-shrink-0 text-slate-500" />
+                    {!isWpSidebarCollapsed && <span>Delivery Riders</span>}
+                  </div>
+                  {!isWpSidebarCollapsed && (
+                    <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded">GPS</span>
+                  )}
+                </button>
+                {activeTab === 'riders' && !isWpSidebarCollapsed && (
+                  <div className="pl-7 pr-2 space-y-0.5 py-1 text-[11px]">
+                    <button
+                      onClick={() => setRiderSubTab('all')}
+                      className={`w-full text-left py-1 px-2 rounded transition-colors ${riderSubTab === 'all' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                      • All Fleet
+                    </button>
+                    <button
+                      onClick={() => setRiderSubTab('tracking')}
+                      className={`w-full text-left py-1 px-2 rounded transition-colors ${riderSubTab === 'tracking' ? 'text-emerald-700 font-bold bg-emerald-50' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                      • Live GPS Radar
+                    </button>
+                    <button
+                      onClick={() => setRiderSubTab('payouts')}
+                      className={`w-full text-left py-1 px-2 rounded transition-colors ${riderSubTab === 'payouts' ? 'text-slate-900 font-bold bg-slate-100' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                      • Rider Payouts
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <button
                 onClick={() => setActiveTab('warranty')}
@@ -4091,24 +4195,49 @@ export default function AdminPage() {
                 </div>
               </button>
 
-              <button
-                onClick={() => setActiveTab('staff')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'staff'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                title="Manage Staff IDs & Passwords"
-              >
-                <div className="flex items-center gap-2.5 w-full">
-                  <User className="w-4 h-4 flex-shrink-0 text-slate-500" />
-                  {!isWpSidebarCollapsed && (
-                    <div className="flex items-center justify-between flex-1">
-                      <span>Staff &amp; Passwords</span>
-                      <span className="text-[9px] bg-blue-100 text-blue-700 font-extrabold px-1.5 py-0.5 rounded">ID/PIN</span>
-                    </div>
-                  )}
-                </div>
-              </button>
+              {/* Staff Management Suite with Sub-Sections */}
+              <div className="space-y-0.5">
+                <button
+                  onClick={() => { setActiveTab('staff'); setStaffSubTab('ROSTER'); }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'staff'
+                      ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  title="Manage Staff Accounts, Daily Attendance & Payroll"
+                >
+                  <div className="flex items-center gap-2.5 w-full">
+                    <User className="w-4 h-4 flex-shrink-0 text-slate-500" />
+                    {!isWpSidebarCollapsed && (
+                      <div className="flex items-center justify-between flex-1">
+                        <span>Staff Management</span>
+                        <span className="text-[9px] bg-blue-100 text-blue-700 font-extrabold px-1.5 py-0.5 rounded">Roster</span>
+                      </div>
+                    )}
+                  </div>
+                </button>
+                {activeTab === 'staff' && !isWpSidebarCollapsed && (
+                  <div className="pl-7 pr-2 space-y-0.5 py-1 text-[11px]">
+                    <button
+                      onClick={() => setStaffSubTab('ROSTER')}
+                      className={`w-full text-left py-1 px-2 rounded transition-colors ${staffSubTab === 'ROSTER' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                      • Staff Accounts &amp; PINs
+                    </button>
+                    <button
+                      onClick={() => setStaffSubTab('ATTENDANCE')}
+                      className={`w-full text-left py-1 px-2 rounded transition-colors ${staffSubTab === 'ATTENDANCE' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                      • Daily Attendance
+                    </button>
+                    <button
+                      onClick={() => setStaffSubTab('SALARY')}
+                      className={`w-full text-left py-1 px-2 rounded transition-colors ${staffSubTab === 'SALARY' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                      • Salary &amp; Payroll
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <Link
                 href="/staff"
@@ -4455,10 +4584,12 @@ export default function AdminPage() {
                 {['inventory', 'trash', 'categories', 'brands', 'coupons', 'scraper'].includes(activeTab) && 'Store & Catalog'}
                 {['orders', 'billing', 'mybillbook', 'bank', 'leads'].includes(activeTab) && 'Sales & Operations'}
                 {['homepage', 'banners', 'header_footer', 'theme', 'pages', 'blogs', 'media'].includes(activeTab) && 'Appearance & CMS'}
-                {['delivery', 'security', 'settings', 'tools', 'warranty', 'dashboard'].includes(activeTab) && 'Management'}
+                {['delivery', 'security', 'settings', 'tools', 'warranty', 'staff', 'riders', 'dashboard'].includes(activeTab) && 'Management'}
               </span>
               <ChevronRight className="w-3 h-3 text-slate-400" />
               <span className="font-extrabold text-[#1A56DB] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200/70">
+                {activeTab === 'staff' && 'Staff Accounts & Attendance'}
+                {activeTab === 'riders' && 'Delivery Riders Fleet & Payouts'}
                 {activeTab === 'brands' && 'Top Brands Showcase'}
                 {activeTab === 'dashboard' && 'Dashboard'}
                 {activeTab === 'inventory' && 'All Products'}
@@ -4491,6 +4622,8 @@ export default function AdminPage() {
               <div className="flex items-center gap-3">
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                   {activeTab === 'dashboard' && 'Dashboard'}
+                  {activeTab === 'staff' && 'Staff Management, Daily Attendance & Payroll'}
+                  {activeTab === 'riders' && 'Delivery Riders Fleet, Live GPS & Payouts'}
                   {activeTab === 'delivery' && 'Delivery Charges & Distance Scale'}
                   {activeTab === 'security' && 'Security & Approved Devices'}
                   {activeTab === 'inventory' && `All Products (${products.length} SKUs)`}
@@ -11101,14 +11234,14 @@ export default function AdminPage() {
             {/* Staff Accounts Manager Tab */}
             {activeTab === 'staff' && (
               <div className="space-y-6">
-                <StaffManager />
+                <StaffManager initialTab={staffSubTab} />
               </div>
             )}
 
             {/* Riders Fleet Manager Tab */}
             {activeTab === 'riders' && (
               <div className="space-y-6">
-                <RidersManager />
+                <RidersManager initialTab={riderSubTab} />
               </div>
             )}
 

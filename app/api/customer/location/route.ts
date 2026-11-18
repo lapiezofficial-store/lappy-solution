@@ -3,23 +3,32 @@ import { recordCustomerLocation, getRecentCustomerLocations, calculateDeliveryFe
 import { triggerPusherEvent } from '@/lib/pusher';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
+import { hasAdminSession, isMasterAdminSecret } from '@/lib/adminAuth';
 
 const JWT_SECRET = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET || 'lapiez_dev_secret_key_2026';
 
 export async function GET(req: NextRequest) {
   try {
-    // Admin check
-    const cookieStore = await cookies();
-    const token = cookieStore.get('lapiez_admin_token')?.value;
+    // Multi-factor Admin Authorization check
+    const isAuth =
+      hasAdminSession(req) ||
+      isMasterAdminSecret(req.headers.get('x-admin-key')) ||
+      isMasterAdminSecret(req.headers.get('x-admin-token')) ||
+      isMasterAdminSecret(req.headers.get('authorization')?.replace('Bearer ', ''));
 
-    if (!token) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!isAuth) {
+      const cookieStore = await cookies();
+      const token = cookieStore.get('lapiez_admin_token')?.value;
 
-    try {
-      jwt.verify(token, JWT_SECRET);
-    } catch {
-      return NextResponse.json({ success: false, error: 'Invalid admin token' }, { status: 401 });
+      if (!token) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      }
+
+      try {
+        jwt.verify(token, JWT_SECRET);
+      } catch {
+        return NextResponse.json({ success: false, error: 'Invalid admin token' }, { status: 401 });
+      }
     }
 
     const { searchParams } = new URL(req.url);
