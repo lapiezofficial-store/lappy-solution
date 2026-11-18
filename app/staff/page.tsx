@@ -8,12 +8,15 @@ import {
   ShieldCheck, AlertCircle, ArrowRight, Check, X, Key,
   Lock, ArrowDownLeft, ArrowUpRight,
   Calendar, User, Smartphone, Download, Shield,
-  Bike, MapPin, Navigation, Compass, ExternalLink, Clock, MessageSquare, Plus
+  Bike, MapPin, Navigation, Compass, ExternalLink, Clock, MessageSquare, Plus,
+  Copy, CheckCheck, CreditCard
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 import WarrantyManager from '../../components/admin/WarrantyManager';
 import RiderActivityModal from '../../components/admin/RiderActivityModal';
+import OrderRiderAssignModal from '../../components/admin/OrderRiderAssignModal';
+import OrderChatModal from '../../components/OrderChatModal';
 
 interface StaffRider {
   id: string;
@@ -125,6 +128,20 @@ export default function StaffPage() {
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const hasFetchedOnceRef = useRef(false);
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+
+  // Image 4 Features: Assign Rider Modal & Chat Modal
+  const [assigningOrder, setAssigningOrder] = useState<StaffOrder | null>(null);
+  const [activeChatOrderId, setActiveChatOrderId] = useState<string | null>(null);
+
+  // Per-Rider Isolated Activity Filter
+  const [selectedFleetRiderId, setSelectedFleetRiderId] = useState<string>('ALL');
+
+  // Attendance Punch-In State
+  const [currentStaffId, setCurrentStaffId] = useState('');
+  const [attendanceStatus, setAttendanceStatus] = useState<string>('NOT_MARKED');
+  const [attendanceCheckInTime, setAttendanceCheckInTime] = useState<string | null>(null);
+  const [isPunchingIn, setIsPunchingIn] = useState(false);
 
   // Active Order View Tab
   const [activeTab, setActiveTab] = useState<'aaya' | 'gya' | 'all'>('aaya');
@@ -135,6 +152,60 @@ export default function StaffPage() {
   const [handoverModalOrder, setHandoverModalOrder] = useState<StaffOrder | null>(null);
   const [handoverStaffName, setHandoverStaffName] = useState('');
   const [isSubmittingHandover, setIsSubmittingHandover] = useState(false);
+
+  const fetchMyAttendance = useCallback(async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch(`/api/admin/staff/attendance?date=${today}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.todaySheet)) {
+          const myRecord = data.todaySheet.find(
+            (s: any) =>
+              (currentStaffCode && s.staffCode?.toLowerCase() === currentStaffCode.toLowerCase()) ||
+              (currentStaffName && s.staffName?.toLowerCase() === currentStaffName.toLowerCase())
+          );
+          if (myRecord) {
+            setAttendanceStatus(myRecord.status);
+            setAttendanceCheckInTime(myRecord.checkInTime);
+            if (myRecord.staffId) setCurrentStaffId(myRecord.staffId);
+          }
+        }
+      }
+    } catch {
+      // Background attendance fetch
+    }
+  }, [currentStaffCode, currentStaffName]);
+
+  const handlePunchInSelf = async () => {
+    try {
+      setIsPunchingIn(true);
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch('/api/admin/staff/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          staffId: currentStaffId || 'current',
+          staffCode: currentStaffCode,
+          staffName: currentStaffName,
+          status: 'PRESENT',
+          date: today,
+          notes: 'Punch-in from Showroom Staff portal',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('✓ Attendance marked PRESENT for today!');
+        fetchMyAttendance();
+      } else {
+        showToast(data.error || 'Failed to punch in');
+      }
+    } catch {
+      showToast('Network error punching in.');
+    } finally {
+      setIsPunchingIn(false);
+    }
+  };
 
   // Check existing session once on mount
   useEffect(() => {
@@ -160,6 +231,39 @@ export default function StaffPage() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchMyAttendance();
+    }
+  }, [isAuthenticated, fetchMyAttendance]);
+
+  // Audio Chime on New Order
+  const playNewOrderChime = () => {
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2);
+      osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.3);
+
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.55);
+    } catch {}
+  };
+
   // Silent non-flickering fetch
   const fetchStaffOrders = useCallback(async (silent = false) => {
     if (!hasFetchedOnceRef.current && !silent) {
@@ -172,7 +276,16 @@ export default function StaffPage() {
       const res = await fetch('/api/staff/orders', { cache: 'no-store' });
       const data = await res.json();
       if (res.ok && data.success) {
-        setOrders(data.orders || []);
+        const fetchedOrders: StaffOrder[] = data.orders || [];
+        if (hasFetchedOnceRef.current && fetchedOrders.length > 0) {
+          const newOrders = fetchedOrders.filter((o) => !knownOrderIdsRef.current.has(o.orderId));
+          if (newOrders.length > 0) {
+            playNewOrderChime();
+            showToast(`🔔 Naya Order Aaya! #${newOrders[0].orderId} (${newOrders[0].customerName})`);
+          }
+        }
+        fetchedOrders.forEach((o) => knownOrderIdsRef.current.add(o.orderId));
+        setOrders(fetchedOrders);
         if (data.metrics) setMetrics(data.metrics);
         hasFetchedOnceRef.current = true;
       } else if (res.status === 401) {
@@ -189,14 +302,39 @@ export default function StaffPage() {
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchStaffOrders(false);
+    // Fast 5-second polling for real-time updates
     const interval = setInterval(() => {
-      // Skip background fetch if user is not on orders tab or modal open
       if (document.visibilityState === 'visible') {
         fetchStaffOrders(true);
       }
-    }, 25000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [isAuthenticated, fetchStaffOrders]);
+
+  // Image 4 Action: Approve Payment & Generate Bill
+  const handleVerifyPayment = async (orderId: string) => {
+    try {
+      const res = await fetch('/api/staff/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          paymentStatus: 'Paid',
+          orderStatus: 'Packed',
+          staffName: currentStaffName,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`✓ Payment Approved for #${orderId}! Official Bill Unlocked.`);
+        fetchStaffOrders(true);
+      } else {
+        showToast(data.error || 'Failed to approve payment');
+      }
+    } catch {
+      showToast('Network error verifying payment.');
+    }
+  };
 
   // Fetch Fleet & Real-time Milestone Activities
   const fetchFleetData = useCallback(async (silent = false) => {
@@ -525,6 +663,13 @@ export default function StaffPage() {
     );
   }, [orders]);
 
+  const displayedFleetActivities = useMemo(() => {
+    if (selectedFleetRiderId === 'ALL') return fleetActivities;
+    return fleetActivities.filter(
+      (act) => act.riderId === selectedFleetRiderId || act.rider?.id === selectedFleetRiderId
+    );
+  }, [fleetActivities, selectedFleetRiderId]);
+
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-slate-800">
@@ -821,6 +966,53 @@ export default function StaffPage() {
               <span>Warranty</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Daily Staff Attendance Punch-In Strip */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-4">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold shrink-0 ${
+              attendanceStatus === 'PRESENT' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+            }`}>
+              <Calendar className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-slate-900">Today's Attendance:</span>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                  attendanceStatus === 'PRESENT'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-amber-50 text-amber-800 border border-amber-300'
+                }`}>
+                  {attendanceStatus === 'PRESENT' ? `✓ Present (${attendanceCheckInTime || 'Checked In'})` : 'Not Marked Yet'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Staff: <strong className="text-slate-800">{currentStaffName}</strong> ({currentStaffCode}) • Role: {currentStaffRole}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {attendanceStatus !== 'PRESENT' ? (
+              <button
+                type="button"
+                onClick={handlePunchInSelf}
+                disabled={isPunchingIn}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{isPunchingIn ? 'Punching In...' : '✓ Punch In Present (Roll Call)'}</span>
+              </button>
+            ) : (
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Duty Checked In</span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1174,33 +1366,33 @@ export default function StaffPage() {
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="grid grid-cols-3 gap-1.5 pt-2">
+                      {/* Action Buttons: Logo Only (No Background) */}
+                      <div className="flex items-center justify-end gap-2 pt-2">
                         <a
                           href={`tel:${rider.phone}`}
-                          className="py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+                          title={`Call ${rider.name}`}
+                          className="p-1.5 text-blue-600 hover:text-blue-800 transition-colors"
                         >
-                          <Phone className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Call</span>
+                          <Phone className="w-4 h-4" />
                         </a>
 
                         <a
                           href={`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(`Hello ${rider.name}, Lapiez Showroom Staff desk here.`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="py-2 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 flex items-center justify-center gap-1 transition-colors"
+                          title="WhatsApp Rider"
+                          className="p-1.5 text-emerald-600 hover:text-emerald-800 transition-colors"
                         >
-                          <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>WhatsApp</span>
+                          <WhatsAppIcon className="w-4 h-4" />
                         </a>
 
                         <button
                           type="button"
                           onClick={() => setSelectedTimelineRider(rider)}
-                          className="py-2 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title="View Rider Timeline"
+                          className="p-1.5 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
                         >
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>Timeline</span>
+                          <Clock className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -1212,23 +1404,53 @@ export default function StaffPage() {
 
           {/* Section 3: Live Milestone Activity Feed */}
           <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-600" />
-                <span>Live Rider Milestone Reports Stream</span>
-              </h3>
-              <span className="text-[11px] text-slate-500 font-semibold">
-                Updated in real time from rider apps
-              </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-600" />
+                  <span>Live Rider Milestone Reports Stream</span>
+                </h3>
+                <span className="text-[11px] text-slate-500 font-semibold">
+                  Updated in real time from rider apps
+                </span>
+              </div>
+
+              {/* Per-Rider Isolation Selector */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-slate-600">Filter by Rider:</span>
+                <select
+                  value={selectedFleetRiderId}
+                  onChange={(e) => setSelectedFleetRiderId(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none cursor-pointer"
+                >
+                  <option value="ALL">All Fleet (Combined)</option>
+                  {riders.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} ({r.riderCode || r.phone})
+                    </option>
+                  ))}
+                </select>
+                {selectedFleetRiderId !== 'ALL' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFleetRiderId('ALL')}
+                    className="text-xs text-blue-600 hover:underline font-bold cursor-pointer"
+                  >
+                    Clear Filter
+                  </button>
+                )}
+              </div>
             </div>
 
-            {fleetActivities.length === 0 ? (
+            {displayedFleetActivities.length === 0 ? (
               <div className="py-8 text-center text-xs text-slate-500">
-                Koi activity records nahi hain abhi tak.
+                {selectedFleetRiderId !== 'ALL'
+                  ? 'Is rider ke liye abhi koi activity record nahi hai.'
+                  : 'Koi activity records nahi hain abhi tak.'}
               </div>
             ) : (
               <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
-                {fleetActivities.map((act) => {
+                {displayedFleetActivities.map((act) => {
                   return (
                     <div
                       key={act.id}
@@ -1520,49 +1742,107 @@ export default function StaffPage() {
                       </div>
                     </div>
 
-                    {/* Action Toolbar */}
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <a
-                          href={`tel:${order.phone}`}
-                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
-                        >
-                          <Phone className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Call</span>
-                        </a>
-
-                        <button
-                          type="button"
-                          onClick={() => sendWhatsAppReadyMessage(order)}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                          <WhatsAppIcon className="w-4 h-4" />
-                          <span>WhatsApp Alert</span>
-                        </button>
-
-                        <Link
-                          href={`/invoice/${order.orderId}`}
-                          target="_blank"
-                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
-                        >
-                          <Printer className="w-3.5 h-3.5" />
-                          <span>Bill</span>
-                        </Link>
+                    {/* Image 4: Bank Reference / Payment Card */}
+                    <div className="bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3 my-2 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                          Bank Reference / Payment
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                          order.paymentStatus === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                        }`}>
+                          {order.paymentStatus}
+                        </span>
                       </div>
 
+                      {order.utrNumber ? (
+                        <div>
+                          <div className="flex items-center gap-1.5 font-mono text-sm font-black text-slate-900">
+                            <span>{order.utrNumber}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(order.utrNumber!);
+                                showToast('UTR Number Copied!');
+                              }}
+                              className="p-1 text-[#1A56DB] hover:text-[#1E40AF] cursor-pointer"
+                              title="Copy UTR"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <span className="text-[10px] text-slate-500 block">
+                            UPI Online Payment (Bank statement)
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="font-semibold text-slate-700">
+                          {order.paymentMethod || 'Cash / Pay at Counter'}
+                        </div>
+                      )}
+
+                      {/* Rider Assignment Badge if Assigned */}
+                      {order.rider && (
+                        <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/60 mt-1 text-[11px]">
+                          <span className="text-slate-800 flex items-center gap-1.5 font-bold">
+                            <Bike className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Rider: {order.rider.name}</span>
+                            {order.rider.riderCode && (
+                              <span className="text-[10px] font-mono bg-blue-50 text-blue-700 px-1 rounded">
+                                {order.rider.riderCode}
+                              </span>
+                            )}
+                          </span>
+                          <a href={`tel:${order.rider.phone}`} className="font-mono text-blue-600 hover:underline">
+                            {order.rider.phone}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Image 4 & Reference 2: Professional Action Toolbar */}
+                    <div className="pt-2.5 flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {isConfirmed && (
+                        {/* 1. Approve Payment & Generate Bill */}
+                        {order.paymentStatus !== 'Paid' && (
                           <button
                             type="button"
-                            onClick={() => handleUpdateOrderStatus(order.orderId, 'Packed')}
-                            className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                            onClick={() => handleVerifyPayment(order.orderId)}
+                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
                           >
-                            <Package className="w-3.5 h-3.5" />
-                            <span>Mark Packed</span>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Approve Payment &amp; Generate Bill</span>
                           </button>
                         )}
 
-                        {!isDelivered && (
+                        {/* 2. Dispatch Order / Send to Rider */}
+                        {!order.isStorePickup && !isDelivered && (
+                          <button
+                            type="button"
+                            onClick={() => setAssigningOrder(order)}
+                            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <Bike className="w-3.5 h-3.5" />
+                            <span>{order.rider ? 'Change Delivery Rider' : 'Send to Delivery Rider'}</span>
+                          </button>
+                        )}
+
+                        {!order.isStorePickup && !isDelivered && !isOutForDelivery && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleUpdateOrderStatus(order.orderId, 'Out For Delivery');
+                              sendWhatsAppDispatchMessage(order);
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <Truck className="w-3.5 h-3.5" />
+                            <span>Dispatch Order</span>
+                          </button>
+                        )}
+
+                        {/* 3. Hand Over & Deliver (Store pickup) */}
+                        {order.isStorePickup && !isDelivered && (
                           <button
                             type="button"
                             onClick={() => {
@@ -1573,26 +1853,66 @@ export default function StaffPage() {
                                   : currentStaffName
                               );
                             }}
-                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                            className="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
                           >
-                            <Check className="w-4 h-4" />
+                            <Store className="w-3.5 h-3.5" />
                             <span>Hand Over &amp; Deliver</span>
                           </button>
                         )}
 
-                        {!isDelivered && !order.isStorePickup && !isOutForDelivery && (
+                        {/* 4. Mark Packed */}
+                        {isConfirmed && (
                           <button
                             type="button"
-                            onClick={() => {
-                              handleUpdateOrderStatus(order.orderId, 'Out For Delivery');
-                              sendWhatsAppDispatchMessage(order);
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                            onClick={() => handleUpdateOrderStatus(order.orderId, 'Packed')}
+                            className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer"
                           >
-                            <Truck className="w-3.5 h-3.5" />
-                            <span>Dispatch</span>
+                            <Package className="w-3.5 h-3.5" />
+                            <span>Mark Packed</span>
                           </button>
                         )}
+                      </div>
+
+                      {/* Communication & Print Shortcuts */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* WhatsApp Customer */}
+                        <button
+                          type="button"
+                          onClick={() => sendWhatsAppReadyMessage(order)}
+                          className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>WhatsApp Customer</span>
+                        </button>
+
+                        {/* Direct Call */}
+                        <a
+                          href={`tel:${order.phone}`}
+                          className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                        >
+                          <Phone className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Call</span>
+                        </a>
+
+                        {/* Live Delivery Chat */}
+                        <button
+                          type="button"
+                          onClick={() => setActiveChatOrderId(order.orderId)}
+                          className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Chat</span>
+                        </button>
+
+                        {/* Bill / Invoice */}
+                        <Link
+                          href={`/invoice/${order.orderId}`}
+                          target="_blank"
+                          className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Bill</span>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -1665,6 +1985,35 @@ export default function StaffPage() {
           rider={selectedTimelineRider}
           isOpen={Boolean(selectedTimelineRider)}
           onClose={() => setSelectedTimelineRider(null)}
+        />
+      )}
+
+      {/* RIDER DISPATCH & ASSIGN MODAL */}
+      {assigningOrder && (
+        <OrderRiderAssignModal
+          orderId={assigningOrder.orderId}
+          customerName={assigningOrder.customerName}
+          customerPhone={assigningOrder.phone}
+          address={assigningOrder.address}
+          totalAmount={assigningOrder.totalAmount}
+          currentRiderId={assigningOrder.rider?.id}
+          onClose={() => setAssigningOrder(null)}
+          onSuccess={() => {
+            fetchStaffOrders(true);
+            fetchFleetData(true);
+            setAssigningOrder(null);
+          }}
+        />
+      )}
+
+      {/* ORDER LIVE CHAT MODAL */}
+      {activeChatOrderId && (
+        <OrderChatModal
+          orderId={activeChatOrderId}
+          isOpen={Boolean(activeChatOrderId)}
+          onClose={() => setActiveChatOrderId(null)}
+          currentUserType="ADMIN"
+          currentUserName={currentStaffName}
         />
       )}
     </div>

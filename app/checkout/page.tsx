@@ -793,36 +793,6 @@ export default function CheckoutPage() {
                   {/* Physical Address Fields if Delivery */}
                   {deliveryType === 'delivery' ? (
                     <div className="space-y-4 pt-2">
-
-                      {/* Live GPS Location Status (Clean & Subtle - Hidden until detected) */}
-                      {Boolean(customerLocation?.lat && customerLocation?.lng) && (
-                        <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 shadow-2xs flex items-center justify-between gap-3 text-xs">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                              <CheckCircle2 className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <span className="font-bold text-slate-900 block">
-                                Live Location Verified: {customerLocation?.area || 'Garhwa Area'} ({customerLocation?.distanceKm ?? 0} km from Store)
-                              </span>
-                              <span className="text-[11px] text-slate-500">
-                                Delivery Charge: <strong className="text-emerald-700">{currentDeliveryFee === 0 ? 'FREE' : `₹${currentDeliveryFee}`}</strong>
-                              </span>
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsLocationModalOpen(true);
-                              handleUseLiveGps();
-                            }}
-                            className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer shrink-0"
-                          >
-                            Update Location
-                          </button>
-                        </div>
-                      )}
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-slate-700">Street Address / Mohalla / Village *</label>
                         <input

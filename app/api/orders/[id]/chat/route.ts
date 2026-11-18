@@ -132,3 +132,41 @@ export async function POST(
     return NextResponse.json({ error: 'Failed to send message: ' + error.message }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+    const orderIdParam = decodeURIComponent(id || '').trim();
+    const body = await req.json().catch(() => ({}));
+    const { viewerType } = body;
+
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [{ id: orderIdParam }, { orderId: orderIdParam }],
+      },
+      select: { id: true, orderId: true },
+    });
+    const targetOrderIds = order ? [order.id, order.orderId] : [orderIdParam];
+
+    const filter: any = {
+      orderId: { in: targetOrderIds },
+      isRead: false,
+    };
+    if (viewerType) {
+      filter.senderType = { not: viewerType };
+    }
+
+    const updated = await prisma.orderChatMessage.updateMany({
+      where: filter,
+      data: { isRead: true },
+    });
+
+    return NextResponse.json({ success: true, count: updated.count });
+  } catch (error: any) {
+    console.error('Mark read error:', error);
+    return NextResponse.json({ error: 'Failed to mark read' }, { status: 500 });
+  }
+}

@@ -82,9 +82,27 @@ export default function RidersManager() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [payoutModalTab, setPayoutModalTab] = useState<'settle' | 'history'>('settle');
+  const [riderPayouts, setRiderPayouts] = useState<any[]>([]);
+  const [loadingRiderPayouts, setLoadingRiderPayouts] = useState(false);
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
   const [activeRiderForActivity, setActiveRiderForActivity] = useState<Rider | null>(null);
   const [chatOrderId, setChatOrderId] = useState<string | null>(null);
+
+  const fetchRiderPayouts = async (rId: string) => {
+    try {
+      setLoadingRiderPayouts(true);
+      const res = await fetch(`/api/admin/payouts?riderId=${encodeURIComponent(rId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) setRiderPayouts(data);
+      }
+    } catch (err) {
+      console.error('Error fetching rider payouts:', err);
+    } finally {
+      setLoadingRiderPayouts(false);
+    }
+  };
 
   // Forms
   const [addForm, setAddForm] = useState({
@@ -789,18 +807,17 @@ export default function RidersManager() {
                     <button
                       type="button"
                       onClick={() => setActiveRiderForActivity(rider)}
-                      className="px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-slate-200"
-                      title="View Activity History"
+                      className="p-1.5 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                      title="View Activity Timeline"
                     >
-                      <History className="w-3.5 h-3.5 text-[#1A56DB]" />
-                      <span>Timeline</span>
+                      <History className="w-4 h-4 text-[#1A56DB]" />
                     </button>
 
                     <a
                       href={`https://wa.me/91${rider.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${rider.name}, Lapiez Admin regarding delivery dispatch.`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl flex items-center justify-center transition-colors"
+                      className="p-1.5 text-emerald-600 hover:text-emerald-700 transition-colors"
                       title="Chat on WhatsApp"
                     >
                       <WhatsAppIcon className="w-4 h-4" />
@@ -808,10 +825,10 @@ export default function RidersManager() {
 
                     <a
                       href={`tel:${rider.phone}`}
-                      className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold flex items-center justify-center transition-colors"
+                      className="p-1.5 text-blue-600 hover:text-blue-700 transition-colors"
                       title="Direct Call Rider"
                     >
-                      <Phone className="w-3.5 h-3.5 text-[#1A56DB]" />
+                      <Phone className="w-4 h-4" />
                     </a>
                   </div>
                 </div>
@@ -1129,6 +1146,8 @@ export default function RidersManager() {
                         onClick={() => {
                           setSelectedRider(rider);
                           setPayoutAmount(rider.walletBalance > 0 ? String(rider.walletBalance) : '');
+                          setPayoutModalTab('settle');
+                          fetchRiderPayouts(rider.id);
                           setShowPayoutModal(true);
                         }}
                         className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-2.5 rounded-xl text-xs flex items-center justify-center gap-1 shadow-xs transition-all whitespace-nowrap"
@@ -1510,13 +1529,13 @@ export default function RidersManager() {
       {showPayoutModal && selectedRider && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
                   <Wallet className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-lg text-gray-900">Settle Rider Payout</h3>
+                  <h3 className="font-extrabold text-lg text-gray-900">Rider Payout &amp; Settlements</h3>
                   <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">{selectedRider.name} (<Phone className="w-3 h-3 text-gray-400 inline" />{selectedRider.phone})</p>
                 </div>
               </div>
@@ -1528,68 +1547,134 @@ export default function RidersManager() {
               </button>
             </div>
 
-            <form onSubmit={handleSettlePayout} className="space-y-4">
-              <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
-                <div className="text-xs text-emerald-700 font-semibold">Current Unpaid Earnings</div>
-                <div className="text-2xl font-black text-emerald-800 mt-1">₹{selectedRider.walletBalance || 0}</div>
-                {selectedRider.bankUpi && (
-                  <div className="text-xs text-emerald-600 mt-1">Linked UPI: <strong>{selectedRider.bankUpi}</strong></div>
+            {/* Payout Modal Tab Switcher */}
+            <div className="flex bg-slate-100 p-1 rounded-xl mb-4 text-xs font-bold gap-1">
+              <button
+                type="button"
+                onClick={() => setPayoutModalTab('settle')}
+                className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  payoutModalTab === 'settle' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Settle Payout
+              </button>
+              <button
+                type="button"
+                onClick={() => setPayoutModalTab('history')}
+                className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  payoutModalTab === 'history' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Payout History ({riderPayouts.length})
+              </button>
+            </div>
+
+            {payoutModalTab === 'settle' ? (
+              <form onSubmit={handleSettlePayout} className="space-y-4">
+                <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
+                  <div className="text-xs text-emerald-700 font-semibold">Current Unpaid Earnings</div>
+                  <div className="text-2xl font-black text-emerald-800 mt-1">₹{selectedRider.walletBalance || 0}</div>
+                  {selectedRider.bankUpi && (
+                    <div className="text-xs text-emerald-600 mt-1">Linked UPI: <strong>{selectedRider.bankUpi}</strong></div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">Amount to Pay (₹) *</label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="e.g. 500"
+                    value={payoutAmount}
+                    onChange={(e) => setPayoutAmount(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-gray-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">Payment Method</label>
+                  <select
+                    value={payoutMode}
+                    onChange={(e) => setPayoutMode(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  >
+                    <option value="UPI">Google Pay / PhonePe (UPI)</option>
+                    <option value="BANK_TRANSFER">Direct Bank Transfer (IMPS/NEFT)</option>
+                    <option value="CASH">Cash in Hand</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">UTR / Transaction Ref (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="UPI Ref No or Bank UTR"
+                    value={utrNumber}
+                    onChange={(e) => setUtrNumber(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowPayoutModal(false)}
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm shadow-sm disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Processing...' : 'Confirm & Settle Payout'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-3">
+                {loadingRiderPayouts && riderPayouts.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-slate-400">Loading payout records...</div>
+                ) : riderPayouts.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-slate-400">
+                    Is rider ke liye koi previous payout record nahi hai.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                    {riderPayouts.map((p) => (
+                      <div key={p.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-sm font-black text-emerald-700">₹{p.amount}</strong>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            {p.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-500">
+                          <span>Mode: {p.paymentMode}</span>
+                          <span>{new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        {p.utrNumber && (
+                          <div className="font-mono text-[11px] text-slate-700 pt-0.5">
+                            UTR: {p.utrNumber}
+                          </div>
+                        )}
+                        {p.note && <div className="text-[10px] text-slate-500">Note: {p.note}</div>}
+                      </div>
+                    ))}
+                  </div>
                 )}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPayoutModal(false)}
+                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
-
-              <div>
-                <label className="text-xs font-bold text-gray-700 block mb-1">Amount to Pay (₹) *</label>
-                <input
-                  type="number"
-                  required
-                  placeholder="e.g. 500"
-                  value={payoutAmount}
-                  onChange={(e) => setPayoutAmount(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-gray-900"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-gray-700 block mb-1">Payment Method</label>
-                <select
-                  value={payoutMode}
-                  onChange={(e) => setPayoutMode(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                >
-                  <option value="UPI">Google Pay / PhonePe (UPI)</option>
-                  <option value="BANK_TRANSFER">Direct Bank Transfer (IMPS/NEFT)</option>
-                  <option value="CASH">Cash in Hand</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-gray-700 block mb-1">UTR / Transaction Ref (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="UPI Ref No or Bank UTR"
-                  value={utrNumber}
-                  onChange={(e) => setUtrNumber(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
-                />
-              </div>
-
-              <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowPayoutModal(false)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm shadow-md disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Processing...' : 'Mark as Paid'}
-                </button>
-              </div>
-            </form>
+            )}
           </div>
         </div>
       )}

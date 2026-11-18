@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Plus, Search, RefreshCw, Key, Lock, Unlock,
   ShieldCheck, Package, Trash2, Edit2, Phone, Copy, Check,
-  ExternalLink, Smartphone, Download, X, IndianRupee, Award, Filter
+  ExternalLink, Smartphone, Download, X, IndianRupee, Award, Filter, Calendar
 } from 'lucide-react';
 import { adminFetch } from '@/lib/adminApi';
 import { useStore } from '@/context/StoreContext';
+import StaffAttendanceRegister from './StaffAttendanceRegister';
+import StaffSalaryManager from './StaffSalaryManager';
 
 interface StaffAccount {
   id: string;
@@ -30,6 +32,7 @@ export default function StaffManager() {
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'COUNTER' | 'TECHNICIAN' | 'MANAGER'>('ALL');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  const [mainTab, setMainTab] = useState<'ROSTER' | 'ATTENDANCE' | 'SALARY'>('ROSTER');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffAccount | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -275,6 +278,51 @@ export default function StaffManager() {
         </div>
       </div>
 
+      {/* Main Tab Navigation Bar: Roster | Attendance | Salary */}
+      <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 text-xs font-bold gap-1 shadow-2xs">
+        <button
+          type="button"
+          onClick={() => setMainTab('ROSTER')}
+          className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            mainTab === 'ROSTER' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Staff Accounts ({staffList.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMainTab('ATTENDANCE')}
+          className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            mainTab === 'ATTENDANCE' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          <span>Daily Attendance Register</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMainTab('SALARY')}
+          className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            mainTab === 'SALARY' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <IndianRupee className="w-4 h-4" />
+          <span>Salary &amp; Payroll Manager</span>
+        </button>
+      </div>
+
+      {/* VIEW 1: ATTENDANCE REGISTER */}
+      {mainTab === 'ATTENDANCE' && <StaffAttendanceRegister />}
+
+      {/* VIEW 2: SALARY & PAYROLL MANAGER */}
+      {mainTab === 'SALARY' && <StaffSalaryManager />}
+
+      {/* VIEW 3: STAFF ACCOUNTS & ROSTER */}
+      {mainTab === 'ROSTER' && (
+        <div className="space-y-5">
       {/* Quick Direct Create Staff ID & Password Form */}
       <div className="bg-white border-2 border-blue-500/30 rounded-2xl p-5 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-3">
@@ -739,6 +787,8 @@ export default function StaffManager() {
               </div>
             );
           })}
+        </div>
+      )}
         </div>
       )}
 
