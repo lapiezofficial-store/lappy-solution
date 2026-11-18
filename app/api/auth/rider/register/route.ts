@@ -87,9 +87,9 @@ export async function POST(req: Request) {
             dlNumber: dlNumber ? dlNumber.trim().toUpperCase() : null,
             city: city ? city.trim() : 'Garhwa',
             emergencyContact: emergencyContact ? emergencyContact.trim() : null,
-            approvalStatus: 'APPROVED', // Auto-approved so delivery partner can immediately log in
+            approvalStatus: 'PENDING', // Requires approval from Showroom Staff or Admin
             commissionPerOrder: 25,
-            isOnline: true,
+            isOnline: false,
             isBlocked: false,
           },
         });
@@ -114,11 +114,23 @@ export async function POST(req: Request) {
       throw new Error('Rider ID generate nahi ho payi. Kripya punah prayas karein.');
     }
 
+    // Record registration submission in RiderActivity timeline
+    await prisma.riderActivity.create({
+      data: {
+        riderId: newRider.id,
+        activityType: 'REGISTRATION_SUBMITTED',
+        title: 'New Rider Registered (Pending Verification)',
+        description: `Rider ${newRider.name} (${newRider.riderCode}, phone: ${newRider.phone}) ne register kiya. Showroom Staff ya Admin se verification & approval pending hai.`,
+        locationText: newRider.city || 'Garhwa',
+      },
+    }).catch(() => {});
+
     const { password: _, ...sanitized } = newRider;
 
     return NextResponse.json({
       success: true,
-      message: `Registration safal raha! Aapki Rider ID hai: ${riderCode}.`,
+      status: 'PENDING',
+      message: `Registration safal raha! Aapki Rider ID hai: ${riderCode}. Showroom Staff ya Admin dwara verification ke baad account activate ho jayega.`,
       rider: sanitized,
     });
   } catch (error: any) {

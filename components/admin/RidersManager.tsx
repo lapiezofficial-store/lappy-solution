@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Bike, Plus, Search, RefreshCw,
   Wallet, Phone, DollarSign,
   Check, MapPin, Truck, Edit2,
@@ -417,7 +417,7 @@ export default function RidersManager() {
 
   const handleCopyRiderAccess = (rider: Rider) => {
     const msg = `Lapiez Rider App Login\nURL: https://www.lapiez.com/rider/login\nRider ID: ${rider.riderCode || rider.phone}\nPhone: ${rider.phone}`;
-    navigator.clipboard.writeText(msg).catch(() => {});
+    navigator.clipboard.writeText(msg).catch(() => { });
     setCopiedRiderId(rider.id);
     setTimeout(() => setCopiedRiderId(null), 2000);
   };
@@ -463,11 +463,10 @@ export default function RidersManager() {
         </div>
 
         {/* Card 2: Live Tracking & Online */}
-        <div 
+        <div
           onClick={() => setFilterTab('tracking')}
-          className={`border rounded-2xl p-4 shadow-xs transition-all cursor-pointer ${
-            filterTab === 'tracking' ? 'ring-2 ring-emerald-500 bg-emerald-50/50' : 'bg-white border-gray-200 hover:border-emerald-300'
-          }`}
+          className={`border rounded-2xl p-4 shadow-xs transition-all cursor-pointer ${filterTab === 'tracking' ? 'ring-2 ring-emerald-500 bg-emerald-50/50' : 'bg-white border-gray-200 hover:border-emerald-300'
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-700 uppercase">Live On-Road GPS</span>
@@ -480,9 +479,8 @@ export default function RidersManager() {
         </div>
 
         {/* Card 3: Pending Approvals */}
-        <div className={`border rounded-2xl p-4 shadow-xs transition-all ${
-          pendingCount > 0 ? 'bg-amber-50/60 border-amber-300' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`border rounded-2xl p-4 shadow-xs transition-all ${pendingCount > 0 ? 'bg-amber-50/60 border-amber-300' : 'bg-white border-gray-200'
+          }`}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-700 uppercase">Pending Review</span>
             <div className="p-2 bg-amber-100 text-amber-700 rounded-xl">
@@ -616,18 +614,16 @@ export default function RidersManager() {
           <div className="flex bg-gray-100 p-1 rounded-xl text-xs font-bold shrink-0">
             <button
               onClick={() => setFilterTab('all')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                filterTab === 'all' ? 'bg-white shadow-xs text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-800'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition-all ${filterTab === 'all' ? 'bg-white shadow-xs text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-800'
+                }`}
             >
               All Fleet ({riders.length})
             </button>
 
             <button
               onClick={() => setFilterTab('tracking')}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                filterTab === 'tracking' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'text-emerald-700 hover:text-emerald-800'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${filterTab === 'tracking' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'text-emerald-700 hover:text-emerald-800'
+                }`}
             >
               <Compass className="w-3.5 h-3.5" />
               <span>Live GPS Tracking ({onlineCount})</span>
@@ -635,27 +631,24 @@ export default function RidersManager() {
 
             <button
               onClick={() => setFilterTab('pending')}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
-                filterTab === 'pending' ? 'bg-amber-500 text-white shadow-xs font-bold' : 'text-amber-700 hover:text-amber-800'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${filterTab === 'pending' ? 'bg-amber-500 text-white shadow-xs font-bold' : 'text-amber-700 hover:text-amber-800'
+                }`}
             >
               Pending ({pendingCount})
             </button>
 
             <button
               onClick={() => setFilterTab('approved')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                filterTab === 'approved' ? 'bg-white shadow-xs text-emerald-700 font-bold' : 'text-gray-500 hover:text-gray-800'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition-all ${filterTab === 'approved' ? 'bg-white shadow-xs text-emerald-700 font-bold' : 'text-gray-500 hover:text-gray-800'
+                }`}
             >
               Approved ({approvedCount})
             </button>
 
             <button
               onClick={() => setFilterTab('blocked')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                filterTab === 'blocked' ? 'bg-white shadow-xs text-red-600 font-bold' : 'text-gray-500 hover:text-gray-800'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition-all ${filterTab === 'blocked' ? 'bg-white shadow-xs text-red-600 font-bold' : 'text-gray-500 hover:text-gray-800'
+                }`}
             >
               Blocked ({blockedCount})
             </button>
@@ -697,7 +690,7 @@ export default function RidersManager() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
             {riders.map((rider) => {
-              const mapsUrl = rider.currentLat && rider.currentLng 
+              const mapsUrl = rider.currentLat && rider.currentLng
                 ? `https://www.google.com/maps?q=${rider.currentLat},${rider.currentLng}`
                 : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((rider.lastLocationText || rider.city || 'Garhwa') + ', Jharkhand')}`;
 
@@ -840,20 +833,19 @@ export default function RidersManager() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
           {filteredRiders.map((rider) => {
-            const mapsUrl = rider.currentLat && rider.currentLng 
+            const mapsUrl = rider.currentLat && rider.currentLng
               ? `https://www.google.com/maps?q=${rider.currentLat},${rider.currentLng}`
               : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((rider.lastLocationText || rider.city || 'Garhwa') + ', Jharkhand')}`;
 
             return (
               <div
                 key={rider.id}
-                className={`bg-white border rounded-2xl p-5 shadow-xs transition-all hover:shadow-md relative overflow-hidden flex flex-col justify-between h-full ${
-                  rider.approvalStatus === 'PENDING'
-                    ? 'border-amber-300 bg-amber-50/15'
-                    : rider.isBlocked
+                className={`bg-white border rounded-2xl p-5 shadow-xs transition-all hover:shadow-md relative overflow-hidden flex flex-col justify-between h-full ${rider.approvalStatus === 'PENDING'
+                  ? 'border-amber-300 bg-amber-50/15'
+                  : rider.isBlocked
                     ? 'border-red-200 bg-red-50/15'
                     : 'border-gray-200'
-                }`}
+                  }`}
               >
                 <div className="space-y-3">
                   {/* Top Bar: Rider Code + Status Badge (Full width, zero wrapping) */}
@@ -889,16 +881,14 @@ export default function RidersManager() {
                         </span>
                       ) : (
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap shadow-2xs ${
-                            rider.isOnline
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                              : 'bg-gray-100 text-gray-600 border border-gray-200'
-                          }`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap shadow-2xs ${rider.isOnline
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : 'bg-gray-100 text-gray-600 border border-gray-200'
+                            }`}
                         >
                           <span
-                            className={`w-2 h-2 rounded-full ${
-                              rider.isOnline ? 'bg-emerald-500' : 'bg-gray-400'
-                            }`}
+                            className={`w-2 h-2 rounded-full ${rider.isOnline ? 'bg-emerald-500' : 'bg-gray-400'
+                              }`}
                           />
                           {rider.isOnline ? 'ONLINE' : 'OFFLINE'}
                         </span>
@@ -1197,11 +1187,10 @@ export default function RidersManager() {
 
                       <button
                         onClick={() => handleToggleBlock(rider)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold shrink-0 transition-all whitespace-nowrap ${
-                          rider.isBlocked
-                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                            : 'bg-red-50 text-red-600 hover:bg-red-100'
-                        }`}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold shrink-0 transition-all whitespace-nowrap ${rider.isBlocked
+                          ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                          : 'bg-red-50 text-red-600 hover:bg-red-100'
+                          }`}
                         title={rider.isBlocked ? 'Unblock Rider' : 'Block Rider'}
                       >
                         {rider.isBlocked ? 'Unblock' : 'Block'}

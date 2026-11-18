@@ -349,6 +349,71 @@ export default function RiderApp() {
     }
   };
 
+  // Step 1 Report: Picked Up from Showroom
+  const handleReportPickup = async (order: Order) => {
+    if (!rider) return;
+    try {
+      setActionLoading(`pickup-${order.id}`);
+      await fetch('/api/rider/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riderId: rider.id,
+          orderId: order.orderId,
+          activityType: 'PICKED_UP',
+          title: `Showroom se Pick Up Ho Gya (#${order.orderId})`,
+          description: `Rider ${rider.name} (${rider.riderCode}) ne Lapiez Showroom se order pick kar liya hai aur delivery ke liye nikal chuke hain.`,
+          locationText: currentCoordsText || 'Lapiez Showroom, Chiniya Road, Garhwa',
+        }),
+      });
+
+      // Update status to Out For Delivery
+      await fetch('/api/staff/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order.orderId,
+          orderStatus: 'Out For Delivery',
+          staffName: `Rider: ${rider.name}`,
+        }),
+      }).catch(() => {});
+
+      alert(`✅ Order #${order.orderId} Picked Up report bhej di gayi! Admin & Staff ko live alert mil gaya.`);
+      await fetchOrders(rider.id, true);
+    } catch (err: any) {
+      alert('Error reporting pickup: ' + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Step 2 Report: Reached Customer Address
+  const handleReportArrived = async (order: Order) => {
+    if (!rider) return;
+    try {
+      setActionLoading(`arrived-${order.id}`);
+      await fetch('/api/rider/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riderId: rider.id,
+          orderId: order.orderId,
+          activityType: 'ARRIVED_CUSTOMER',
+          title: `Customer Address Par Pahunch Gaye (#${order.orderId})`,
+          description: `Rider ${rider.name} customer ke address (${order.address}) par pahunch gaya hai.`,
+          locationText: currentCoordsText || order.address,
+        }),
+      });
+
+      alert(`📍 Location Arrival report bhej di gayi! Showroom Staff & Admin ko notify ho gaya.`);
+      await fetchOrders(rider.id, true);
+    } catch (err: any) {
+      alert('Error reporting arrival: ' + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   // Mark Delivered
   const handleMarkDelivered = async (order: Order) => {
     const rate = Number(rider?.commissionPerOrder) || 25;
@@ -635,6 +700,18 @@ export default function RiderApp() {
         {/* TAB 2: ACTIVE ON-ROAD ORDERS */}
         {activeTab === 'active' && (
           <div className="space-y-3">
+            {activeOrders.length > 1 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 flex items-center justify-between text-xs text-blue-900 font-bold shadow-2xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
+                  <span>Multi-Delivery Active ({activeOrders.length} Orders assigned)</span>
+                </div>
+                <span className="text-[11px] font-semibold text-blue-700 bg-white px-2.5 py-0.5 rounded-md border border-blue-200">
+                  Total: ₹{activeOrders.reduce((s, o) => s + Number(o.totalAmount || 0), 0).toLocaleString('en-IN')}
+                </span>
+              </div>
+            )}
+
             {activeOrders.length === 0 ? (
               <div className="bg-white border border-gray-200 rounded-3xl p-8 text-center space-y-2 shadow-xs">
                 <Navigation className="w-12 h-12 text-gray-400 mx-auto" />
@@ -698,21 +775,56 @@ export default function RiderApp() {
                       </a>
                     </div>
 
+                    {/* Rapido-Style Step-by-Step Delivery Progress Reporting */}
+                    <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3 space-y-2.5">
+                      <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-700 uppercase tracking-wider">
+                        <span>Milestone Progress Reports</span>
+                        <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                          Live to Staff &amp; Admin
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* Step 1: Showroom Pickup */}
+                        <button
+                          type="button"
+                          onClick={() => handleReportPickup(order)}
+                          disabled={actionLoading === `pickup-${order.id}`}
+                          className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
+                        >
+                          <Package className="w-3.5 h-3.5 text-[#1A56DB]" />
+                          <span>{actionLoading === `pickup-${order.id}` ? 'Sending...' : '1. Showroom Picked Up'}</span>
+                        </button>
+
+                        {/* Step 2: Arrived at Customer Location */}
+                        <button
+                          type="button"
+                          onClick={() => handleReportArrived(order)}
+                          disabled={actionLoading === `arrived-${order.id}`}
+                          className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-rose-600" />
+                          <span>{actionLoading === `arrived-${order.id}` ? 'Sending...' : '2. Reached Address'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Quick Communication & Final Delivery Action Row */}
                     <div className="grid grid-cols-4 gap-1.5 pt-1">
                       <button
                         type="button"
                         onClick={() => handleCallCustomer(order)}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl text-xs flex flex-col items-center justify-center gap-1 border border-slate-200 transition-colors cursor-pointer"
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl text-xs flex flex-col items-center justify-center gap-1 border border-slate-200 transition-colors cursor-pointer"
                         title="Call Customer Directly"
                       >
                         <Phone className="w-4 h-4 text-[#1A56DB]" />
-                        <span className="text-[10px]">Call</span>
+                        <span className="text-[10px]">3. Call</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setChatOrderId(order.orderId)}
-                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 rounded-xl text-xs flex flex-col items-center justify-center gap-1 border border-blue-200 transition-colors cursor-pointer"
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2.5 rounded-xl text-xs flex flex-col items-center justify-center gap-1 border border-blue-200 transition-colors cursor-pointer"
                         title="In-App Live Chat"
                       >
                         <MessageSquare className="w-4 h-4 text-[#1A56DB]" />
@@ -723,7 +835,7 @@ export default function RiderApp() {
                         href={`https://wa.me/91${cleanCustPhone}?text=${encodeURIComponent(`Namaste ${order.customerName} ji, main Lapiez Delivery Rider (${rider.name}) aapka Order #${order.orderId} lekar aa raha hu.`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-3 rounded-xl text-xs flex flex-col items-center justify-center gap-1 border border-emerald-200 transition-colors"
+                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-2.5 rounded-xl text-xs flex flex-col items-center justify-center gap-1 border border-emerald-200 transition-colors"
                         title="WhatsApp Message"
                       >
                         <WhatsAppIcon className="w-4 h-4 text-emerald-600" />
@@ -734,10 +846,10 @@ export default function RiderApp() {
                         type="button"
                         onClick={() => handleMarkDelivered(order)}
                         disabled={actionLoading === order.id}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl text-xs flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2.5 rounded-xl text-xs flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                       >
                         <CheckCircle className="w-4 h-4" />
-                        <span className="text-[10px]">{actionLoading === order.id ? 'Saving...' : `Delivered`}</span>
+                        <span className="text-[10px]">{actionLoading === order.id ? 'Saving...' : `4. Deliver (+₹${rate})`}</span>
                       </button>
                     </div>
                   </div>

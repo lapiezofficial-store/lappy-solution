@@ -40,13 +40,16 @@ export async function POST(req: Request) {
     // 1. Check Approval Status
     if (rider.approvalStatus === 'PENDING') {
       return NextResponse.json({ 
-        error: 'Aapka account verification pending hai. Admin approval ke baad hi aap login kar sakte hain.' 
+        error: 'Aapka account verification pending hai. Lapiez Showroom Staff ya Admin verify aur approve karenge, jiske baad aap login kar sakenge.',
+        status: 'PENDING',
+        riderCode: rider.riderCode,
       }, { status: 403 });
     }
 
     if (rider.approvalStatus === 'REJECTED') {
       return NextResponse.json({ 
-        error: `Aapka registration reject ho chuka hai: ${rider.rejectionReason || 'Kripya Admin se sampark karein.'}` 
+        error: `Aapka registration reject ho chuka hai: ${rider.rejectionReason || 'Showroom counter team se sampark karein.'}`,
+        status: 'REJECTED',
       }, { status: 403 });
     }
 

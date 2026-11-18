@@ -67,10 +67,12 @@ export default function RiderRegisterPage() {
       const data = await res.json();
       if (res.ok && data.rider) {
         setRegisteredRider(data.rider);
-        // Automatically save session so rider can immediately proceed
-        try {
-          localStorage.setItem('lapiez-rider', JSON.stringify(data.rider));
-        } catch { }
+        // Save session only if approved
+        if (data.rider.approvalStatus === 'APPROVED') {
+          try {
+            localStorage.setItem('lapiez-rider', JSON.stringify(data.rider));
+          } catch { }
+        }
       } else {
         setError(data.error || 'Registration fail hua. Kripya check karein.');
         if (data.alreadyRegistered) {
@@ -116,19 +118,37 @@ export default function RiderRegisterPage() {
       {/* Main Content Area */}
       <main className="max-w-lg w-full mx-auto my-6">
         {registeredRider ? (
-          /* SUCCESS SCREEN (Clean White Flagship Style) */
+          /* SUCCESS / PENDING SCREEN (Clean White Flagship Style) */
           <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-xl animate-in fade-in zoom-in-95">
-            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200 shadow-sm">
-              <CheckCircle className="w-9 h-9" />
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto border shadow-sm ${
+              registeredRider.approvalStatus === 'APPROVED'
+                ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                : 'bg-amber-50 text-amber-600 border-amber-200'
+            }`}>
+              {registeredRider.approvalStatus === 'APPROVED' ? (
+                <CheckCircle className="w-9 h-9" />
+              ) : (
+                <ShieldCheck className="w-9 h-9" />
+              )}
             </div>
 
             <div className="space-y-1">
-              <span className="inline-flex items-center text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                Registration Successful
+              <span className={`inline-flex items-center text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                registeredRider.approvalStatus === 'APPROVED'
+                  ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                  : 'text-amber-800 bg-amber-50 border-amber-300'
+              }`}>
+                {registeredRider.approvalStatus === 'APPROVED' ? 'Account Approved' : 'Verification Pending (Staff / Admin Review)'}
               </span>
-              <h2 className="text-2xl font-black text-slate-900">Rider Account Created</h2>
+              <h2 className="text-2xl font-black text-slate-900">
+                {registeredRider.approvalStatus === 'APPROVED' ? 'Rider Account Active' : 'Application Submitted!'}
+              </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Welcome to Lapiez Delivery Fleet, <strong>{registeredRider.name}</strong>
+                {registeredRider.approvalStatus === 'APPROVED' ? (
+                  <>Welcome to Lapiez Delivery Fleet, <strong>{registeredRider.name}</strong></>
+                ) : (
+                  <>Showroom Staff ya Admin verify aur approve karenge, jiske baad aap login kar sakenge.</>
+                )}
               </p>
             </div>
 
@@ -144,16 +164,31 @@ export default function RiderRegisterPage() {
                 <button
                   type="button"
                   onClick={() => copyRiderCode(registeredRider.riderCode)}
-                  className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-blue-600 shadow-2xs transition-colors"
+                  className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-blue-600 shadow-2xs transition-colors cursor-pointer"
                   title="Copy Rider ID"
                 >
                   {copiedCode ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
               <p className="text-[11px] text-slate-500 mt-2 font-medium">
-                Aap is Rider ID ya apne registered phone number se login kar sakte hain.
+                Login ke waqt is Rider ID ya registered phone number ({registeredRider.phone}) ka upyog karein.
               </p>
             </div>
+
+            {/* Verification Steps Card */}
+            {registeredRider.approvalStatus !== 'APPROVED' && (
+              <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 text-left space-y-2 text-xs">
+                <div className="flex items-center gap-2 font-bold text-amber-900 text-xs">
+                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>Next Step: Showroom Verification</span>
+                </div>
+                <p className="text-amber-800 text-[11px] leading-relaxed">
+                  1. Aapki details Lapiez Showroom Staff Panel aur Admin Portal me review ke liye bhej di gayi hain.
+                  <br />
+                  2. Showroom counter se approve hote hi aap Rider Console me login karke deliveries start kar sakenge.
+                </p>
+              </div>
+            )}
 
             {/* Quick Summary Grid */}
             <div className="grid grid-cols-2 gap-2 text-left text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
@@ -179,28 +214,42 @@ export default function RiderRegisterPage() {
 
             {/* Action Buttons */}
             <div className="space-y-2.5 pt-2">
-              <Link
-                href="/rider"
-                className="w-full bg-[#1A56DB] hover:bg-[#1E40AF] active:scale-[0.98] text-white font-extrabold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
-              >
-                <span>Go to Rider Console (Start Delivering)</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {registeredRider.approvalStatus === 'APPROVED' ? (
+                <Link
+                  href="/rider"
+                  className="w-full bg-[#1A56DB] hover:bg-[#1E40AF] active:scale-[0.98] text-white font-extrabold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+                >
+                  <span>Go to Rider Console (Start Delivering)</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <a
+                  href={`https://wa.me/919608828288?text=${encodeURIComponent(
+                    `Hello Lapiez Showroom Team, maine naya Rider account create kiya hai.\nName: ${registeredRider.name}\nRider ID: ${registeredRider.riderCode}\nPhone: ${registeredRider.phone}\nVehicle: ${registeredRider.vehicleType} (${registeredRider.vehicleNumber || 'Bike'})\n\nKripya mera rider account verify aur approve karein.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                >
+                  <WhatsAppIcon className="w-4 h-4 text-white" />
+                  <span>Notify Showroom Staff on WhatsApp</span>
+                </a>
+              )}
 
               <button
                 type="button"
                 onClick={() => shareOnWhatsApp(registeredRider.riderCode, registeredRider.name)}
-                className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <WhatsAppIcon className="w-4 h-4 text-emerald-600" />
-                <span>Share Details on WhatsApp</span>
+                <Share2 className="w-4 h-4 text-slate-500" />
+                <span>Share Details</span>
               </button>
 
               <Link
                 href="/rider/login"
                 className="inline-block text-xs font-bold text-slate-600 hover:text-[#1A56DB] hover:underline pt-1"
               >
-                Already have password? Go to Login Screen &rarr;
+                Go to Rider Login Screen &rarr;
               </Link>
             </div>
           </div>

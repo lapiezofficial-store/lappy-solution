@@ -7,11 +7,48 @@ import {
   Search, RefreshCw, Printer, Store,
   ShieldCheck, AlertCircle, ArrowRight, Check, X, Key,
   Lock, ArrowDownLeft, ArrowUpRight,
-  Calendar, User, Smartphone, Download, Shield
+  Calendar, User, Smartphone, Download, Shield,
+  Bike, MapPin, Navigation, Compass, ExternalLink, Clock, MessageSquare, Plus
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 import WarrantyManager from '../../components/admin/WarrantyManager';
+import RiderActivityModal from '../../components/admin/RiderActivityModal';
+
+interface StaffRider {
+  id: string;
+  riderCode?: string;
+  name: string;
+  phone: string;
+  email?: string;
+  vehicleType?: string;
+  vehicleNumber?: string;
+  dlNumber?: string;
+  city?: string;
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string;
+  isOnline: boolean;
+  isBlocked: boolean;
+  walletBalance: number;
+  commissionPerOrder: number;
+  currentLat?: number | null;
+  currentLng?: number | null;
+  lastLocationText?: string | null;
+  lastActiveAt?: string | null;
+  lastDeliveryAt?: string | null;
+  createdAt: string;
+  deliveredCount?: number;
+  codCollected?: number;
+  orders?: Array<{
+    id: string;
+    orderId: string;
+    orderStatus: string;
+    customerName: string;
+    address: string;
+    totalAmount: number;
+    paymentMethod: string;
+  }>;
+}
 
 interface StaffOrder {
   id: string;
@@ -64,8 +101,17 @@ export default function StaffPage() {
   const [authError, setAuthError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  // Console Main Section: 'orders' | 'warranty'
-  const [activeSection, setActiveSection] = useState<'orders' | 'warranty'>('orders');
+  // Console Main Section: 'orders' | 'warranty' | 'fleet'
+  const [activeSection, setActiveSection] = useState<'orders' | 'warranty' | 'fleet'>('orders');
+
+  // Fleet & Rider Management State
+  const [riders, setRiders] = useState<StaffRider[]>([]);
+  const [fleetActivities, setFleetActivities] = useState<any[]>([]);
+  const [isLoadingFleet, setIsLoadingFleet] = useState(false);
+  const [selectedTimelineRider, setSelectedTimelineRider] = useState<StaffRider | null>(null);
+  const [approvingRiderId, setApprovingRiderId] = useState<string | null>(null);
+  const [assigningToRiderId, setAssigningToRiderId] = useState<string | null>(null);
+  const [orderToDispatchMap, setOrderToDispatchMap] = useState<Record<string, string>>({});
 
   // Orders State (Zero-flicker silent polling)
   const [orders, setOrders] = useState<StaffOrder[]>([]);
@@ -151,6 +197,134 @@ export default function StaffPage() {
     }, 25000);
     return () => clearInterval(interval);
   }, [isAuthenticated, fetchStaffOrders]);
+
+  // Fetch Fleet & Real-time Milestone Activities
+  const fetchFleetData = useCallback(async (silent = false) => {
+    if (!silent) setIsLoadingFleet(true);
+    try {
+      const [ridersRes, actRes] = await Promise.all([
+        fetch('/api/admin/riders?includeQueue=true', { cache: 'no-store' }),
+        fetch('/api/rider/activity?limit=30', { cache: 'no-store' }),
+      ]);
+      if (ridersRes.ok) {
+        const ridersData = await ridersRes.json();
+        setRiders(Array.isArray(ridersData) ? ridersData : (ridersData?.riders || []));
+      }
+      if (actRes.ok) {
+        const actData = await actRes.json();
+        if (Array.isArray(actData?.activities)) {
+          setFleetActivities(actData.activities);
+        }
+      }
+    } catch {
+      // silent
+    } finally {
+      if (!silent) setIsLoadingFleet(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchFleetData(false);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchFleetData(true);
+      }
+    }, 15000); // 15s auto-refresh for real-time fleet GPS & status
+    return () => clearInterval(interval);
+  }, [isAuthenticated, fetchFleetData]);
+
+  // Approve Rider Application (Direct from Staff Console)
+  const handleApproveRider = async (rider: StaffRider) => {
+    try {
+      setApprovingRiderId(rider.id);
+      const res = await fetch(`/api/admin/riders/${rider.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          approvalStatus: 'APPROVED',
+          isOnline: true,
+        }),
+      });
+
+      if (res.ok) {
+        // Log milestone in RiderActivity
+        await fetch('/api/rider/activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            riderId: rider.id,
+            activityType: 'RIDER_APPROVED',
+            title: 'Rider Approved by Showroom Staff',
+            description: `Rider ${rider.name} (${rider.riderCode}) ko Staff '${currentStaffName}' dwara verify & approve kar diya gaya. Account activate ho chuka hai.`,
+            locationText: 'Lapiez Showroom, Chiniya Road, Garhwa',
+          }),
+        }).catch(() => {});
+
+        showToast(`✅ Rider ${rider.name} approved! Ab rider console me login kar sakte hain.`);
+        await fetchFleetData(true);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        showToast(d.error || 'Approval failed.');
+      }
+    } catch {
+      showToast('Network error during rider approval.');
+    } finally {
+      setApprovingRiderId(null);
+    }
+  };
+
+  // Reject Rider Application
+  const handleRejectRider = async (rider: StaffRider) => {
+    const reason = prompt(`Kripya '${rider.name}' ke rejection ka karan dalein:`, 'Document verify nahi ho paya.');
+    if (!reason) return;
+
+    try {
+      setApprovingRiderId(rider.id);
+      const res = await fetch(`/api/admin/riders/${rider.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          approvalStatus: 'REJECTED',
+          rejectionReason: reason.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        showToast(`Rider application for ${rider.name} rejected.`);
+        await fetchFleetData(true);
+      }
+    } catch {
+      showToast('Error rejecting rider.');
+    } finally {
+      setApprovingRiderId(null);
+    }
+  };
+
+  // Quick Dispatch Order to Rider
+  const handleDispatchOrderToRider = async (orderId: string, riderId: string) => {
+    if (!orderId || !riderId) return;
+    try {
+      setAssigningToRiderId(riderId);
+      const res = await fetch(`/api/orders/${orderId}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ riderId }),
+      });
+
+      if (res.ok) {
+        showToast(`Order #${orderId} rider ko successfully dispatch ho gaya!`);
+        await Promise.all([fetchStaffOrders(true), fetchFleetData(true)]);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        showToast(d.error || 'Order dispatch nahi ho paya.');
+      }
+    } catch {
+      showToast('Error dispatching order.');
+    } finally {
+      setAssigningToRiderId(null);
+    }
+  };
 
   // Handle Login (ID/Phone + Password or PIN fallback)
   const handleLogin = async (e: React.FormEvent) => {
@@ -333,6 +507,23 @@ export default function StaffPage() {
       return true;
     });
   }, [orders, activeTab, filterType, searchQuery]);
+
+  const pendingRiders = useMemo(() => {
+    return riders.filter((r) => r.approvalStatus === 'PENDING');
+  }, [riders]);
+
+  const activeOnRoadRiders = useMemo(() => {
+    return riders.filter((r) => r.approvalStatus === 'APPROVED');
+  }, [riders]);
+
+  const undispatchedOrders = useMemo(() => {
+    return orders.filter(
+      (o) =>
+        ['Ready', 'Packed', 'Confirmed', 'Ready for Pickup'].includes(o.orderStatus) &&
+        !o.isStorePickup &&
+        !o.rider
+    );
+  }, [orders]);
 
   if (isCheckingAuth) {
     return (
@@ -529,6 +720,24 @@ export default function StaffPage() {
               <Package className="w-3.5 h-3.5" />
               <span>Orders Desk ({metrics.aayaCount})</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => { setActiveSection('fleet'); fetchFleetData(true); }}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${activeSection === 'fleet' ? 'bg-orange-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+            >
+              <Bike className="w-3.5 h-3.5" />
+              <span>Riders &amp; Fleet</span>
+              {pendingRiders.length > 0 ? (
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-amber-950 font-black text-[10px] animate-pulse">
+                  {pendingRiders.length} Pending
+                </span>
+              ) : (
+                <span className="text-[10px] opacity-75">({riders.length})</span>
+              )}
+            </button>
+
             {canHandleWarranty && (
               <button
                 type="button"
@@ -553,17 +762,18 @@ export default function StaffPage() {
               <span>APK</span>
             </a>
 
-            {activeSection === 'orders' && (
-              <button
-                type="button"
-                onClick={() => fetchStaffOrders(true)}
-                disabled={isRefreshing}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
-                title="Refresh Orders"
-              >
-                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (activeSection === 'fleet') fetchFleetData(false);
+                else fetchStaffOrders(true);
+              }}
+              disabled={isRefreshing || isLoadingFleet}
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing || isLoadingFleet ? 'animate-spin text-blue-600' : ''}`} />
+            </button>
 
             <button
               type="button"
@@ -578,34 +788,480 @@ export default function StaffPage() {
       </header>
 
       {/* Mobile Top Section Toggle */}
-      {canHandleWarranty && (
-        <div className="md:hidden bg-white border-b border-slate-200 px-3 py-2 sticky top-16 z-20">
-          <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setActiveSection('orders')}
-              className={`py-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeSection === 'orders' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-slate-600'
-                }`}
-            >
-              <Package className="w-3.5 h-3.5" />
-              <span>Orders ({metrics.aayaCount})</span>
-            </button>
+      <div className="md:hidden bg-white border-b border-slate-200 px-3 py-2 sticky top-16 z-20">
+        <div className={`grid gap-1.5 bg-slate-100 p-1 rounded-xl ${canHandleWarranty ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <button
+            type="button"
+            onClick={() => setActiveSection('orders')}
+            className={`py-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1 transition-all cursor-pointer ${activeSection === 'orders' ? 'bg-[#1A56DB] text-white shadow-xs' : 'text-slate-600'
+              }`}
+          >
+            <Package className="w-3 h-3" />
+            <span>Orders ({metrics.aayaCount})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setActiveSection('fleet'); fetchFleetData(true); }}
+            className={`py-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1 transition-all cursor-pointer ${activeSection === 'fleet' ? 'bg-orange-600 text-white shadow-xs' : 'text-slate-600'
+              }`}
+          >
+            <Bike className="w-3 h-3" />
+            <span>Riders {pendingRiders.length > 0 && `(${pendingRiders.length})`}</span>
+          </button>
+
+          {canHandleWarranty && (
             <button
               type="button"
               onClick={() => setActiveSection('warranty')}
-              className={`py-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeSection === 'warranty' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600'
+              className={`py-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1 transition-all cursor-pointer ${activeSection === 'warranty' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600'
                 }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Warranty Desk</span>
+              <ShieldCheck className="w-3 h-3" />
+              <span>Warranty</span>
             </button>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       {activeSection === 'warranty' ? (
         <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-5">
           <WarrantyManager staffMode staffName={`${currentStaffName} (${currentStaffCode})`} />
+        </div>
+      ) : activeSection === 'fleet' ? (
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-5 space-y-6">
+
+          {/* Top Banner & Quick Metrics */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
+                    <Bike className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-lg font-black text-slate-900">Showroom Fleet &amp; Rider Verification</h2>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  New rider verification, live on-road GPS monitoring, multi-delivery dispatch, and real-time milestone progress.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fetchFleetData(false)}
+                  disabled={isLoadingFleet}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingFleet ? 'animate-spin text-blue-600' : ''}`} />
+                  <span>Refresh Fleet</span>
+                </button>
+
+                <a
+                  href="/rider/register"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-extrabold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Onboard Rider</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-4">
+              <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200/80">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Total Registered Fleet</span>
+                <span className="text-2xl font-black text-slate-900 mt-1 block">{riders.length}</span>
+                <span className="text-[10px] font-semibold text-slate-500 mt-0.5 block">Delivery partners</span>
+              </div>
+
+              <div className="bg-emerald-50/60 rounded-2xl p-3.5 border border-emerald-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">Online &amp; Active Duty</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                </div>
+                <span className="text-2xl font-black text-emerald-700 mt-1 block">
+                  {riders.filter((r) => r.isOnline && r.approvalStatus === 'APPROVED').length}
+                </span>
+                <span className="text-[10px] font-semibold text-emerald-700 mt-0.5 block">Ready for orders</span>
+              </div>
+
+              <div className="bg-blue-50/60 rounded-2xl p-3.5 border border-blue-200">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-800 block">Active Deliveries in Transit</span>
+                <span className="text-2xl font-black text-[#1A56DB] mt-1 block">
+                  {riders.reduce((acc, r) => acc + (r.orders?.length || 0), 0)}
+                </span>
+                <span className="text-[10px] font-semibold text-blue-600 mt-0.5 block">On the road</span>
+              </div>
+
+              <div className={`rounded-2xl p-3.5 border ${
+                pendingRiders.length > 0 ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200/80'
+              }`}>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">Pending Verification</span>
+                <span className={`text-2xl font-black mt-1 block ${pendingRiders.length > 0 ? 'text-amber-700 animate-pulse' : 'text-slate-800'}`}>
+                  {pendingRiders.length}
+                </span>
+                <span className="text-[10px] font-semibold text-amber-700 mt-0.5 block">
+                  {pendingRiders.length > 0 ? 'Action required' : 'All verified'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 1: Pending Rider Verification Queue */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-600" />
+                <span>Rider Verification &amp; Approval Queue</span>
+                {pendingRiders.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black animate-pulse">
+                    {pendingRiders.length} PENDING
+                  </span>
+                )}
+              </h3>
+            </div>
+
+            {pendingRiders.length === 0 ? (
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center space-y-2 shadow-2xs">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+                <h4 className="text-sm font-bold text-slate-800">All Rider Applications Verified</h4>
+                <p className="text-xs text-slate-500">
+                  Naye delivery partner register hote hi verification ke liye yahan dikhenge.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pendingRiders.map((r) => {
+                  const cleanPhone = (r.phone || '').replace(/\D/g, '').slice(-10);
+                  const isProcessing = approvingRiderId === r.id;
+                  return (
+                    <div
+                      key={r.id}
+                      className="bg-white border-2 border-amber-300 rounded-3xl p-5 shadow-sm space-y-3.5 relative overflow-hidden"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="text-[10px] font-mono font-black text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded">
+                            {r.riderCode || 'PENDING'}
+                          </span>
+                          <h4 className="text-base font-black text-slate-900 mt-1">{r.name}</h4>
+                          <a
+                            href={`tel:${r.phone}`}
+                            className="text-xs text-blue-600 hover:underline font-mono font-bold flex items-center gap-1 mt-0.5"
+                          >
+                            <Phone className="w-3 h-3 text-blue-500" />
+                            <span>{r.phone}</span>
+                          </a>
+                        </div>
+
+                        <span className="text-[10px] font-black uppercase text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                          Pending Review
+                        </span>
+                      </div>
+
+                      <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 text-xs space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Vehicle:</span>
+                          <strong className="text-slate-800">{r.vehicleType || 'BIKE'} {r.vehicleNumber ? `(${r.vehicleNumber})` : ''}</strong>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">City / Area:</span>
+                          <strong className="text-slate-800">{r.city || 'Garhwa'}</strong>
+                        </div>
+                        {r.dlNumber && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">DL Number:</span>
+                            <strong className="text-slate-800 font-mono">{r.dlNumber}</strong>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Applied:</span>
+                          <span className="text-slate-700 text-[11px]">
+                            {new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="space-y-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleApproveRider(r)}
+                          disabled={isProcessing}
+                          className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>{isProcessing ? 'Approving...' : '✓ Approve & Activate Rider'}</span>
+                        </button>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <a
+                            href={`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(`Namaste ${r.name} ji, Lapiez Showroom se aapki Rider application mil gayi hai.`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+                          >
+                            <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>WhatsApp</span>
+                          </a>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRejectRider(r)}
+                            disabled={isProcessing}
+                            className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Active Fleet Live On-Road Tracking & GPS Radar */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                <Compass className="w-4 h-4 text-emerald-600" />
+                <span>On-Road Fleet Live Tracking ({activeOnRoadRiders.length})</span>
+              </h3>
+              <span className="text-xs text-slate-500 font-semibold">
+                Auto-refreshes live GPS coordinates every 15s
+              </span>
+            </div>
+
+            {activeOnRoadRiders.length === 0 ? (
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center space-y-2 shadow-2xs">
+                <Bike className="w-10 h-10 text-slate-400 mx-auto" />
+                <h4 className="text-sm font-bold text-slate-800">No Approved Riders Yet</h4>
+                <p className="text-xs text-slate-500">Riders approve hone ke baad yahan live track honge.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activeOnRoadRiders.map((rider) => {
+                  const mapsUrl = rider.currentLat && rider.currentLng
+                    ? `https://www.google.com/maps?q=${rider.currentLat},${rider.currentLng}`
+                    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((rider.lastLocationText || rider.city || 'Garhwa') + ', Jharkhand')}`;
+
+                  const cleanPhone = (rider.phone || '').replace(/\D/g, '').slice(-10);
+                  const isAssigned = rider.orders && rider.orders.length > 0;
+                  const isAssigning = assigningToRiderId === rider.id;
+
+                  return (
+                    <div
+                      key={rider.id}
+                      className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs hover:shadow-md transition-all space-y-4 flex flex-col justify-between"
+                    >
+                      <div className="space-y-3">
+                        {/* Top: Status & Code */}
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                              rider.isOnline
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200'
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${rider.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                            <span>{rider.isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                          </span>
+
+                          <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+                            {rider.riderCode}
+                          </span>
+                        </div>
+
+                        {/* Name & Phone */}
+                        <div>
+                          <h4 className="text-base font-black text-slate-900">{rider.name}</h4>
+                          <p className="text-xs text-slate-500 font-medium mt-0.5">
+                            {rider.vehicleType || 'BIKE'} {rider.vehicleNumber ? `• ${rider.vehicleNumber}` : ''}
+                          </p>
+                        </div>
+
+                        {/* Live Location / GPS Radar */}
+                        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/90 text-xs space-y-1.5">
+                          <div className="flex items-start gap-1.5 text-slate-700">
+                            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                            <span className="font-mono text-[11px] font-bold truncate">
+                              {rider.lastLocationText || 'Showroom Base, Garhwa'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[11px]">
+                            <span className="text-slate-500">
+                              {rider.lastActiveAt ? `Active ${new Date(rider.lastActiveAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}` : 'Recent'}
+                            </span>
+                            <a
+                              href={mapsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline font-bold inline-flex items-center gap-1"
+                            >
+                              <span>Google Maps</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* Carrying Orders (Multi-Delivery support) */}
+                        <div className="rounded-2xl p-3 border text-xs space-y-2 bg-slate-50 border-slate-200/80">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-extrabold uppercase text-slate-700">
+                              {isAssigned ? `Carrying ${rider.orders?.length} Deliveries` : 'Available (No Active Orders)'}
+                            </span>
+                            {isAssigned && (
+                              <span className="text-[10px] font-bold bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">
+                                In Transit
+                              </span>
+                            )}
+                          </div>
+
+                          {isAssigned && (
+                            <div className="space-y-1.5 pt-1">
+                              {rider.orders?.map((o) => (
+                                <div key={o.id} className="bg-white p-2 rounded-xl border border-slate-200 text-[11px] flex items-center justify-between">
+                                  <div className="min-w-0">
+                                    <span className="font-mono font-bold text-blue-700">#{o.orderId}</span>
+                                    <span className="text-slate-600 ml-1.5 truncate">{o.customerName}</span>
+                                  </div>
+                                  <strong className="text-emerald-700 shrink-0">₹{o.totalAmount}</strong>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Quick Showroom Dispatch Dropdown */}
+                          {undispatchedOrders.length > 0 && (
+                            <div className="pt-1.5 border-t border-slate-200 space-y-1.5">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase block">Dispatch Ready Order</span>
+                              <div className="flex gap-1.5">
+                                <select
+                                  value={orderToDispatchMap[rider.id] || ''}
+                                  onChange={(e) => setOrderToDispatchMap({ ...orderToDispatchMap, [rider.id]: e.target.value })}
+                                  className="flex-1 h-8 text-[11px] bg-white border border-slate-300 rounded-lg px-2 font-medium"
+                                >
+                                  <option value="">Select Ready Order...</option>
+                                  {undispatchedOrders.map((uo) => (
+                                    <option key={uo.id} value={uo.orderId}>
+                                      #{uo.orderId} - {uo.customerName} (₹{uo.totalAmount})
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const oid = orderToDispatchMap[rider.id];
+                                    if (oid) handleDispatchOrderToRider(oid, rider.id);
+                                    else showToast('Pehle order select karein.');
+                                  }}
+                                  disabled={isAssigning}
+                                  className="h-8 px-2.5 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11px] font-bold shrink-0 transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                  {isAssigning ? '...' : 'Assign'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="grid grid-cols-3 gap-1.5 pt-2">
+                        <a
+                          href={`tel:${rider.phone}`}
+                          className="py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+                        >
+                          <Phone className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Call</span>
+                        </a>
+
+                        <a
+                          href={`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(`Hello ${rider.name}, Lapiez Showroom Staff desk here.`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-2 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 flex items-center justify-center gap-1 transition-colors"
+                        >
+                          <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>WhatsApp</span>
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTimelineRider(rider)}
+                          className="py-2 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Timeline</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Live Milestone Activity Feed */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-600" />
+                <span>Live Rider Milestone Reports Stream</span>
+              </h3>
+              <span className="text-[11px] text-slate-500 font-semibold">
+                Updated in real time from rider apps
+              </span>
+            </div>
+
+            {fleetActivities.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-500">
+                Koi activity records nahi hain abhi tak.
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+                {fleetActivities.map((act) => {
+                  return (
+                    <div
+                      key={act.id}
+                      className="p-3 rounded-2xl border border-slate-200/90 bg-slate-50/70 hover:bg-slate-50 text-xs flex items-start justify-between gap-3 transition-colors"
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <strong className="text-slate-900 font-bold">{act.title}</strong>
+                          {act.rider?.riderCode && (
+                            <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                              {act.rider.riderCode}
+                            </span>
+                          )}
+                          <span className="text-slate-500 font-medium">({act.rider?.name || 'Rider'})</span>
+                        </div>
+                        <p className="text-slate-600 text-[11px] leading-relaxed">{act.description}</p>
+                        {act.locationText && (
+                          <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-rose-500" />
+                            <span>{act.locationText}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <span className="text-[10px] text-slate-400 font-mono shrink-0 whitespace-nowrap">
+                        {new Date(act.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-5 space-y-5">
@@ -1002,6 +1658,14 @@ export default function StaffPage() {
             </form>
           </div>
         </div>
+      )}
+      {/* RIDER ACTIVITY & MILESTONE TIMELINE MODAL */}
+      {selectedTimelineRider && (
+        <RiderActivityModal
+          rider={selectedTimelineRider}
+          isOpen={Boolean(selectedTimelineRider)}
+          onClose={() => setSelectedTimelineRider(null)}
+        />
       )}
     </div>
   );
