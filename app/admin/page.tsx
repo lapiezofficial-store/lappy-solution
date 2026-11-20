@@ -33,6 +33,7 @@ import StaffManager from '../../components/admin/StaffManager';
 import { SecurityManager } from '../../components/admin/SecurityManager';
 import { DeliveryManager } from '../../components/admin/DeliveryManager';
 import { WhatsAppIcon } from '../../components/WhatsAppIcon';
+import { BulkSerialNumberInput } from '../../components/admin/BulkSerialNumberInput';
 
 export default function AdminPage() {
   const {
@@ -6650,8 +6651,18 @@ export default function AdminPage() {
                                             SKU: {product.sku || 'N/A'}
                                           </span>
                                           {product.serialNumber && (
-                                            <span className="font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded font-bold">
-                                              S/N: {product.serialNumber}
+                                            <span className="font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded font-bold inline-flex items-center gap-1">
+                                              <span>S/N:</span>
+                                              {product.serialNumber.includes(',') ? (
+                                                <>
+                                                  <span>{product.serialNumber.split(',')[0].trim()}</span>
+                                                  <span className="bg-emerald-200/80 text-emerald-900 px-1 rounded-full text-[9px]">
+                                                    +{product.serialNumber.split(',').length - 1} more
+                                                  </span>
+                                                </>
+                                              ) : (
+                                                <span>{product.serialNumber}</span>
+                                              )}
                                             </span>
                                           )}
                                           {product.featured && (
@@ -9579,21 +9590,6 @@ export default function AdminPage() {
                             htmlFor="site-favicon-file-input"
                             className={`flex-1 h-9 px-3 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs ${isUploadingFavicon ? 'opacity-60 pointer-events-none' : ''}`}
                           >
-                            <Upload className="w-3.5 h-3.5" />
-                            <span>{isUploadingFavicon ? 'Uploading Favicon...' : 'Upload New Favicon'}</span>
-                          </label>
-                          <input
-                            type="file"
-                            id="site-favicon-file-input"
-                            accept="image/*,.ico,.svg"
-                            onChange={handleUploadFaviconFile}
-                            className="hidden"
-                          />
-
-                          {siteFavicon && siteFavicon !== '/favicon.ico' && (
-                            <button
-                              type="button"
-                              onClick={handleRemoveFavicon}
                               className="h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                               title="Reset favicon to default Lapiez icon"
                             >
@@ -11521,19 +11517,13 @@ export default function AdminPage() {
             </div>
 
             <form onSubmit={handleAddProductSubmit} className="space-y-3.5 text-xs">
-              {/* OPTIONAL SERIAL NUMBER FIELD */}
-              <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-200">
-                <label className="font-bold text-gray-700 block mb-1">
-                  Product Serial Number (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter Serial No. / S/N if available (e.g. SN-HP-5CG12345)"
-                  value={newProductSerialNumber}
-                  onChange={(e) => setNewProductSerialNumber(e.target.value.toUpperCase())}
-                  className="w-full h-9 bg-white border border-gray-300 rounded-lg px-3 text-xs text-gray-900 font-mono focus:outline-none focus:border-[#1A56DB]"
-                />
-              </div>
+              {/* OPTIONAL SERIAL NUMBER FIELD WITH BULK ENTRY */}
+              <BulkSerialNumberInput
+                value={newProductSerialNumber}
+                onChange={setNewProductSerialNumber}
+                onSyncStock={(count) => setNewProductStockQuantity(count)}
+                label="Product Serial Numbers (Add Multiple / Bulk Entry)"
+              />
 
               <div>
                 <label className="font-bold text-gray-700 block mb-1">Product Title *</label>
@@ -12014,16 +12004,12 @@ export default function AdminPage() {
             </div>
 
             <form onSubmit={handleSaveEditProduct} className="space-y-3.5 text-xs">
-              <div>
-                <label className="font-bold text-gray-700 block mb-1">Serial Number (S/N)</label>
-                <input
-                  type="text"
-                  placeholder="Enter Serial Number"
-                  value={editSerialNumber}
-                  onChange={(e) => setEditSerialNumber(e.target.value.toUpperCase())}
-                  className="w-full h-9 bg-amber-50/60 border border-amber-300 rounded-lg px-3 text-xs text-gray-900 font-mono font-bold uppercase focus:outline-none focus:border-[#1A56DB]"
-                />
-              </div>
+              <BulkSerialNumberInput
+                value={editSerialNumber}
+                onChange={setEditSerialNumber}
+                onSyncStock={(count) => setEditStockQuantity(count)}
+                label="Product Serial Numbers (Add Multiple / Bulk Entry)"
+              />
 
               <div>
                 <label className="font-bold text-gray-700 block mb-1">Product Title *</label>

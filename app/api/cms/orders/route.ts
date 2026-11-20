@@ -83,12 +83,19 @@ const toClientOrder = (order: { itemsJson: string; address?: string } & Record<s
     approvedBy = 'Lapiez';
   }
 
-  return { ...rest, items, pickupHandedBy, approvedBy };
+  const rawSubtotal = Number(order.subtotalAmount || 0);
+  const rawDiscount = Number(order.couponDiscount || 0);
+  const rawTotal = Number(order.totalAmount || 0);
+  const deliveryFee = Math.max(0, Math.round(rawTotal - (rawSubtotal - rawDiscount)));
+
+  return { ...rest, items, pickupHandedBy, approvedBy, deliveryFee };
 };
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const orderId = searchParams.get('orderId');
+  const customerPhone = searchParams.get('phone');
+  const customerId = searchParams.get('customerId');
 
   // Single order lookup (e.g. order confirmation, public tracking)
   if (orderId) {
@@ -120,6 +127,42 @@ export async function GET(request: Request) {
     } catch (error) {
       console.error('Error fetching order by ID:', error);
       return NextResponse.json({ error: 'Failed to fetch order' }, { status: 500 });
+    }
+  }
+
+  // Customer order lookup by phone or customerId (public for customer account)
+  if (customerPhone || customerId) {
+    try {
+      const cleanPhone = customerPhone ? customerPhone.replace(/\D/g, '').slice(-10) : undefined;
+      const orders = await prisma.order.findMany({
+        where: {
+          OR: [
+            ...(cleanPhone ? [{ phone: { contains: cleanPhone } }] : []),
+            ...(customerId ? [{ customerId }] : []),
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          rider: {
+            select: {
+              id: true,
+              riderCode: true,
+              name: true,
+              phone: true,
+              vehicleType: true,
+              vehicleNumber: true,
+              isOnline: true,
+              currentLat: true,
+              currentLng: true,
+              lastLocationText: true,
+            },
+          },
+        },
+      });
+      return NextResponse.json({ orders: orders.map(toClientOrder) });
+    } catch (error) {
+      console.error('Error fetching customer orders:', error);
+      return NextResponse.json({ error: 'Failed to fetch customer orders' }, { status: 500 });
     }
   }
 
@@ -300,7 +343,9 @@ export async function POST(request: Request) {
       }
     }
 
-    const totalAmount = Math.max(0, subtotalAmount - finalCouponDiscount);
+    const rawDeliveryFee = Number(body.deliveryFee ?? body.deliveryCharge ?? 0);
+    const deliveryFee = !isNaN(rawDeliveryFee) && rawDeliveryFee > 0 ? rawDeliveryFee : 0;
+    const totalAmount = Math.max(0, subtotalAmount - finalCouponDiscount + deliveryFee);
 
     const rawMethod = String(body.paymentMethod || '').toLowerCase();
     const isUpi = rawMethod.includes('upi') || rawMethod === 'upi_qr';

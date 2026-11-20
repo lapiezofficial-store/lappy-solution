@@ -1726,18 +1726,16 @@ export default function RidersManager({ initialTab }: { initialTab?: 'all' | 'tr
               <button
                 type="button"
                 onClick={() => setPayoutModalTab('settle')}
-                className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${
-                  payoutModalTab === 'settle' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
-                }`}
+                className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${payoutModalTab === 'settle' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                  }`}
               >
                 Settle Payout
               </button>
               <button
                 type="button"
                 onClick={() => setPayoutModalTab('history')}
-                className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${
-                  payoutModalTab === 'history' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
-                }`}
+                className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${payoutModalTab === 'history' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                  }`}
               >
                 Payout History ({riderPayouts.length})
               </button>

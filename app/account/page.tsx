@@ -9,9 +9,10 @@ import {
   Store, ExternalLink, Search, Filter, ChevronRight,
   FileText, CheckCircle2, AlertCircle, Sparkles, Star,
   Tag, CreditCard, HelpCircle, Download, Check, X,
-  Printer, ArrowLeft, RefreshCw, QrCode, LogOut, Bell, Truck
+  Printer, ArrowLeft, RefreshCw, QrCode, LogOut, Bell, Truck, Bike, MessageSquare
 } from 'lucide-react';
 import { WhatsAppIcon } from '../../components/WhatsAppIcon';
+import OrderChatModal from '../../components/OrderChatModal';
 
 import { useStore } from '../../context/StoreContext';
 import { STORE_INFO } from '../../data/storeData';
@@ -74,6 +75,7 @@ function AccountContent() {
   const router = useRouter();
   const {
     orders,
+    updateOrders,
     cart,
     updateQuantity,
     removeFromCart,
@@ -254,6 +256,30 @@ function AccountContent() {
 
   // Selected Order for Tracking Stepper Modal
   const [trackingOrder, setTrackingOrder] = useState<any | null>(null);
+
+  // Selected Order for Live Rider Chat Modal
+  const [chatOrder, setChatOrder] = useState<any | null>(null);
+
+  // Auto-refresh orders with live rider assignment & chat status from database
+  useEffect(() => {
+    if (!customer) return;
+    const phone = (customer.phone || customer.user_metadata?.phone || '').replace(/\D/g, '').slice(-10);
+    const custId = customer.id;
+    if (!phone && !custId) return;
+
+    const query = new URLSearchParams();
+    if (phone) query.set('phone', phone);
+    if (custId) query.set('customerId', custId);
+
+    fetch(`/api/cms/orders?${query.toString()}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.orders) && data.orders.length > 0) {
+          updateOrders(data.orders);
+        }
+      })
+      .catch(() => {});
+  }, [customer, updateOrders]);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -860,6 +886,52 @@ function AccountContent() {
                             ))}
                           </div>
 
+                          {/* Live Delivery Partner Strip */}
+                          {ord.rider && (
+                            <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 flex flex-wrap items-center justify-between gap-2.5">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-full bg-[#1A56DB] text-white flex items-center justify-center font-bold">
+                                  <Bike className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <div className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                                    <span>Rider: {ord.rider.name}</span>
+                                    {ord.rider.isOnline && (
+                                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded-full font-bold">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Online
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[11px] text-gray-500">
+                                    {ord.rider.vehicleType || 'Motorcycle'} {ord.rider.vehicleNumber ? `• ${ord.rider.vehicleNumber}` : ''}
+                                    {ord.rider.lastLocationText && (
+                                      <span className="text-gray-400"> • Near {ord.rider.lastLocationText}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {ord.rider.phone && (
+                                  <a
+                                    href={`tel:${ord.rider.phone}`}
+                                    className="h-7 px-2.5 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-[11px] flex items-center gap-1 transition-colors"
+                                  >
+                                    <Phone className="w-3 h-3 text-[#1A56DB]" />
+                                    <span>Call</span>
+                                  </a>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setChatOrder(ord)}
+                                  className="h-7 px-3 rounded-lg bg-[#1A56DB] hover:bg-[#1546b3] text-white font-bold text-[11px] flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                                >
+                                  <MessageSquare className="w-3 h-3" />
+                                  <span>Chat Live</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
                           {/* 4-Step Flipkart Progress Stepper */}
                           <div className="pt-3 border-t border-gray-100">
                             <div className="grid grid-cols-4 gap-1 text-center text-[10.5px]">
@@ -925,6 +997,15 @@ function AccountContent() {
 
                             {/* Buttons */}
                             <div className="flex flex-wrap items-center gap-2">
+
+                              <button
+                                type="button"
+                                onClick={() => setChatOrder(ord)}
+                                className="h-8 px-3 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#1A56DB] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5 text-[#1A56DB]" />
+                                <span>Chat with Rider {ord.rider?.name ? `(${ord.rider.name.split(' ')[0]})` : ''}</span>
+                              </button>
 
                               <button
                                 onClick={() => setTrackingOrder(ord)}
@@ -2125,30 +2206,42 @@ function AccountContent() {
               {/* Totals Calculation */}
               <div className="pt-3 border-t border-gray-200 flex justify-end">
                 <div className="w-64 space-y-1.5 text-xs">
-                  <div className="flex justify-between text-gray-500">
-                    <span>Taxable Value:</span>
-                    <span className="font-mono">
-                      ₹{Math.round((Number(invoiceOrder.totalAmount) || 0) / 1.18).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-gray-500">
-                    <span>CGST (9%):</span>
-                    <span className="font-mono">
-                      ₹{Math.round(((Number(invoiceOrder.totalAmount) || 0) * 0.09) / 1.18).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-gray-500">
-                    <span>SGST (9%):</span>
-                    <span className="font-mono">
-                      ₹{Math.round(((Number(invoiceOrder.totalAmount) || 0) * 0.09) / 1.18).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between font-extrabold text-sm text-gray-900 pt-2 border-t border-gray-200">
-                    <span>Grand Total:</span>
-                    <span className="font-mono text-[#1A56DB]">
-                      ₹{(Number(invoiceOrder.totalAmount) || 0).toLocaleString('en-IN')}
-                    </span>
-                  </div>
+                  {(() => {
+                    const rawTotal = Number(invoiceOrder.totalAmount) || 0;
+                    const rawSubtotal = Number(invoiceOrder.subtotalAmount) || 0;
+                    const rawDiscount = Number(invoiceOrder.couponDiscount) || 0;
+                    const deliveryFee = Number(invoiceOrder.deliveryFee || 0) || Math.max(0, Math.round(rawTotal - (rawSubtotal - rawDiscount)));
+                    const itemsTotal = Math.max(0, rawTotal - deliveryFee);
+                    const taxableVal = Math.round(itemsTotal / 1.18);
+                    const gstSplit = Math.round((itemsTotal * 0.09) / 1.18);
+
+                    return (
+                      <>
+                        <div className="flex justify-between text-gray-500">
+                          <span>Taxable Value:</span>
+                          <span className="font-mono">₹{taxableVal.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between text-gray-500">
+                          <span>CGST (9%):</span>
+                          <span className="font-mono">₹{gstSplit.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between text-gray-500">
+                          <span>SGST (9%):</span>
+                          <span className="font-mono">₹{gstSplit.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between text-gray-500">
+                          <span>Delivery / Shipping:</span>
+                          <span className={deliveryFee > 0 ? "font-mono font-bold text-gray-900" : "font-semibold text-emerald-700"}>
+                            {deliveryFee > 0 ? `₹${deliveryFee.toLocaleString('en-IN')}` : 'FREE'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-extrabold text-sm text-gray-900 pt-2 border-t border-gray-200">
+                          <span>Grand Total:</span>
+                          <span className="font-mono text-[#1A56DB]">₹{rawTotal.toLocaleString('en-IN')}</span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -2336,6 +2429,18 @@ function AccountContent() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Live Order Chat Modal */}
+      {chatOrder && (
+        <OrderChatModal
+          orderId={chatOrder.orderId}
+          isOpen={Boolean(chatOrder)}
+          onClose={() => setChatOrder(null)}
+          currentUserType="CUSTOMER"
+          currentUserName={customer?.user_metadata?.full_name || customer?.user_metadata?.name || chatOrder.customerName || profile.firstName || 'Customer'}
+          riderId={chatOrder.riderId || chatOrder.rider?.id}
+        />
       )}
 
     </div>

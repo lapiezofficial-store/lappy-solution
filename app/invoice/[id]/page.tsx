@@ -815,7 +815,9 @@ export default function InvoicePage() {
 
               <div className="flex justify-between text-gray-600">
                 <span>Delivery / Shipping:</span>
-                <span className="font-semibold text-emerald-700">FREE</span>
+                <span className={invoice.shipping > 0 ? "font-mono font-bold text-gray-900" : "font-semibold text-emerald-700"}>
+                  {invoice.shipping > 0 ? `₹${invoice.shipping.toLocaleString('en-IN')}` : 'FREE'}
+                </span>
               </div>
 
               {invoice.roundOff !== 0 && (

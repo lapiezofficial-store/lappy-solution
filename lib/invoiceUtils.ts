@@ -430,7 +430,13 @@ export function buildInvoiceFromOrder(params: {
   const sgstTotal = Math.round(invoiceItems.reduce((acc, it) => acc + it.sgstAmount, 0) * 100) / 100;
   const igstTotal = Math.round(invoiceItems.reduce((acc, it) => acc + it.igstAmount, 0) * 100) / 100;
   const totalTax = cgstTotal + sgstTotal + igstTotal;
-  const calculatedGrand = taxableAmount + totalTax;
+
+  const rawDeliveryFee = Number(order.deliveryFee ?? order.deliveryCharge ?? 0);
+  const deliveryFee = !isNaN(rawDeliveryFee) && rawDeliveryFee > 0 ? rawDeliveryFee : (
+    (order.totalAmount && subtotal) ? Math.max(0, Math.round(Number(order.totalAmount) - (subtotal - discountTotal))) : 0
+  );
+
+  const calculatedGrand = taxableAmount + totalTax + deliveryFee;
   const roundedGrand = Math.round(calculatedGrand);
   const roundOff = Math.round((roundedGrand - calculatedGrand) * 100) / 100;
 
@@ -537,7 +543,7 @@ export function buildInvoiceFromOrder(params: {
     sgstTotal,
     igstTotal,
     totalTax,
-    shipping: 0,
+    shipping: deliveryFee,
     roundOff,
     grandTotal: roundedGrand,
     amountInWords: convertAmountToWords(roundedGrand),
