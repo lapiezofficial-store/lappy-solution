@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  MapPin, X, Navigation, CheckCircle2, AlertCircle, ArrowRight, Search 
+import {
+  MapPin, X, Navigation, CheckCircle2, AlertCircle, ArrowRight, Search
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
@@ -35,9 +35,9 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c * 10) / 10;
 }
@@ -74,8 +74,8 @@ export const LocationSelectorModal: React.FC = () => {
   const getFeeForDistance = (distKm: number) => {
     const sorted = [...slabs].sort((a: any, b: any) => (Number(a.minKm) || 0) - (Number(b.minKm) || 0));
     const matched = sorted.find((s: any) => distKm >= Number(s.minKm || 0) && distKm <= Number(s.maxKm || 0)) ||
-                    sorted.find((s: any) => distKm < Number(s.maxKm || 0)) ||
-                    sorted[sorted.length - 1];
+      sorted.find((s: any) => distKm < Number(s.maxKm || 0)) ||
+      sorted[sorted.length - 1];
     return { fee: Number(matched?.price || 0), slabName: matched?.name || 'Standard Delivery' };
   };
 
@@ -209,14 +209,14 @@ export const LocationSelectorModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
         onClick={() => setIsLocationModalOpen(false)}
       />
 
       {/* Modal Card */}
       <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl z-10 overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom sm:zoom-in-95 duration-200">
-        
+
         {/* Mobile Drag Handle */}
         <div className="sm:hidden pt-3 pb-1 flex justify-center">
           <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
@@ -249,7 +249,7 @@ export const LocationSelectorModal: React.FC = () => {
 
         {/* Content Body */}
         <div className="p-5 sm:p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
-          
+
           {/* 1-Tap Live GPS Button */}
           <button
             type="button"
@@ -284,11 +284,10 @@ export const LocationSelectorModal: React.FC = () => {
                     key={loc.name}
                     type="button"
                     onClick={() => handleSelectPresetArea(loc)}
-                    className={`p-2 rounded-xl text-left border transition-all text-xs flex flex-col justify-between cursor-pointer ${
-                      isSelected
+                    className={`p-2 rounded-xl text-left border transition-all text-xs flex flex-col justify-between cursor-pointer ${isSelected
                         ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold shadow-2xs'
                         : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300 text-slate-800'
-                    }`}
+                      }`}
                   >
                     <span className="truncate block font-semibold text-[11.5px]">{loc.name}</span>
                     <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500 font-mono">

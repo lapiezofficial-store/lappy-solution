@@ -20,6 +20,110 @@ interface ProductCatalogProps {
   initialBrand?: string;
 }
 
+// Subcategory keyword taxonomy for intelligent showroom inventory matching
+const SUBCATEGORY_KEYWORDS: Record<string, string[]> = {
+  'speakers & soundbars': ['speaker', 'soundbar', 'sound bar', 'soundbox', 'sound box', 'home theatre', 'audio', 'woofer', 'subwoofer'],
+  'speakers': ['speaker', 'soundbar', 'sound bar', 'soundbox', 'audio'],
+  'mouse & keyboard': ['keyboard', 'mouse', 'combo', 'keypad', 'ft-1671', 'ft-1602a', 'optical mouse', 'gaming mouse'],
+  'monitors & displays': ['monitor', 'display', 'screen', 'curved monitor', 'led monitor', 'ips', '100hz', 'e2225hm', 'p204v', 'ek220q', 'mon-0068'],
+  'cable & connector (hdmi/vga/power)': ['cable', 'connector', 'hdmi', 'vga', 'power cord', 'patch cord', 'extender', 'splitter', 'converter', 'adapter', 'dongle', 'usb wi-fi', 'wi-fi dongle', 'bluetooth dongle', 'ft-0844'],
+  'cables-connectors': ['cable', 'connector', 'hdmi', 'vga', 'extender', 'adapter', 'converter'],
+  'computer peripherals': ['keyboard', 'mouse', 'ups', 'switch', 'dongle', 'motherboard', 'processor', 'cooler', 'fan', 'ram', 'monitor', 'scanner'],
+  'desktop & laptops': ['laptop', 'notebook', 'desktop', 'pc'],
+  'refurbished laptops': ['refurbished', 'pre-owned', 'renewed'],
+  'custom desktop pc rigs': ['motherboard', 'processor', 'core-i', 'cooler', 'fan', 'rig', 'gaming pc', 'cabinet', 'heatsink', 'h110', 'h81', 'h61'],
+  'laptop battery': ['battery', 'batt', 'mah'],
+  'laptop adaptor': ['adaptor', 'adapter', 'charger', 'power supply', 'ac adapter', '65w', '45w', '90w'],
+  'laptop body': ['body', 'casing', 'hinge', 'panel', 'base', 'top cover'],
+  'laptop keyboards': ['laptop keyboard', 'internal keyboard', 'replacement keyboard'],
+  'laptop screen': ['laptop screen', 'led screen', 'lcd panel', '15.6', '14.0', '30 pin', '40 pin', 'slim led'],
+  'laptop parts': ['part', 'cable', 'fan', 'jack', 'hinge', 'display cable'],
+  'printers (inktank & laser)': ['printer', 'inktank', 'laserjet', 'ecotank', 'all-in-one', 'pixma', 'deskjet'],
+  'toner & ink bottles': ['toner', 'ink', 'cartridge', '003', '774', '664', 'gt-52', 'gt-51', 'gt-53', '12a', '88a', 'refill', 'bottle'],
+  'paper & sticker sheets': ['paper', 'sticker', 'glossy', 'photo paper', 'a4', 'sublimation'],
+  'printer spare parts & rollers': ['roller', 'pick up roller', 'teflon', 'fuser', 'head', 'gear', 'carriage', 'encoder'],
+  'cctv cameras (dome/bullet/wi-fi)': ['camera', 'dome', 'bullet', 'wi-fi camera', 'ptz', 'cctv', 'dvr', 'nvr', 'imou', 'ezviz', 'cp-plus', 'dahua', 'hikvision', '4mp', '2mp'],
+  'biometric attendance & scanners': ['biometric', 'fingerprint', 'scanner', 'attendance', 'mantra', 'morpho', 'mfs110', 'rd service'],
+  'ssd & hard disk': ['ssd', 'hard disk', 'hdd', 'sata', 'nvme', 'm.2', 'internal ssd', 'external ssd'],
+  'pendrive & sd card': ['pen drive', 'pendrive', 'usb drive', 'flash drive', 'sd card', 'micro sd', 'memory card', 'otg', 'metal pen drive'],
+  'antivirus (quick heal / total security)': ['antivirus', 'quick heal', 'total security', 'internet security', 'kaspersky', 'k7', 'license'],
+  'toner cartridges': ['toner', 'cartridge', '12a', '88a'],
+  'ink bottles & refills': ['ink', 'bottle', 'refill', '003', 'gt-52', 'gt-51', '664'],
+  'opc drum & doctor blade': ['drum', 'blade', 'opc', 'wiper blade', 'doctor blade'],
+  'screens-displays': ['screen', 'display', 'panel', 'led', 'lcd'],
+  'audio-modules': ['speaker', 'audio', 'sound', 'woofer'],
+  'certified refurbished laptops': ['refurbished', 'pre-owned', 'renewed'],
+  'refurbished desktop pcs': ['refurbished desktop', 'renewed pc', 'desktop rig'],
+  'refurbished hd monitors': ['refurbished monitor', 'used monitor', 'hd monitor'],
+};
+
+// Robust Category Matcher
+export function isProductInCategory(p: Product, targetCategory: string): boolean {
+  if (!targetCategory || targetCategory === 'All' || targetCategory === 'All Products') return true;
+  const target = targetCategory.trim().toLowerCase();
+  const pCat = (p.category || '').trim().toLowerCase();
+  if (!pCat) return false;
+
+  // Direct exact match
+  if (pCat === target) return true;
+
+  // Normalized string match (remove plural endings and ampersands)
+  const targetBase = target.replace(/s\b/g, '').replace(/&/g, 'and').replace(/\s+/g, ' ').trim();
+  const pCatBase = pCat.replace(/s\b/g, '').replace(/&/g, 'and').replace(/\s+/g, ' ').trim();
+  if (targetBase === pCatBase) return true;
+
+  // Dedicated showroom domain rules
+  if (target.includes('periph') && pCat.includes('periph')) return true;
+  if ((target.includes('cctv') || target.includes('secur')) && (pCat.includes('cctv') || pCat.includes('secur'))) return true;
+  if (target.includes('toner') && pCat.includes('toner')) return true;
+  if (target.includes('printer') && pCat.includes('printer')) return true;
+  if ((target.includes('storage') || target.includes('memory')) && (pCat.includes('storage') || pCat.includes('memory'))) return true;
+  if (target.includes('electronic') && pCat.includes('electronic')) return true;
+
+  // Distinguish Laptops from Laptop Parts & Spares
+  if (target.includes('part') || target.includes('spare')) {
+    return pCat.includes('part') || pCat.includes('spare') || pCat.includes('adaptor') || pCat.includes('battery');
+  }
+  if (target.includes('laptop') && !target.includes('part') && !target.includes('spare')) {
+    return (pCat.includes('laptop') || pCat.includes('computer')) && !pCat.includes('peripheral') && !pCat.includes('part');
+  }
+
+  return false;
+}
+
+// Robust Subcategory Matcher
+export function isProductInSubcategory(p: Product, subcategoryName: string): boolean {
+  if (!subcategoryName || subcategoryName === 'All') return true;
+  const subLower = subcategoryName.trim().toLowerCase();
+  if (!subLower) return true;
+
+  // 1. Direct match on product's explicit subcategory field if present
+  const pSub = (p.subcategory || (p as any).subCategory || '').trim().toLowerCase();
+  if (pSub) {
+    if (pSub === subLower) return true;
+    if (pSub.includes(subLower) || subLower.includes(pSub)) return true;
+  }
+
+  // 2. Keyword dictionary lookup
+  const keywords = SUBCATEGORY_KEYWORDS[subLower];
+  const pText = `${p.name} ${p.specs || ''} ${p.description || ''} ${p.brand || ''}`.toLowerCase();
+  if (keywords && keywords.length > 0) {
+    return keywords.some(kw => pText.includes(kw));
+  }
+
+  // 3. Fallback: Check if subcategory keywords appear in product text (ignoring common stop words)
+  const subWords = subLower
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !['and', 'for', 'with', 'the', 'all'].includes(w));
+
+  if (subWords.length > 0) {
+    return subWords.some(w => pText.includes(w));
+  }
+
+  return false;
+}
+
 // Helper to map legacy / abbreviated category slugs to canonical showroom category names
 function normalizeToCanonicalCategory(query: string, availableCategories: string[]): string | null {
   if (!query || query === 'All' || query === 'All Products') return null;
@@ -34,8 +138,8 @@ function normalizeToCanonicalCategory(query: string, availableCategories: string
   if (contains) return contains;
 
   // 3. Known taxonomy aliases
-  if (['laptops', 'laptop', 'notebooks'].includes(q)) {
-    const found = availableCategories.find(c => c.toLowerCase().includes('laptop'));
+  if (['laptops', 'laptop', 'notebooks', 'computer & laptops', 'computers & laptops'].includes(q)) {
+    const found = availableCategories.find(c => c.toLowerCase().includes('laptop') || c.toLowerCase().includes('computer'));
     if (found) return found;
   }
   if (['computers', 'computer', 'desktops', 'desktop', 'pc', 'custom-pcs'].includes(q)) {
@@ -113,21 +217,87 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
 
   const currentSortLabel = sortOptions.find(o => o.id === sortBy)?.label || 'Featured Deals';
 
-  useEffect(() => {
-    if (initialCategory && initialCategory !== 'All' && initialCategory !== 'All Products') {
-      const allCatNames = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
-      const canonical = normalizeToCanonicalCategory(initialCategory, allCatNames);
-      setSelectedCategory(canonical || initialCategory);
-    } else if (initialCategory) {
-      setSelectedCategory(initialCategory);
-    }
-  }, [initialCategory, products]);
+  const initialMountDoneRef = React.useRef<boolean>(false);
 
-  useEffect(() => {
-    if (initialSubcategory) {
-      setSelectedSubcategory(initialSubcategory);
+  // Synchronize browser URL bar query params without page reload
+  const updateUrlFilters = (cat: string, sub: string, brand?: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const url = new URL(window.location.href);
+      if (cat && cat !== 'All' && cat !== 'All Products') {
+        url.searchParams.set('cat', cat);
+      } else {
+        url.searchParams.delete('cat');
+        url.searchParams.delete('category');
+      }
+      if (sub && sub !== 'All') {
+        url.searchParams.set('sub', sub);
+      } else {
+        url.searchParams.delete('sub');
+        url.searchParams.delete('subcat');
+      }
+      if (brand && brand !== 'All') {
+        url.searchParams.set('brand', brand);
+      } else {
+        url.searchParams.delete('brand');
+      }
+      window.history.replaceState(null, '', url.pathname + (url.search ? url.search : ''));
+    } catch (e) {
+      // ignore
     }
-  }, [initialSubcategory]);
+  };
+
+  const handleCategorySelect = (catName: string) => {
+    setSelectedCategory(catName);
+    setSelectedSubcategory('All');
+    setDisplayLimit(24);
+    updateUrlFilters(catName, 'All', selectedBrand);
+  };
+
+  const handleSubcategorySelect = (subName: string) => {
+    setSelectedSubcategory(subName);
+    setDisplayLimit(24);
+    updateUrlFilters(selectedCategory, subName, selectedBrand);
+  };
+
+  const handleBrandSelect = (brandName: string) => {
+    setSelectedBrand(brandName);
+    setDisplayLimit(24);
+    updateUrlFilters(selectedCategory, selectedSubcategory, brandName);
+  };
+
+  // 1. Initial URL param synchronization on mount only (does not reset when products sync in background)
+  useEffect(() => {
+    if (!initialMountDoneRef.current) {
+      initialMountDoneRef.current = true;
+      if (initialCategory && initialCategory !== 'All' && initialCategory !== 'All Products') {
+        const allCatNames = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+        const canonical = normalizeToCanonicalCategory(initialCategory, allCatNames);
+        setSelectedCategory(canonical || initialCategory);
+      } else if (initialCategory) {
+        setSelectedCategory(initialCategory);
+      }
+
+      if (initialSubcategory && initialSubcategory !== 'All') {
+        setSelectedSubcategory(initialSubcategory);
+      }
+    }
+  }, [initialCategory, initialSubcategory, products]);
+
+  // 2. Browser Back / Forward button support
+  useEffect(() => {
+    const handlePopState = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const c = sp.get('cat') || sp.get('category') || 'All';
+      const s = sp.get('sub') || sp.get('subcat') || 'All';
+      const b = sp.get('brand') || 'All';
+      setSelectedCategory(c);
+      setSelectedSubcategory(s);
+      setSelectedBrand(b);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     if (initialBrand) {
@@ -161,18 +331,6 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       { name: 'All', icon: LayoutGrid, count: products.length }
     ];
 
-    // Category product counts helper that normalizes casing and variants
-    const getNormalizedCategoryCount = (targetCatName: string): number => {
-      const targetLower = targetCatName.trim().toLowerCase();
-      const targetBase = targetLower.replace(/s\b/g, '');
-      return products.filter((p) => {
-        const pCat = (p.category || '').trim().toLowerCase();
-        const pBase = pCat.replace(/s\b/g, '');
-        return pCat === targetLower || pBase === targetBase ||
-          (targetLower.includes('laptop') && pCat.includes('laptop') && !pCat.includes('part') && !pCat.includes('body') && !pCat.includes('screen') && !pCat.includes('keyboard') && !pCat.includes('battery') && !pCat.includes('adaptor'));
-      }).length;
-    };
-
     const seen = new Set<string>();
     seen.add('all');
 
@@ -189,7 +347,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
         const cName = c.name.trim();
         if (!seen.has(cName.toLowerCase())) {
           seen.add(cName.toLowerCase());
-          const count = getNormalizedCategoryCount(cName);
+          const count = products.filter(p => isProductInCategory(p, cName)).length;
           list.push({
             name: cName,
             icon: getCategoryIcon(cName),
@@ -203,7 +361,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       const cName = c.name.trim();
       if (!seen.has(cName.toLowerCase())) {
         seen.add(cName.toLowerCase());
-        const count = getNormalizedCategoryCount(cName);
+        const count = products.filter(p => isProductInCategory(p, cName)).length;
         list.push({
           name: cName,
           icon: getCategoryIcon(cName),
@@ -217,7 +375,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       const pCat = p.category?.trim();
       if (pCat && !seen.has(pCat.toLowerCase())) {
         seen.add(pCat.toLowerCase());
-        const count = getNormalizedCategoryCount(pCat);
+        const count = products.filter(prod => isProductInCategory(prod, pCat)).length;
         list.push({
           name: pCat,
           icon: getCategoryIcon(pCat),
@@ -264,17 +422,9 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       });
     }
 
-    // 2. Count matching products and include any extra subcategories present in product data
+    // 2. Also include any extra subcategories stored explicitly in product data
     products.forEach((p) => {
-      const pCat = (p.category || '').toLowerCase();
-      const matchesCategory =
-        pCat === catLower ||
-        pCat.includes(catLower) ||
-        catLower.includes(pCat) ||
-        p.name.toLowerCase().includes(catLower);
-
-      if (!matchesCategory) return;
-
+      if (!isProductInCategory(p, selectedCategory)) return;
       const pSub = (p.subcategory || (p as any).subCategory || '').trim();
       if (pSub) {
         const key = pSub.toLowerCase();
@@ -282,12 +432,16 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
           subMap.set(key, {
             name: pSub,
             slug: key.replace(/[^a-z0-9]+/g, '-'),
-            count: 1,
+            count: 0,
           });
-        } else {
-          subMap.get(key)!.count += 1;
         }
       }
+    });
+
+    // 3. Accurately calculate product count for each subcategory
+    const catProducts = products.filter(p => isProductInCategory(p, selectedCategory));
+    subMap.forEach((subItem) => {
+      subItem.count = catProducts.filter(p => isProductInSubcategory(p, subItem.name)).length;
     });
 
     return Array.from(subMap.values());
@@ -350,33 +504,24 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     return list;
   }, [brandListWithCounts, brandSearch]);
 
-  // Filtered products
+  // Filtered products with robust Category & Subcategory matching
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      // Category Match
+      // 1. Category Match
       if (selectedCategory !== 'All' && selectedCategory !== 'All Products') {
-        const catLower = selectedCategory.toLowerCase();
-        const pCatLower = (p.category || '').toLowerCase();
-        const matchesDirect = pCatLower === catLower || pCatLower.includes(catLower) || catLower.includes(pCatLower);
-        const matchesSub = (p.subcategory || '').toLowerCase().includes(catLower);
-        const matchesName = p.name.toLowerCase().includes(catLower);
-        if (!matchesDirect && !matchesSub && !matchesName) {
+        if (!isProductInCategory(p, selectedCategory)) {
           return false;
         }
       }
 
-      // Subcategory Match
+      // 2. Subcategory Match
       if (selectedSubcategory !== 'All') {
-        const subLower = selectedSubcategory.toLowerCase();
-        const pSub = (p.subcategory || (p as any).subCategory || '').toLowerCase();
-        const matchesSubDirect = pSub === subLower || pSub.includes(subLower) || subLower.includes(pSub);
-        const matchesSubName = p.name.toLowerCase().includes(subLower);
-        const matchesSpecs = (p.specs || '').toLowerCase().includes(subLower);
-        if (!matchesSubDirect && !matchesSubName && !matchesSpecs) {
+        if (!isProductInSubcategory(p, selectedSubcategory)) {
           return false;
         }
       }
 
+      // 3. Brand Match
       if (selectedBrand !== 'All') {
         const pBrand = (p.brand || '').trim().toLowerCase();
         const selBrand = selectedBrand.trim().toLowerCase();
@@ -384,26 +529,35 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
           return false;
         }
       }
+
+      // 4. In Stock Filter
       if (onlyInStock) {
         const isAvailable = p.inStock !== false && (p.stockQuantity === undefined || p.stockQuantity === null || Number(p.stockQuantity) > 0);
         if (!isAvailable) {
           return false;
         }
       }
+
+      // 5. Price Filter
       if (p.price > maxPrice) {
         return false;
       }
+
+      // 6. Rating Filter
       if (minRating > 0 && (p.rating || 0) < minRating) {
         return false;
       }
+
+      // 7. Search Query Filter
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesName = p.name.toLowerCase().includes(q);
+        const q = searchQuery.toLowerCase().trim();
+        const matchesName = (p.name || '').toLowerCase().includes(q);
         const matchesCat = (p.category || '').toLowerCase().includes(q);
         const matchesSubcat = (p.subcategory || '').toLowerCase().includes(q);
         const matchesBrand = (p.brand || '').toLowerCase().includes(q);
         const matchesSpecs = (p.specs || '').toLowerCase().includes(q);
-        if (!matchesName && !matchesCat && !matchesSubcat && !matchesBrand && !matchesSpecs) {
+        const matchesSku = (p.sku || '').toLowerCase().includes(q);
+        if (!matchesName && !matchesCat && !matchesSubcat && !matchesBrand && !matchesSpecs && !matchesSku) {
           return false;
         }
       }
@@ -428,6 +582,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     setMinRating(0);
     setBrandSearch('');
     setSearchQuery('');
+    setDisplayLimit(24);
+    updateUrlFilters('All', 'All', 'All');
   };
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
@@ -446,14 +602,30 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
         
         {/* Top Breadcrumb & Title */}
         <div className="mb-3 sm:mb-5">
-          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-gray-500 mb-1">
+          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-gray-500 mb-1 flex-wrap">
             <Link href="/" className="hover:text-[#1A56DB]">Home</Link>
             <span>/</span>
-            <span className="text-[#1A56DB] font-semibold">Store Catalog</span>
-            {selectedCategory !== 'All' && (
+            <button 
+              onClick={() => handleCategorySelect('All')} 
+              className="text-[#1A56DB] font-semibold hover:underline cursor-pointer"
+            >
+              Store Catalog
+            </button>
+            {selectedCategory !== 'All' && selectedCategory !== 'All Products' && (
               <>
                 <span>/</span>
-                <span className="text-gray-900 font-bold">{selectedCategory}</span>
+                <button
+                  onClick={() => handleSubcategorySelect('All')}
+                  className={`${selectedSubcategory === 'All' ? 'text-gray-900 font-bold' : 'text-[#1A56DB] hover:underline cursor-pointer'}`}
+                >
+                  {selectedCategory}
+                </button>
+              </>
+            )}
+            {selectedSubcategory !== 'All' && (
+              <>
+                <span>/</span>
+                <span className="text-gray-900 font-bold">{selectedSubcategory}</span>
               </>
             )}
           </div>
@@ -461,10 +633,12 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
             <div>
               <h1 className="text-lg sm:text-2xl font-extrabold text-[#111827]">
-                {selectedCategory === 'All' ? 'All Hardware & Spares Collection' : `${selectedCategory}`}
+                {selectedCategory === 'All' || selectedCategory === 'All Products'
+                  ? 'All Hardware & Spares Collection' 
+                  : (selectedSubcategory !== 'All' ? `${selectedCategory} › ${selectedSubcategory}` : `${selectedCategory}`)}
               </h1>
               <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
-                {filteredProducts.length} Products
+                {filteredProducts.length} Products Available
               </p>
             </div>
 
@@ -630,11 +804,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                   return (
                     <div key={cat.name} className="space-y-1">
                       <button
-                        onClick={() => {
-                          setSelectedCategory(cat.name);
-                          setSelectedSubcategory('All');
-                          setDisplayLimit(24);
-                        }}
+                        onClick={() => handleCategorySelect(cat.name)}
                         className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex justify-between items-center transition-all cursor-pointer ${
                           isSelected
                             ? 'bg-blue-50 text-[#1A56DB] font-extrabold border border-blue-200 shadow-2xs'
@@ -656,7 +826,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                       {isSelected && cat.name !== 'All' && availableSubcategories.length > 0 && (
                         <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-blue-200 ml-2 animate-in slide-in-from-top-1">
                           <button
-                            onClick={() => setSelectedSubcategory('All')}
+                            onClick={() => handleSubcategorySelect('All')}
                             className={`w-full text-left py-1 px-2 rounded-lg text-[11px] flex items-center justify-between transition-colors cursor-pointer ${
                               selectedSubcategory === 'All'
                                 ? 'font-bold text-[#1A56DB] bg-blue-50'
@@ -664,28 +834,27 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                             }`}
                           >
                             <span>All {cat.name}</span>
+                            <span className="text-[9.5px] text-gray-400 font-semibold">{cat.count}</span>
                           </button>
                           {availableSubcategories.map((sub) => {
                             const isSubActive = selectedSubcategory.toLowerCase() === sub.name.toLowerCase();
-                            const subCount = products.filter(
-                              p => (p.category || '').trim().toLowerCase() === cat.name.trim().toLowerCase() && 
-                              (p.subcategory || (p as any).subCategory || '').trim().toLowerCase() === sub.name.trim().toLowerCase()
-                            ).length;
 
                             return (
                               <button
                                 key={sub.name}
-                                onClick={() => setSelectedSubcategory(sub.name)}
-                                className={`w-full text-left py-1 px-2 rounded-lg text-[11px] flex items-center justify-between transition-colors cursor-pointer ${
+                                onClick={() => handleSubcategorySelect(isSubActive ? 'All' : sub.name)}
+                                className={`w-full text-left py-1.5 px-2 rounded-lg text-[11px] flex items-center justify-between transition-colors cursor-pointer ${
                                   isSubActive
-                                    ? 'font-bold text-[#1A56DB] bg-blue-100/70 shadow-2xs'
+                                    ? 'font-bold text-[#1A56DB] bg-blue-100/90 shadow-2xs border border-blue-200'
                                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                 }`}
                               >
                                 <span className="truncate">↳ {sub.name}</span>
-                                {subCount > 0 && (
-                                  <span className="text-[9.5px] text-gray-400 font-semibold">{subCount}</span>
-                                )}
+                                <span className={`text-[9.5px] px-1.5 py-0.2 rounded-full font-semibold ${
+                                  isSubActive ? 'bg-[#1A56DB] text-white' : 'text-gray-400 bg-gray-100'
+                                }`}>
+                                  {sub.count}
+                                </span>
                               </button>
                             );
                           })}
@@ -794,6 +963,67 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
 
           {/* Right Product Grid Area */}
           <main className="lg:col-span-9 space-y-3.5">
+            {/* Active Filter Chips Strip (Flipkart / Amazon Style) */}
+            {activeFilterCount > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 p-2.5 bg-white border border-[#E5E7EB] rounded-xl shadow-2xs">
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mr-1">Active:</span>
+                {selectedCategory !== 'All' && selectedCategory !== 'All Products' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-[#1A56DB] border border-blue-200">
+                    Category: {selectedCategory}
+                    <button
+                      onClick={() => handleCategorySelect('All')}
+                      className="hover:text-red-500 cursor-pointer ml-1"
+                      title="Clear category filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {selectedSubcategory !== 'All' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-100 text-[#1A56DB] border border-blue-300">
+                    Subcategory: {selectedSubcategory}
+                    <button
+                      onClick={() => handleSubcategorySelect('All')}
+                      className="hover:text-red-500 cursor-pointer ml-1"
+                      title="Clear subcategory filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {selectedBrand !== 'All' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-800 border border-gray-300">
+                    Brand: {selectedBrand}
+                    <button
+                      onClick={() => handleBrandSelect('All')}
+                      className="hover:text-red-500 cursor-pointer ml-1"
+                      title="Clear brand filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {searchQuery.trim() && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                    &quot;{searchQuery}&quot;
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="hover:text-red-500 cursor-pointer ml-1"
+                      title="Clear search query"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                <button
+                  onClick={clearAllFilters}
+                  className="text-xs font-bold text-[#1A56DB] hover:text-[#1E40AF] hover:underline cursor-pointer ml-auto"
+                >
+                  Clear All
+                </button>
+              </div>
+            )}
+
             {/* Sorting & Result Controls Strip (Desktop) */}
             <div className="hidden lg:flex bg-white border border-[#E5E7EB] rounded-xl p-3 items-center justify-between gap-2 shadow-2xs">
               <span className="text-xs text-gray-500">
@@ -825,19 +1055,35 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
               </div>
             ) : (
               <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
-                <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3 text-gray-400">
+                <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3 text-[#1A56DB]">
                   <Search className="w-6 h-6" />
                 </div>
-                <h3 className="text-base font-bold text-gray-900 mb-1">No products match your criteria</h3>
+                <h3 className="text-base font-bold text-gray-900 mb-1">
+                  {selectedSubcategory !== 'All' 
+                    ? `No products found in "${selectedSubcategory}"` 
+                    : (selectedCategory !== 'All' ? `No products found in "${selectedCategory}"` : 'No products match your criteria')}
+                </h3>
                 <p className="text-xs text-gray-500 max-w-sm mx-auto mb-4">
-                  Try adjusting the category, lowering the price threshold, or searching for a broader term.
+                  {selectedSubcategory !== 'All'
+                    ? `Currently there are no showroom products cataloged under this subcategory. You can view all ${selectedCategory} products or reset your filters.`
+                    : 'Try adjusting the category, lowering the price threshold, or searching for a broader term.'}
                 </p>
-                <button
-                  onClick={clearAllFilters}
-                  className="px-4 py-2 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs"
-                >
-                  Reset Filters
-                </button>
+                <div className="flex items-center justify-center gap-2.5 flex-wrap">
+                  {selectedSubcategory !== 'All' && selectedCategory !== 'All' && (
+                    <button
+                      onClick={() => handleSubcategorySelect('All')}
+                      className="px-4 py-2 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-xs cursor-pointer shadow-xs"
+                    >
+                      View All {selectedCategory} Products
+                    </button>
+                  )}
+                  <button
+                    onClick={clearAllFilters}
+                    className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs cursor-pointer"
+                  >
+                    Reset All Filters
+                  </button>
+                </div>
               </div>
             )}
 
@@ -917,16 +1163,12 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                 <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
                   {categories.map((cat) => {
                     const count = cat.name === 'All' ? products.length : cat.count;
-                    const isSelected = selectedCategory === cat.name || (cat.name === 'All' && selectedCategory === 'All Products');
+                    const isSelected = selectedCategory.toLowerCase() === cat.name.toLowerCase() || (cat.name === 'All' && selectedCategory === 'All Products');
                     return (
                       <button
                         key={cat.name}
                         type="button"
-                        onClick={() => {
-                          setSelectedCategory(cat.name);
-                          setSelectedSubcategory('All');
-                          setDisplayLimit(24);
-                        }}
+                        onClick={() => handleCategorySelect(cat.name)}
                         className={`p-2.5 rounded-xl text-left text-xs font-semibold border flex items-center justify-between gap-1 transition-all cursor-pointer ${
                           isSelected
                             ? 'bg-blue-50 border-[#1A56DB] text-[#1A56DB] font-extrabold shadow-2xs'
@@ -955,7 +1197,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                     {selectedSubcategory !== 'All' && (
                       <button
                         type="button"
-                        onClick={() => setSelectedSubcategory('All')}
+                        onClick={() => handleSubcategorySelect('All')}
                         className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
                       >
                         Reset to All
@@ -965,7 +1207,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                   <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
                     <button
                       type="button"
-                      onClick={() => setSelectedSubcategory('All')}
+                      onClick={() => handleSubcategorySelect('All')}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                         selectedSubcategory === 'All'
                           ? 'bg-[#1A56DB] text-white border-[#1A56DB] shadow-2xs'
@@ -980,14 +1222,19 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                         <button
                           key={sub.name}
                           type="button"
-                          onClick={() => setSelectedSubcategory(isSubSelected ? 'All' : sub.name)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          onClick={() => handleSubcategorySelect(isSubSelected ? 'All' : sub.name)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
                             isSubSelected
                               ? 'bg-[#1A56DB] text-white border-[#1A56DB] shadow-2xs'
                               : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'
                           }`}
                         >
-                          {sub.name} {sub.count > 0 && `(${sub.count})`}
+                          <span>{sub.name}</span>
+                          <span className={`text-[9.5px] px-1 py-0.2 rounded-full font-semibold ${
+                            isSubSelected ? 'bg-blue-800 text-white' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {sub.count}
+                          </span>
                         </button>
                       );
                     })}
@@ -1024,8 +1271,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                 <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
                   <button
                     key="All"
-                    onClick={() => setSelectedBrand('All')}
-                    className={`px-2.5 py-1 rounded-md text-xs border font-medium transition-colors ${
+                    onClick={() => handleBrandSelect('All')}
+                    className={`px-2.5 py-1 rounded-md text-xs border font-medium transition-colors cursor-pointer ${
                       selectedBrand === 'All'
                         ? 'bg-[#1A56DB] text-white border-[#1A56DB] font-bold'
                         : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
@@ -1036,8 +1283,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                   {brandListWithCounts.map((b) => (
                     <button
                       key={b.name}
-                      onClick={() => setSelectedBrand(b.name)}
-                      className={`px-2.5 py-1 rounded-md text-xs border font-medium transition-colors ${
+                      onClick={() => handleBrandSelect(b.name)}
+                      className={`px-2.5 py-1 rounded-md text-xs border font-medium transition-colors cursor-pointer ${
                         selectedBrand === b.name
                           ? 'bg-[#1A56DB] text-white border-[#1A56DB] font-bold'
                           : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
@@ -1068,8 +1315,14 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
             <div className="p-3 bg-white border-t border-gray-100 flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setMobileFilterOpen(false)}
-                className="w-full h-11 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md active:scale-98"
+                onClick={() => {
+                  updateUrlFilters(selectedCategory, selectedSubcategory, selectedBrand);
+                  setMobileFilterOpen(false);
+                  if (typeof window !== 'undefined') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className="w-full h-11 rounded-xl bg-[#1A56DB] hover:bg-[#1E40AF] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md active:scale-98 cursor-pointer"
               >
                 <span>Apply & View {filteredProducts.length} Products</span>
               </button>
