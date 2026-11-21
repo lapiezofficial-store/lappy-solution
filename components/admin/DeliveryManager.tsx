@@ -7,7 +7,7 @@ import {
   ExternalLink, ArrowRight, DollarSign, Navigation, Plus, Trash2 
 } from 'lucide-react';
 import { DeliverySettings, DeliverySlab, CustomerLocationRecord } from '@/lib/deliveryService';
-import { adminFetch } from '@/lib/adminApi';
+import { adminFetch, broadcastCmsUpdate } from '@/lib/adminApi';
 import { useStore } from '@/context/StoreContext';
 
 export const DeliveryManager: React.FC = () => {
@@ -147,6 +147,8 @@ export const DeliveryManager: React.FC = () => {
         if (updateDeliverySettingsInStore) {
           await updateDeliverySettingsInStore(payload);
         }
+        broadcastCmsUpdate('delivery');
+        broadcastCmsUpdate('settings');
         if (showToast) {
           showToast('Delivery rates saved & live updated!');
         }

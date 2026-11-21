@@ -85,12 +85,28 @@ export default function CheckoutPage() {
     }
   }, [customerLocation]);
 
-  const [selectedDistance, setSelectedDistance] = useState<number>(() => {
-    return customerLocation?.distanceKm ?? 2;
+  const isLocationVerified = Boolean(
+    customerLocation &&
+    (customerLocation.isConfirmed || customerLocation.lat || (typeof window !== 'undefined' && localStorage.getItem('lapiez_loc_confirmed') === 'true')) &&
+    customerLocation.distanceKm !== undefined
+  );
+
+  const [selectedDistance, setSelectedDistance] = useState<number | null>(() => {
+    return customerLocation?.distanceKm ?? null;
   });
   const [selectedArea, setSelectedArea] = useState<string>(() => {
-    return customerLocation?.area || 'Garhwa Town Core';
+    return customerLocation?.area || '';
   });
+
+  // Automatically prompt location modal if customer selects delivery without having location verified
+  useEffect(() => {
+    if (deliveryType === 'delivery' && !isLocationVerified) {
+      const timer = setTimeout(() => {
+        setIsLocationModalOpen(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [deliveryType, isLocationVerified, setIsLocationModalOpen]);
 
   const handleUpdateDistance = (km: number, areaName?: string, pin?: string) => {
     setSelectedDistance(km);
@@ -115,11 +131,18 @@ export default function CheckoutPage() {
     if (setCustomerDeliveryLocation) {
       setCustomerDeliveryLocation({
         area,
+        city: 'Garhwa',
         pincode: pin || pincode || '822114',
         distanceKm: km,
         deliveryFee: fee,
         landmark: landmark || '',
+        isConfirmed: true,
+        fullAddress: `${area}, Garhwa - ${pin || pincode || '822114'}`,
+        updatedAt: new Date().toISOString(),
       });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lapiez_loc_confirmed', 'true');
+      }
     }
   };
 
@@ -180,7 +203,11 @@ export default function CheckoutPage() {
               deliveryFee: fee,
               fullAddress: `${locName}, Garhwa - ${pincode || '822114'}`,
               updatedAt: new Date().toISOString(),
+              isConfirmed: true,
             });
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('lapiez_loc_confirmed', 'true');
+            }
           }
         } catch { } finally {
           setIsDetectingGps(false);
@@ -188,7 +215,8 @@ export default function CheckoutPage() {
       },
       () => {
         setIsDetectingGps(false);
-        alert('Could not access GPS location. Please enter your street address.');
+        showToast('Could not access live GPS. Please select your Garhwa area from the list.');
+        setIsLocationModalOpen(true);
       },
       { timeout: 10000, enableHighAccuracy: true }
     );
@@ -404,11 +432,9 @@ export default function CheckoutPage() {
       return;
     }
     if (deliveryType === 'delivery') {
-      const hasLiveCoordinates = Boolean(customerLocation?.lat && customerLocation?.lng);
-      if (!hasLiveCoordinates) {
-        showToast('Location access is required. Opening location selector...');
+      if (!isLocationVerified) {
+        showToast('📍 Delivery location is mandatory! Please choose your Garhwa area or live GPS.');
         setIsLocationModalOpen(true);
-        handleUseLiveGps();
         return;
       }
       if (!streetAddress.trim() || !pincode.trim()) {
@@ -422,12 +448,10 @@ export default function CheckoutPage() {
 
   const handleProceedToPayment = () => {
     if (deliveryType === 'delivery') {
-      const hasLiveCoordinates = Boolean(customerLocation?.lat && customerLocation?.lng);
-      if (!hasLiveCoordinates) {
-        showToast('Live GPS location is mandatory for doorstep delivery.');
+      if (!isLocationVerified) {
+        showToast('📍 Delivery location is mandatory for doorstep delivery.');
         setStep(1);
         setIsLocationModalOpen(true);
-        handleUseLiveGps();
         return;
       }
     }
@@ -438,14 +462,12 @@ export default function CheckoutPage() {
   const handleFinalOrderSubmit = async () => {
     const isPickup = deliveryType === 'pickup' || paymentMethod === 'store_pickup';
 
-    // Strict mandatory GPS check for doorstep delivery
+    // Strict mandatory location check for doorstep delivery
     if (!isPickup) {
-      const hasLiveCoordinates = Boolean(customerLocation?.lat && customerLocation?.lng);
-      if (!hasLiveCoordinates) {
-        showToast('Live GPS location is mandatory for doorstep delivery.');
+      if (!isLocationVerified) {
+        showToast('📍 Delivery location is mandatory for doorstep delivery.');
         setStep(1);
         setIsLocationModalOpen(true);
-        handleUseLiveGps();
         return;
       }
     }
@@ -790,6 +812,80 @@ export default function CheckoutPage() {
                     {/* Physical Address Fields if Delivery */}
                     {deliveryType === 'delivery' ? (
                       <div className="space-y-4 pt-2">
+                        {/* MANDATORY DELIVERY LOCATION SELECTOR */}
+                        {isLocationVerified ? (
+                          <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                <CheckCircle2 className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <strong className="font-extrabold text-slate-900 text-sm">
+                                    {customerLocation?.area || selectedArea || 'Garhwa Area'}
+                                  </strong>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    ✓ Location Verified ({customerLocation?.distanceKm ?? selectedDistance ?? 0} km from Store)
+                                  </span>
+                                </div>
+                                <p className="text-[11.5px] text-slate-600 mt-0.5">
+                                  Delivery Charge: <strong className={currentDeliveryFee === 0 ? 'text-emerald-700 font-extrabold' : 'text-slate-900 font-extrabold'}>{currentDeliveryFee === 0 ? 'FREE' : `₹${currentDeliveryFee}`}</strong> {subtotal >= (deliverySettings?.freeDeliveryAbove ?? 5000) ? '• Free shipping qualified' : ''}
+                                </p>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setIsLocationModalOpen(true)}
+                              className="h-9 px-3.5 rounded-xl bg-white hover:bg-slate-50 text-blue-700 font-bold text-xs border border-blue-200 shadow-2xs transition-all flex items-center justify-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                            >
+                              <Navigation className="w-3.5 h-3.5 text-blue-600" />
+                              <span>Change Location</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/90 border-2 border-amber-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs animate-in fade-in duration-200">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                                <MapPin className="w-5 h-5 animate-bounce" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <strong className="text-sm font-extrabold text-amber-950">
+                                    Delivery Location Required *
+                                  </strong>
+                                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 border border-amber-300">
+                                    Mandatory
+                                  </span>
+                                </div>
+                                <p className="text-xs text-amber-900 mt-1 max-w-md leading-relaxed">
+                                  Doorstep delivery requires your GPS or area location to calculate the exact delivery fee and assign the nearest delivery partner. <strong>Bina location select kiye order aage nahi badhega.</strong>
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={handleUseLiveGps}
+                                disabled={isDetectingGps}
+                                className="h-10 px-4 rounded-xl bg-[#1A56DB] hover:bg-[#1545B0] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer disabled:opacity-75"
+                              >
+                                <Navigation className={`w-3.5 h-3.5 ${isDetectingGps ? 'animate-spin' : ''}`} />
+                                <span>{isDetectingGps ? 'Detecting GPS...' : 'Use Live GPS'}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setIsLocationModalOpen(true)}
+                                className="h-10 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs border border-slate-300 shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                              >
+                                <MapPin className="w-3.5 h-3.5 text-slate-600" />
+                                <span>Choose Area / Mohalla</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="space-y-1">
                           <label className="text-xs font-semibold text-slate-700">Street Address / Mohalla / Village *</label>
                           <input

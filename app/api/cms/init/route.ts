@@ -4,6 +4,7 @@ import { CATEGORIES } from '@/data/categories';
 import { PRODUCTS } from '@/data/products';
 import { INITIAL_COUPONS } from '@/data/coupons';
 import { INITIAL_BANNERS, decodeBannerConfig } from '@/data/banners';
+import { getDeliverySettings } from '@/lib/deliveryService';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -102,6 +103,7 @@ export async function GET(request: Request) {
       customPages,
       blogPosts,
       dbCoupons,
+      deliveryRatesRecord,
     ] = await Promise.all([
       prisma.siteSettings.findUnique({ where: { id: 'default' } }).catch(() => null),
       prisma.paymentSettings.findUnique({ where: { id: 'default' } }).catch(() => null),
@@ -116,6 +118,7 @@ export async function GET(request: Request) {
       prisma.customPage.findMany({ where: { status: 'published' }, orderBy: { updatedAt: 'desc' } }).catch(() => []),
       prisma.blogPost.findMany({ where: { status: 'published' }, orderBy: { createdAt: 'desc' } }).catch(() => []),
       prisma.coupon.findMany({ where: { isActive: true }, orderBy: { createdAt: 'desc' } }).catch(() => []),
+      prisma.customPage.findUnique({ where: { slug: '_system_delivery_rates' } }).catch(() => null),
     ]);
 
     // Format sanitized Site Settings (Explicit allowlist - strictly no passwords)
@@ -226,10 +229,24 @@ export async function GET(request: Request) {
         })
       : INITIAL_BANNERS;
 
+    let resolvedDeliverySettings = null;
+    if (deliveryRatesRecord?.content) {
+      try {
+        const parsed = JSON.parse(deliveryRatesRecord.content);
+        if (parsed && Array.isArray(parsed.slabs) && parsed.slabs.length > 0) {
+          resolvedDeliverySettings = parsed;
+        }
+      } catch (e) { }
+    }
+    if (!resolvedDeliverySettings) {
+      resolvedDeliverySettings = getDeliverySettings();
+    }
+
     const payload = {
       siteSettings: cleanSiteSettings,
       paymentSettings: cleanPaymentSettings,
       themeSettings: themeSettings || null,
+      deliverySettings: resolvedDeliverySettings,
       banners: effectiveBanners,
       homepageSections: homepageSections || [],
       categories: categoriesTree,
@@ -266,6 +283,7 @@ export async function GET(request: Request) {
         siteSettings: null,
         paymentSettings: null,
         themeSettings: null,
+        deliverySettings: getDeliverySettings(),
         banners: INITIAL_BANNERS,
         homepageSections: [],
         categories: CATEGORIES,

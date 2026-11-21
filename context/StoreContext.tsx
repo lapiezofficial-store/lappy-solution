@@ -215,6 +215,7 @@ export interface CustomerDeliveryLocation {
   lat?: number;
   lng?: number;
   updatedAt?: string;
+  isConfirmed?: boolean;
 }
 
 interface StoreContextType {
@@ -739,19 +740,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [customerLocation, setCustomerLocation] = useState<CustomerDeliveryLocation | null>(() => {
     if (typeof window !== 'undefined') {
       try {
+        const confirmed = localStorage.getItem('lapiez_loc_confirmed');
         const saved = localStorage.getItem('lapiez_customer_location');
-        if (saved) return JSON.parse(saved);
+        if (saved && (confirmed === 'true' || confirmed === '1')) {
+          const parsed = JSON.parse(saved);
+          if (parsed && (parsed.area || parsed.distanceKm !== undefined)) {
+            return { ...parsed, isConfirmed: true };
+          }
+        }
       } catch (e) { }
     }
-    return {
-      area: 'Garhwa Town Core',
-      city: 'Garhwa',
-      pincode: '822114',
-      distanceKm: 2,
-      distanceSlab: 'Garhwa Town Core',
-      deliveryFee: 0,
-      fullAddress: 'Garhwa Town, Garhwa - 822114',
-    };
+    return null;
   });
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [deliverySettings, setDeliverySettings] = useState<any>(() => {
@@ -764,9 +763,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return null;
   });
 
-  // Fetch Delivery Settings & Slabs from Server
+  // Fetch Delivery Settings & Slabs from Server (no-cache to ensure immediate sync)
   useEffect(() => {
-    fetch('/api/delivery/rates')
+    fetch('/api/delivery/rates', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.settings) {
@@ -783,8 +782,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Realtime Delivery Fee calculation based on customer distance & cart total
   const deliveryFee = useMemo(() => {
-    if (!customerLocation) return 0;
-    const dist = customerLocation.distanceKm ?? 2;
     const slabs = deliverySettings?.slabs || [
       { minKm: 0, maxKm: 5, price: 0 },
       { minKm: 5, maxKm: 15, price: 60 },
@@ -796,21 +793,31 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (threshold > 0 && subtotal >= threshold) {
       return 0;
     }
+    if (!customerLocation) {
+      return slabs[0]?.price ?? 0;
+    }
+    const dist = customerLocation.distanceKm ?? 0;
     const matched = slabs.find((s: any) => dist >= s.minKm && dist < s.maxKm) || slabs[slabs.length - 1];
     return matched ? matched.price : 0;
   }, [customerLocation, deliverySettings, cart]);
 
   const setCustomerDeliveryLocation = useCallback((loc: CustomerDeliveryLocation) => {
-    setCustomerLocation(loc);
+    const enrichedLoc: CustomerDeliveryLocation = {
+      ...loc,
+      isConfirmed: true,
+      updatedAt: loc.updatedAt || new Date().toISOString(),
+    };
+    setCustomerLocation(enrichedLoc);
     try {
-      localStorage.setItem('lapiez_customer_location', JSON.stringify(loc));
+      localStorage.setItem('lapiez_customer_location', JSON.stringify(enrichedLoc));
+      localStorage.setItem('lapiez_loc_confirmed', 'true');
     } catch (e) { }
 
     // Realtime sync to backend so admin can view active customer location immediately
     fetch('/api/customer/location', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(loc),
+      body: JSON.stringify(enrichedLoc),
     }).catch(() => { });
   }, []);
 
@@ -837,6 +844,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             } catch (e) { }
           }
         }
+        broadcastCmsUpdate('delivery');
+        broadcastCmsUpdate('settings');
         setToast('Delivery rates updated successfully!');
         setTimeout(() => setToast(null), 2800);
         return true;
@@ -1153,6 +1162,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           // 2. Theme
           if (initData.themeSettings) {
             setThemeSettings(initData.themeSettings);
+          }
+
+          // 2b. Delivery Settings (Sync real-time slabs & free shipping limit)
+          if (initData.deliverySettings) {
+            setDeliverySettings(initData.deliverySettings);
+            try {
+              localStorage.setItem('ls_delivery_settings', JSON.stringify(initData.deliverySettings));
+            } catch (e) { }
           }
 
           // 3. Banners

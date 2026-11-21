@@ -137,18 +137,22 @@ export default function CartPage() {
                         {currentDeliveryFee === 0 ? 'Free Express Delivery' : `Direct Delivery (₹${currentDeliveryFee})`}
                       </strong>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 border border-slate-200 text-slate-700">
-                        {customerLocation?.distanceKm ?? 2} km from Showroom
+                        {customerLocation?.distanceKm !== undefined ? `${customerLocation.distanceKm} km from Showroom` : 'Radius Based Fee'}
                       </span>
                     </div>
                     <span className="text-[11.5px] opacity-85 block truncate mt-0.5">
-                      Delivering to: <strong className="underline decoration-slate-400">{customerLocation?.area || 'Garhwa Town'}</strong> • Tap to change distance &amp; area
+                      {customerLocation?.area ? (
+                        <>Delivering to: <strong className="underline decoration-slate-400">{customerLocation.area}</strong> • Tap to change distance &amp; area</>
+                      ) : (
+                        <>Select your area / GPS to calculate exact delivery charge • Tap here</>
+                      )}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1 text-xs font-bold text-[#1A56DB] group-hover:translate-x-0.5 transition-transform flex-shrink-0 bg-white px-3 py-1.5 rounded-xl border border-blue-200 shadow-2xs">
                   <SlidersHorizontal className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Change Distance</span>
+                  <span className="hidden sm:inline">{customerLocation ? 'Change Distance' : 'Set Location'}</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </div>
               </div>
@@ -285,7 +289,7 @@ export default function CartPage() {
                         onClick={() => setIsLocationModalOpen(true)}
                         className="text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-0.5 cursor-pointer"
                       >
-                        ({customerLocation ? `${customerLocation.distanceKm} km` : 'Set Distance'})
+                        ({customerLocation?.distanceKm !== undefined ? `${customerLocation.distanceKm} km` : 'Set Location'})
                       </button>
                     </div>
                     {currentDeliveryFee === 0 ? (

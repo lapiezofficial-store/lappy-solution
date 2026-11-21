@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDeliverySettings, saveDeliverySettings } from '@/lib/deliveryService';
 import { hasAdminSession, isMasterAdminSecret } from '@/lib/adminAuth';
 import { prisma } from '@/lib/prisma';
+import { invalidateInitCache } from '@/app/api/cms/init/route';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,7 +18,11 @@ export async function GET() {
         const parsed = JSON.parse(dbRecord.content);
         if (parsed && Array.isArray(parsed.slabs) && parsed.slabs.length > 0) {
           saveDeliverySettings(parsed); // Sync memory cache
-          return NextResponse.json({ success: true, settings: parsed });
+          return NextResponse.json({ success: true, settings: parsed }, {
+            headers: {
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            },
+          });
         }
       }
     } catch (dbErr) {
@@ -25,7 +30,11 @@ export async function GET() {
     }
 
     const settings = getDeliverySettings();
-    return NextResponse.json({ success: true, settings });
+    return NextResponse.json({ success: true, settings }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -80,6 +89,10 @@ export async function POST(req: NextRequest) {
     } catch (dbErr) {
       console.warn('Could not persist delivery rates to DB:', dbErr);
     }
+
+    try {
+      invalidateInitCache();
+    } catch (e) { }
 
     return NextResponse.json({
       success: true,
