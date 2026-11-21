@@ -125,8 +125,14 @@ export default function CheckoutPage() {
       { minKm: 15, maxKm: 35, price: 120 },
       { minKm: 35, maxKm: 100, price: 200 },
     ];
-    const matched = slabs.find((s: any) => km >= s.minKm && km < s.maxKm) || slabs[slabs.length - 1];
-    const fee = matched ? matched.price : 0;
+    const sorted = [...slabs].sort((a: any, b: any) => (Number(a.minKm) || 0) - (Number(b.minKm) || 0));
+    const matched = sorted.find((s: any) => km >= Number(s.minKm || 0) && km <= Number(s.maxKm || 0)) ||
+                    sorted.find((s: any) => km < Number(s.maxKm || 0)) ||
+                    sorted[sorted.length - 1];
+    const isFreeDeliveryEnabled = Boolean(deliverySettings?.enableFreeDelivery);
+    const threshold = Number(deliverySettings?.freeDeliveryAbove || 0);
+    const isFree = isFreeDeliveryEnabled && threshold > 0 && subtotal >= threshold;
+    const fee = isFree ? 0 : (Number(matched?.price) || 0);
 
     if (setCustomerDeliveryLocation) {
       setCustomerDeliveryLocation({
@@ -175,8 +181,14 @@ export default function CheckoutPage() {
             { minKm: 15, maxKm: 35, price: 120 },
             { minKm: 35, maxKm: 100, price: 200 },
           ];
-          const matched = slabs.find((s: any) => distKm >= s.minKm && distKm < s.maxKm) || slabs[slabs.length - 1];
-          const fee = (subtotal >= (deliverySettings?.freeDeliveryAbove ?? 5000)) ? 0 : (matched?.price ?? 0);
+          const sorted = [...slabs].sort((a: any, b: any) => (Number(a.minKm) || 0) - (Number(b.minKm) || 0));
+          const matched = sorted.find((s: any) => distKm >= Number(s.minKm || 0) && distKm <= Number(s.maxKm || 0)) ||
+                          sorted.find((s: any) => distKm < Number(s.maxKm || 0)) ||
+                          sorted[sorted.length - 1];
+          const isFreeDeliveryEnabled = Boolean(deliverySettings?.enableFreeDelivery);
+          const threshold = Number(deliverySettings?.freeDeliveryAbove || 0);
+          const isFree = isFreeDeliveryEnabled && threshold > 0 && subtotal >= threshold;
+          const fee = isFree ? 0 : (Number(matched?.price) || 0);
 
           let locName = 'Garhwa Area';
           try {

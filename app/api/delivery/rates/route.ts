@@ -69,6 +69,9 @@ export async function POST(req: NextRequest) {
     if (body && body.freeDeliveryAbove !== undefined) {
       body.freeDeliveryAbove = Number(body.freeDeliveryAbove || 0);
     }
+    if (body && body.enableFreeDelivery !== undefined) {
+      body.enableFreeDelivery = Boolean(body.enableFreeDelivery);
+    }
     const updated = saveDeliverySettings(body);
 
     // Save permanently to Supabase PostgreSQL database

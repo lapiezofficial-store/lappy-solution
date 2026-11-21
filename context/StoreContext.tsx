@@ -789,16 +789,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       { minKm: 35, maxKm: 100, price: 200 },
     ];
     const subtotal = cart.reduce((acc, item) => acc + (Number(item.product.price) || 0) * item.quantity, 0);
-    const threshold = deliverySettings?.freeDeliveryAbove ?? 5000;
-    if (threshold > 0 && subtotal >= threshold) {
+    
+    // Free delivery check ONLY if explicitly enabled by admin and threshold is greater than 0
+    const isFreeDeliveryEnabled = Boolean(deliverySettings?.enableFreeDelivery);
+    const threshold = Number(deliverySettings?.freeDeliveryAbove || 0);
+    if (isFreeDeliveryEnabled && threshold > 0 && subtotal >= threshold) {
       return 0;
     }
-    if (!customerLocation) {
-      return slabs[0]?.price ?? 0;
-    }
-    const dist = customerLocation.distanceKm ?? 0;
-    const matched = slabs.find((s: any) => dist >= s.minKm && dist < s.maxKm) || slabs[slabs.length - 1];
-    return matched ? matched.price : 0;
+
+    const dist = customerLocation?.distanceKm ?? 0;
+    const sorted = [...slabs].sort((a: any, b: any) => (Number(a.minKm) || 0) - (Number(b.minKm) || 0));
+    const matched = sorted.find((s: any) => dist >= Number(s.minKm || 0) && dist <= Number(s.maxKm || 0)) ||
+                    sorted.find((s: any) => dist < Number(s.maxKm || 0)) ||
+                    sorted[sorted.length - 1];
+
+    return matched ? (Number(matched.price) || 0) : 0;
   }, [customerLocation, deliverySettings, cart]);
 
   const setCustomerDeliveryLocation = useCallback((loc: CustomerDeliveryLocation) => {

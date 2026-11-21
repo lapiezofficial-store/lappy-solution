@@ -72,8 +72,11 @@ export const LocationSelectorModal: React.FC = () => {
   ];
 
   const getFeeForDistance = (distKm: number) => {
-    const matched = slabs.find((s: any) => distKm >= s.minKm && distKm < s.maxKm) || slabs[slabs.length - 1];
-    return { fee: matched?.price ?? 0, slabName: matched?.name ?? 'Standard Delivery' };
+    const sorted = [...slabs].sort((a: any, b: any) => (Number(a.minKm) || 0) - (Number(b.minKm) || 0));
+    const matched = sorted.find((s: any) => distKm >= Number(s.minKm || 0) && distKm <= Number(s.maxKm || 0)) ||
+                    sorted.find((s: any) => distKm < Number(s.maxKm || 0)) ||
+                    sorted[sorted.length - 1];
+    return { fee: Number(matched?.price || 0), slabName: matched?.name || 'Standard Delivery' };
   };
 
   // 1-Click Live GPS Detection

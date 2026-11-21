@@ -14,7 +14,8 @@ export const DeliveryManager: React.FC = () => {
   const { updateDeliverySettingsInStore, showToast } = useStore();
   const [settings, setSettings] = useState<DeliverySettings | null>(null);
   const [slabs, setSlabs] = useState<any[]>([]);
-  const [freeDeliveryAbove, setFreeDeliveryAbove] = useState<number | string>(5000);
+  const [enableFreeDelivery, setEnableFreeDelivery] = useState<boolean>(false);
+  const [freeDeliveryAbove, setFreeDeliveryAbove] = useState<number | string>(0);
   const [locations, setLocations] = useState<CustomerLocationRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -36,7 +37,8 @@ export const DeliveryManager: React.FC = () => {
         if (ratesData?.settings) {
           setSettings(ratesData.settings);
           setSlabs(ratesData.settings.slabs || []);
-          setFreeDeliveryAbove(ratesData.settings.freeDeliveryAbove ?? 5000);
+          setEnableFreeDelivery(Boolean(ratesData.settings.enableFreeDelivery));
+          setFreeDeliveryAbove(ratesData.settings.freeDeliveryAbove ?? 0);
         }
       }
 
@@ -122,10 +124,13 @@ export const DeliveryManager: React.FC = () => {
         };
       });
 
-      const cleanFreeAbove = freeDeliveryAbove === '' ? 5000 : Math.max(0, Number(freeDeliveryAbove) || 0);
+      const cleanFreeAbove = enableFreeDelivery
+        ? (freeDeliveryAbove === '' ? 10000 : Math.max(0, Number(freeDeliveryAbove) || 0))
+        : 0;
 
       const payload = {
         enabled: true,
+        enableFreeDelivery: Boolean(enableFreeDelivery),
         freeDeliveryAbove: cleanFreeAbove,
         slabs: cleanSlabs,
         adminKey: 'Lapiez@2026#',
@@ -142,7 +147,8 @@ export const DeliveryManager: React.FC = () => {
         if (data.settings) {
           setSettings(data.settings);
           setSlabs(data.settings.slabs || []);
-          setFreeDeliveryAbove(data.settings.freeDeliveryAbove ?? 5000);
+          setEnableFreeDelivery(Boolean(data.settings.enableFreeDelivery));
+          setFreeDeliveryAbove(data.settings.freeDeliveryAbove ?? 0);
         }
         if (updateDeliverySettingsInStore) {
           await updateDeliverySettingsInStore(payload);
@@ -362,30 +368,63 @@ export const DeliveryManager: React.FC = () => {
               ))}
             </div>
 
-            {/* Free Delivery Threshold */}
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-              <div>
-                <strong className="font-bold text-slate-900 block">
-                  Free Delivery on Orders Above
-                </strong>
-                <span className="text-[11px] text-slate-500">
-                  Cart subtotal qualifying for 100% Free Delivery regardless of distance.
-                </span>
+            {/* Free Delivery Threshold Card with ON/OFF Switch */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <strong className="text-xs font-bold text-slate-900">
+                      Free Delivery on High-Value Orders
+                    </strong>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      enableFreeDelivery
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {enableFreeDelivery ? 'ENABLED' : 'DISABLED (Always Charge Fee)'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {enableFreeDelivery 
+                      ? 'Orders above the threshold get 100% free delivery.' 
+                      : 'Delivery charge will be added to ALL orders based on your distance chart.'}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setEnableFreeDelivery(!enableFreeDelivery)}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                    enableFreeDelivery ? 'bg-emerald-600' : 'bg-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`block w-4 h-4 rounded-full bg-white shadow-xs transition-transform transform mt-1 ml-1 ${
+                      enableFreeDelivery ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
-              <div className="flex items-center bg-white border border-slate-300 rounded-lg px-2.5 py-1 self-start sm:self-auto">
-                <span className="font-bold text-slate-400 mr-1">₹</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="500"
-                  value={freeDeliveryAbove}
-                  onChange={(e) => setFreeDeliveryAbove(e.target.value)}
-                  onBlur={() => {
-                    if (freeDeliveryAbove === '') setFreeDeliveryAbove(5000);
-                  }}
-                  className="w-20 font-bold text-slate-900 text-right focus:outline-none"
-                />
-              </div>
+
+              {enableFreeDelivery && (
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200/80 text-xs">
+                  <span className="font-semibold text-slate-700 text-xs">
+                    Free Delivery if Order Subtotal is Above:
+                  </span>
+                  <div className="flex items-center bg-white border border-slate-300 rounded-lg px-2.5 py-1">
+                    <span className="font-bold text-slate-400 mr-1">₹</span>
+                    <input
+                      type="number"
+                      min="1000"
+                      step="500"
+                      value={freeDeliveryAbove}
+                      onChange={(e) => setFreeDeliveryAbove(e.target.value)}
+                      placeholder="e.g. 10000"
+                      className="w-24 font-bold text-slate-900 text-right focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>

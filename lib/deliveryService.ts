@@ -14,7 +14,8 @@ export interface DeliverySlab {
 
 export interface DeliverySettings {
   enabled: boolean;
-  freeDeliveryAbove: number; // e.g. 5000 (0 to disable)
+  enableFreeDelivery?: boolean;
+  freeDeliveryAbove: number; // 0 to disable
   storeCoordinates: {
     lat: number;
     lng: number;
@@ -39,7 +40,8 @@ export interface CustomerLocationRecord {
 
 const DEFAULT_DELIVERY_SETTINGS: DeliverySettings = {
   enabled: true,
-  freeDeliveryAbove: 5000,
+  enableFreeDelivery: false,
+  freeDeliveryAbove: 0,
   storeCoordinates: {
     lat: 24.1611,
     lng: 83.8055,
@@ -187,7 +189,7 @@ export function calculateDeliveryFee(
     slabs[slabs.length - 1];
 
   // Check if subtotal qualifies for free delivery
-  if (settings.freeDeliveryAbove > 0 && subtotal >= settings.freeDeliveryAbove) {
+  if (settings.enableFreeDelivery && settings.freeDeliveryAbove > 0 && subtotal >= settings.freeDeliveryAbove) {
     return { fee: 0, isFree: true, slab: matchedSlab };
   }
 
