@@ -358,7 +358,7 @@ export default function AdminPage() {
   const [editImageInput, setEditImageInput] = useState('');
   const [editSpecs, setEditSpecs] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  const [editGstRate, setEditGstRate] = useState(18);
+  const [editGstRate, setEditGstRate] = useState<number | string>(18);
   const [editHsnCode, setEditHsnCode] = useState('8471');
   const [editSerialNumber, setEditSerialNumber] = useState('');
 
@@ -377,7 +377,7 @@ export default function AdminPage() {
   const [newProductImage, setNewProductImage] = useState('');
   const [newProductImages, setNewProductImages] = useState<string[]>([]);
   const [newProductImageInput, setNewProductImageInput] = useState('');
-  const [newProductGstRate, setNewProductGstRate] = useState(18);
+  const [newProductGstRate, setNewProductGstRate] = useState<number | string>(18);
   const [newProductHsnCode, setNewProductHsnCode] = useState('8471');
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [inventoryPage, setInventoryPage] = useState(1);
@@ -488,7 +488,7 @@ export default function AdminPage() {
 
   const [upiId, setUpiId] = useState(paymentSettings?.upiId || 'lappy.solution@ybl');
   const [upiName, setUpiName] = useState(paymentSettings?.upiName || 'LAPIEZ GARHWA');
-  const [gstRate, setGstRate] = useState(paymentSettings?.gstRate || 18);
+  const [gstRate, setGstRate] = useState<number | string>(paymentSettings?.gstRate || 18);
   const [gstin, setGstin] = useState(paymentSettings?.gstin || '20AABCL1234F1Z5');
   const [codEnabled, setCodEnabled] = useState(paymentSettings?.codEnabled ?? true);
 
@@ -915,10 +915,10 @@ export default function AdminPage() {
   const [manualPaymentStatus, setManualPaymentStatus] = useState<'Paid' | 'Pending'>('Paid');
   const [manualSelectedProductId, setManualSelectedProductId] = useState('');
   const [manualProductName, setManualProductName] = useState('');
-  const [manualQty, setManualQty] = useState(1);
-  const [manualPrice, setManualPrice] = useState(0);
-  const [manualDiscount, setManualDiscount] = useState(0);
-  const [manualGstRate, setManualGstRate] = useState(18);
+  const [manualQty, setManualQty] = useState<number | string>(1);
+  const [manualPrice, setManualPrice] = useState<number | string>(0);
+  const [manualDiscount, setManualDiscount] = useState<number | string>(0);
+  const [manualGstRate, setManualGstRate] = useState<number | string>(18);
 
   // Invoice Settings Form State
   const [invBizName, setInvBizName] = useState(invoiceSettings?.businessName || 'Lapiez');
@@ -929,7 +929,7 @@ export default function AdminPage() {
   const [invEmail, setInvEmail] = useState(invoiceSettings?.email || 'lappysolution2018@gmail.com');
   const [invPrefix, setInvPrefix] = useState(invoiceSettings?.prefix || 'INV');
   const [invFinancialYear, setInvFinancialYear] = useState(invoiceSettings?.financialYear || '2026-27');
-  const [invNextNumber, setInvNextNumber] = useState<number>(invoiceSettings?.nextNumber && invoiceSettings.nextNumber < 10000 ? invoiceSettings.nextNumber : 1);
+  const [invNextNumber, setInvNextNumber] = useState<number | string>(invoiceSettings?.nextNumber && invoiceSettings.nextNumber < 10000 ? invoiceSettings.nextNumber : 1);
   const [invUpiId, setInvUpiId] = useState(invoiceSettings?.upiId || 'lappy.solution@ybl');
   const [invBankName, setInvBankName] = useState(invoiceSettings?.bankName || 'State Bank of India');
   const [invAccountNo, setInvAccountNo] = useState(invoiceSettings?.accountNumber || '38947291048');
@@ -1772,6 +1772,7 @@ export default function AdminPage() {
       targetDevice: 'all',
       bannerType: 'full_image',
       bgGradient: gradient,
+      position: Number(editingBanner.position) || 1,
     });
     showToast('Banner updated!');
     setEditingBanner(null);
@@ -5650,7 +5651,8 @@ export default function AdminPage() {
                             type="number"
                             min="1"
                             value={manualQty}
-                            onChange={(e) => setManualQty(Number(e.target.value) || 1)}
+                            onChange={(e) => setManualQty(e.target.value)}
+                            onBlur={() => { if (!manualQty || Number(manualQty) < 1) setManualQty(1); }}
                             className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-[#1A56DB]"
                           />
                         </div>
@@ -5661,7 +5663,8 @@ export default function AdminPage() {
                             type="number"
                             min="0"
                             value={manualPrice}
-                            onChange={(e) => setManualPrice(Number(e.target.value) || 0)}
+                            onChange={(e) => setManualPrice(e.target.value)}
+                            onBlur={() => { if (manualPrice === '') setManualPrice(0); }}
                             className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-[#1A56DB]"
                           />
                         </div>
@@ -5672,7 +5675,8 @@ export default function AdminPage() {
                             type="number"
                             min="0"
                             value={manualDiscount}
-                            onChange={(e) => setManualDiscount(Number(e.target.value) || 0)}
+                            onChange={(e) => setManualDiscount(e.target.value)}
+                            onBlur={() => { if (manualDiscount === '') setManualDiscount(0); }}
                             className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-[#1A56DB]"
                           />
                         </div>
@@ -5681,7 +5685,7 @@ export default function AdminPage() {
                           <label className="block text-xs font-bold text-gray-700 mb-1">GST Rate</label>
                           <select
                             value={manualGstRate}
-                            onChange={(e) => setManualGstRate(Number(e.target.value))}
+                            onChange={(e) => setManualGstRate(e.target.value)}
                             className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#1A56DB]"
                           >
                             <option value="18">18% (Laptops, CCTV, Spares)</option>
@@ -5695,9 +5699,13 @@ export default function AdminPage() {
 
                     {/* Real-time Calculation Summary Box */}
                     {(() => {
-                      const gross = manualPrice * manualQty;
-                      const net = Math.max(0, gross - manualDiscount);
-                      const mult = 1 + manualGstRate / 100;
+                      const numQty = Number(manualQty) || 0;
+                      const numPrice = Number(manualPrice) || 0;
+                      const numDiscount = Number(manualDiscount) || 0;
+                      const numGst = Number(manualGstRate) || 0;
+                      const gross = numPrice * numQty;
+                      const net = Math.max(0, gross - numDiscount);
+                      const mult = 1 + numGst / 100;
                       const taxable = Math.round((net / mult) * 100) / 100;
                       const tax = Math.round((net - taxable) * 100) / 100;
                       const cgst = Math.round((tax / 2) * 100) / 100;
@@ -5709,10 +5717,10 @@ export default function AdminPage() {
                             <span>Gross Total:</span>
                             <span className="font-mono">₹{gross.toLocaleString('en-IN')}</span>
                           </div>
-                          {manualDiscount > 0 && (
+                          {numDiscount > 0 && (
                             <div className="flex justify-between text-emerald-700 font-semibold">
                               <span>Discount Applied:</span>
-                              <span className="font-mono">-₹{manualDiscount.toLocaleString('en-IN')}</span>
+                              <span className="font-mono">-₹{numDiscount.toLocaleString('en-IN')}</span>
                             </div>
                           )}
                           <div className="flex justify-between text-gray-800 font-bold border-t border-gray-200 pt-1.5">
@@ -5720,11 +5728,11 @@ export default function AdminPage() {
                             <span className="font-mono">₹{taxable.toLocaleString('en-IN')}</span>
                           </div>
                           <div className="flex justify-between text-gray-600">
-                            <span>CGST ({manualGstRate / 2}%):</span>
+                            <span>CGST ({numGst / 2}%):</span>
                             <span className="font-mono">₹{cgst.toLocaleString('en-IN')}</span>
                           </div>
                           <div className="flex justify-between text-gray-600">
-                            <span>SGST ({manualGstRate / 2}%):</span>
+                            <span>SGST ({numGst / 2}%):</span>
                             <span className="font-mono">₹{sgst.toLocaleString('en-IN')}</span>
                           </div>
                           <div className="flex justify-between items-center border-t-2 border-gray-800 pt-2 text-sm font-black text-gray-900">
@@ -5772,14 +5780,19 @@ export default function AdminPage() {
 
                       <button
                         onClick={() => {
-                          if (!manualCustomerName || !manualProductName || manualPrice <= 0) {
+                          const numQty = Math.max(1, Number(manualQty) || 1);
+                          const numPrice = Number(manualPrice) || 0;
+                          const numDiscount = Number(manualDiscount) || 0;
+                          const numGst = Number(manualGstRate) || 18;
+
+                          if (!manualCustomerName || !manualProductName || numPrice <= 0) {
                             showToast('Please enter customer name, product and price.');
                             return;
                           }
 
-                          const gross = manualPrice * manualQty;
-                          const net = Math.max(0, gross - manualDiscount);
-                          const mult = 1 + manualGstRate / 100;
+                          const gross = numPrice * numQty;
+                          const net = Math.max(0, gross - numDiscount);
+                          const mult = 1 + numGst / 100;
                           const taxable = Math.round((net / mult) * 100) / 100;
                           const tax = Math.round((net - taxable) * 100) / 100;
                           const cgst = Math.round((tax / 2) * 100) / 100;
@@ -5789,14 +5802,14 @@ export default function AdminPage() {
                             id: `item-${Date.now()}`,
                             productName: manualProductName,
                             hsn: '84713010',
-                            quantity: manualQty,
+                            quantity: numQty,
                             unit: 'PCS',
-                            unitPrice: manualPrice,
-                            discount: manualDiscount,
+                            unitPrice: numPrice,
+                            discount: numDiscount,
                             taxableValue: taxable,
-                            gstRate: manualGstRate,
-                            cgstRate: manualGstRate / 2,
-                            sgstRate: manualGstRate / 2,
+                            gstRate: numGst,
+                            cgstRate: numGst / 2,
+                            sgstRate: numGst / 2,
                             igstRate: 0,
                             cgstAmount: cgst,
                             sgstAmount: sgst,
@@ -5815,7 +5828,7 @@ export default function AdminPage() {
                             paymentStatus: manualPaymentStatus,
                             items: [item],
                             subtotal: gross,
-                            discountTotal: manualDiscount,
+                            discountTotal: numDiscount,
                             taxableAmount: taxable,
                             cgstTotal: cgst,
                             sgstTotal: sgst,
@@ -5948,7 +5961,8 @@ export default function AdminPage() {
                           type="number"
                           min={1}
                           value={invNextNumber}
-                          onChange={(e) => setInvNextNumber(Math.max(1, parseInt(e.target.value) || 1))}
+                          onChange={(e) => setInvNextNumber(e.target.value)}
+                          onBlur={() => { if (!invNextNumber || Number(invNextNumber) < 1) setInvNextNumber(1); }}
                           className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-[#1A56DB]"
                         />
                         <span className="text-[10px] text-gray-400 mt-0.5 block">Preview: {invPrefix}/{invFinancialYear}/{String(invNextNumber || 1).padStart(4, '0')}</span>
@@ -9590,6 +9604,21 @@ export default function AdminPage() {
                             htmlFor="site-favicon-file-input"
                             className={`flex-1 h-9 px-3 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs ${isUploadingFavicon ? 'opacity-60 pointer-events-none' : ''}`}
                           >
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>{isUploadingFavicon ? 'Uploading Favicon...' : 'Upload New Favicon'}</span>
+                          </label>
+                          <input
+                            type="file"
+                            id="site-favicon-file-input"
+                            accept="image/*,.ico,.svg"
+                            onChange={handleUploadFaviconFile}
+                            className="hidden"
+                          />
+
+                          {siteFavicon && siteFavicon !== '/favicon.ico' && (
+                            <button
+                              type="button"
+                              onClick={handleRemoveFavicon}
                               className="h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                               title="Reset favicon to default Lapiez icon"
                             >
@@ -9665,7 +9694,8 @@ export default function AdminPage() {
                       <input
                         type="number"
                         value={gstRate}
-                        onChange={(e) => setGstRate(Number(e.target.value))}
+                        onChange={(e) => setGstRate(e.target.value)}
+                        onBlur={() => { if (gstRate === '') setGstRate(18); }}
                         className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900 focus:outline-none focus:border-[#1A56DB]"
                       />
                       <span className="text-[10.5px] text-gray-400 mt-0.5 block">18% standard for computer electronics</span>
@@ -11777,7 +11807,8 @@ export default function AdminPage() {
                       max={100}
                       placeholder="18"
                       value={newProductGstRate}
-                      onChange={(e) => setNewProductGstRate(Number(e.target.value))}
+                      onChange={(e) => setNewProductGstRate(e.target.value)}
+                      onBlur={() => { if (newProductGstRate === '') setNewProductGstRate(18); }}
                       className="w-full h-8 bg-white border border-gray-200 rounded-lg px-2.5 text-xs text-gray-900 font-bold focus:outline-none focus:border-[#1A56DB]"
                     />
                   </div>
@@ -12177,7 +12208,8 @@ export default function AdminPage() {
                       max={100}
                       placeholder="18"
                       value={editGstRate}
-                      onChange={(e) => setEditGstRate(Number(e.target.value))}
+                      onChange={(e) => setEditGstRate(e.target.value)}
+                      onBlur={() => { if (editGstRate === '') setEditGstRate(18); }}
                       className="w-full h-8 bg-white border border-gray-200 rounded-lg px-2.5 text-xs text-gray-900 font-bold focus:outline-none focus:border-[#1A56DB]"
                     />
                   </div>
@@ -12752,7 +12784,12 @@ export default function AdminPage() {
                     min="1"
                     max="99"
                     value={editingBanner.position ?? 1}
-                    onChange={(e) => setEditingBanner({ ...editingBanner, position: parseInt(e.target.value) || 1 })}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, position: e.target.value as any })}
+                    onBlur={() => {
+                      if (!editingBanner.position || Number(editingBanner.position) < 1) {
+                        setEditingBanner({ ...editingBanner, position: 1 });
+                      }
+                    }}
                     className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 text-xs text-gray-900"
                   />
                 </div>

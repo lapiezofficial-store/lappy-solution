@@ -278,7 +278,7 @@ function AccountContent() {
           updateOrders(data.orders);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [customer, updateOrders]);
 
   // Load from localStorage on mount
@@ -508,8 +508,8 @@ function AccountContent() {
                 <button
                   onClick={() => setActiveTab('orders')}
                   className={`w-full py-2.5 px-3 rounded-lg flex items-center justify-between font-bold transition-all ${activeTab === 'orders'
-                      ? 'bg-[#EFF6FF] text-[#1A56DB]'
-                      : 'text-[#374151] hover:bg-gray-50'
+                    ? 'bg-[#EFF6FF] text-[#1A56DB]'
+                    : 'text-[#374151] hover:bg-gray-50'
                     }`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -527,8 +527,8 @@ function AccountContent() {
                 <button
                   onClick={() => setActiveTab('notifications')}
                   className={`w-full py-2.5 px-3 rounded-lg flex items-center justify-between font-bold transition-all ${activeTab === 'notifications'
-                      ? 'bg-[#EFF6FF] text-[#1A56DB]'
-                      : 'text-[#374151] hover:bg-gray-50'
+                    ? 'bg-[#EFF6FF] text-[#1A56DB]'
+                    : 'text-[#374151] hover:bg-gray-50'
                     }`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -552,8 +552,8 @@ function AccountContent() {
                 <button
                   onClick={() => setActiveTab('cart')}
                   className={`w-full py-2.5 px-3 rounded-lg flex items-center justify-between font-bold transition-all ${activeTab === 'cart'
-                      ? 'bg-[#EFF6FF] text-[#1A56DB]'
-                      : 'text-[#374151] hover:bg-gray-50'
+                    ? 'bg-[#EFF6FF] text-[#1A56DB]'
+                    : 'text-[#374151] hover:bg-gray-50'
                     }`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -580,8 +580,8 @@ function AccountContent() {
                 <button
                   onClick={() => setActiveTab('profile')}
                   className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${activeTab === 'profile'
-                      ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
-                      : 'text-[#4B5563] hover:bg-gray-50'
+                    ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
+                    : 'text-[#4B5563] hover:bg-gray-50'
                     }`}
                 >
                   <span>Profile Information</span>
@@ -591,8 +591,8 @@ function AccountContent() {
                 <button
                   onClick={() => setActiveTab('addresses')}
                   className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${activeTab === 'addresses'
-                      ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
-                      : 'text-[#4B5563] hover:bg-gray-50'
+                    ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
+                    : 'text-[#4B5563] hover:bg-gray-50'
                     }`}
                 >
                   <span>Manage Addresses</span>
@@ -602,8 +602,8 @@ function AccountContent() {
                 <button
                   onClick={() => setActiveTab('gst')}
                   className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${activeTab === 'gst'
-                      ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
-                      : 'text-[#4B5563] hover:bg-gray-50'
+                    ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
+                    : 'text-[#4B5563] hover:bg-gray-50'
                     }`}
                 >
                   <span>PAN & GST Invoicing</span>
@@ -621,8 +621,8 @@ function AccountContent() {
                 <button
                   onClick={() => setActiveTab('payments')}
                   className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${activeTab === 'payments'
-                      ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
-                      : 'text-[#4B5563] hover:bg-gray-50'
+                    ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
+                    : 'text-[#4B5563] hover:bg-gray-50'
                     }`}
                 >
                   <span>Saved UPI & Bank Details</span>
@@ -640,8 +640,8 @@ function AccountContent() {
                 <button
                   onClick={() => setActiveTab('cart')}
                   className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors ${activeTab === 'cart'
-                      ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
-                      : 'text-[#4B5563] hover:bg-gray-50'
+                    ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
+                    : 'text-[#4B5563] hover:bg-gray-50'
                     }`}
                 >
                   <span>My Cart Items</span>
@@ -653,8 +653,8 @@ function AccountContent() {
                 <button
                   onClick={() => setActiveTab('wishlist')}
                   className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors ${activeTab === 'wishlist'
-                      ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
-                      : 'text-[#4B5563] hover:bg-gray-50'
+                    ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
+                    : 'text-[#4B5563] hover:bg-gray-50'
                     }`}
                 >
                   <span>My Wishlist</span>
@@ -669,8 +669,8 @@ function AccountContent() {
                 <button
                   onClick={() => setActiveTab('support')}
                   className={`w-full py-2 px-3 rounded-lg text-left flex items-center justify-between transition-colors ${activeTab === 'support'
-                      ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
-                      : 'text-[#4B5563] hover:bg-gray-50'
+                    ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold'
+                    : 'text-[#4B5563] hover:bg-gray-50'
                     }`}
                 >
                   <div className="flex items-center gap-2">
@@ -776,8 +776,8 @@ function AccountContent() {
                           key={f.id}
                           onClick={() => setOrderStatusFilter(f.id as any)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors border ${orderStatusFilter === f.id
-                              ? 'bg-[#1A56DB] text-white border-[#1A56DB]'
-                              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                            ? 'bg-[#1A56DB] text-white border-[#1A56DB]'
+                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                             }`}
                         >
                           {f.label}
@@ -1172,22 +1172,20 @@ function AccountContent() {
                               router.push(notif.link);
                             }
                           }}
-                          className={`bg-white border rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-start gap-3.5 ${
-                            isUnread ? 'border-blue-300 bg-blue-50/20 ring-1 ring-blue-100' : 'border-slate-200/90'
-                          }`}
+                          className={`bg-white border rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-start gap-3.5 ${isUnread ? 'border-blue-300 bg-blue-50/20 ring-1 ring-blue-100' : 'border-slate-200/90'
+                            }`}
                         >
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 border ${
-                            isPayment ? 'bg-amber-50 border-amber-200 text-amber-700' :
-                            isDeliver ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
-                            isShipped ? 'bg-indigo-50 border-indigo-200 text-indigo-700' :
-                            isPacked ? 'bg-blue-50 border-blue-200 text-blue-700' :
-                            'bg-slate-50 border-slate-200 text-slate-700'
-                          }`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 border ${isPayment ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                              isDeliver ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                                isShipped ? 'bg-indigo-50 border-indigo-200 text-indigo-700' :
+                                  isPacked ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                    'bg-slate-50 border-slate-200 text-slate-700'
+                            }`}>
                             {isPayment ? <CreditCard className="w-5 h-5" /> :
-                             isDeliver ? <CheckCircle2 className="w-5 h-5" /> :
-                             isShipped ? <Truck className="w-5 h-5" /> :
-                             isPacked ? <Package className="w-5 h-5" /> :
-                             <Bell className="w-5 h-5" />}
+                              isDeliver ? <CheckCircle2 className="w-5 h-5" /> :
+                                isShipped ? <Truck className="w-5 h-5" /> :
+                                  isPacked ? <Package className="w-5 h-5" /> :
+                                    <Bell className="w-5 h-5" />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
@@ -2307,8 +2305,8 @@ function AccountContent() {
 
               <div className="flex items-start gap-3">
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${trackingOrder.orderStatus === 'Shipped' || trackingOrder.orderStatus === 'Delivered'
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-gray-200 text-gray-500'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-gray-200 text-gray-500'
                   }`}>
                   {trackingOrder.orderStatus === 'Shipped' || trackingOrder.orderStatus === 'Delivered' ? '✓' : '3'}
                 </div>
@@ -2320,8 +2318,8 @@ function AccountContent() {
 
               <div className="flex items-start gap-3">
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${trackingOrder.orderStatus === 'Delivered'
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-gray-200 text-gray-500'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-gray-200 text-gray-500'
                   }`}>
                   {trackingOrder.orderStatus === 'Delivered' ? '✓' : '4'}
                 </div>

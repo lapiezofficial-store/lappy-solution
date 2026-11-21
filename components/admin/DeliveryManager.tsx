@@ -13,8 +13,8 @@ import { useStore } from '@/context/StoreContext';
 export const DeliveryManager: React.FC = () => {
   const { updateDeliverySettingsInStore, showToast } = useStore();
   const [settings, setSettings] = useState<DeliverySettings | null>(null);
-  const [slabs, setSlabs] = useState<DeliverySlab[]>([]);
-  const [freeDeliveryAbove, setFreeDeliveryAbove] = useState<number>(5000);
+  const [slabs, setSlabs] = useState<any[]>([]);
+  const [freeDeliveryAbove, setFreeDeliveryAbove] = useState<number | string>(5000);
   const [locations, setLocations] = useState<CustomerLocationRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -55,7 +55,18 @@ export const DeliveryManager: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 15000); // 15s live refresh
+    // Only poll customer live locations every 20s; never auto-wipe distance slabs while admin is editing
+    const interval = setInterval(async () => {
+      try {
+        const locsRes = await adminFetch('/api/customer/location');
+        if (locsRes.ok) {
+          const locsData = await locsRes.json();
+          if (Array.isArray(locsData?.locations)) {
+            setLocations(locsData.locations);
+          }
+        }
+      } catch {}
+    }, 20000);
     return () => clearInterval(interval);
   }, []);
 
@@ -67,7 +78,7 @@ export const DeliveryManager: React.FC = () => {
 
   const handleAddSlab = () => {
     const lastSlab = slabs[slabs.length - 1];
-    const newMin = lastSlab ? lastSlab.maxKm : 0;
+    const newMin = lastSlab ? (Number(lastSlab.maxKm) || 0) : 0;
     const newMax = newMin + 15;
     const newSlab: DeliverySlab = {
       id: `slab-${Date.now()}`,
@@ -97,10 +108,26 @@ export const DeliveryManager: React.FC = () => {
     setErrorMessage('');
 
     try {
+      const cleanSlabs: DeliverySlab[] = slabs.map((s, idx) => {
+        const minVal = s.minKm === '' ? 0 : Math.max(0, Number(s.minKm) || 0);
+        const rawMax = s.maxKm === '' ? minVal + 5 : Number(s.maxKm);
+        const maxVal = Math.max(minVal, isNaN(rawMax) ? minVal + 5 : rawMax);
+        const priceVal = s.price === '' ? 0 : Math.max(0, Number(s.price) || 0);
+        return {
+          ...s,
+          minKm: minVal,
+          maxKm: maxVal,
+          price: priceVal,
+          name: s.name?.trim() || `Tier ${idx + 1} (${minVal}-${maxVal} km)`,
+        };
+      });
+
+      const cleanFreeAbove = freeDeliveryAbove === '' ? 5000 : Math.max(0, Number(freeDeliveryAbove) || 0);
+
       const payload = {
         enabled: true,
-        freeDeliveryAbove,
-        slabs,
+        freeDeliveryAbove: cleanFreeAbove,
+        slabs: cleanSlabs,
         adminKey: 'Lapiez@2026#',
       };
 
@@ -115,6 +142,7 @@ export const DeliveryManager: React.FC = () => {
         if (data.settings) {
           setSettings(data.settings);
           setSlabs(data.settings.slabs || []);
+          setFreeDeliveryAbove(data.settings.freeDeliveryAbove ?? 5000);
         }
         if (updateDeliverySettingsInStore) {
           await updateDeliverySettingsInStore(payload);
@@ -252,11 +280,14 @@ export const DeliveryManager: React.FC = () => {
                           min="0"
                           step="10"
                           value={slab.price}
-                          onChange={(e) => handleSlabChange(index, 'price', Math.max(0, Number(e.target.value)))}
+                          onChange={(e) => handleSlabChange(index, 'price', e.target.value)}
+                          onBlur={() => {
+                            if (slab.price === '') handleSlabChange(index, 'price', 0);
+                          }}
                           className="w-16 text-xs font-black text-slate-900 text-right focus:outline-none"
                         />
                       </div>
-                      {slab.price === 0 ? (
+                      {(slab.price === 0 || slab.price === '0') ? (
                         <span className="text-[10px] font-black bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
                           FREE
                         </span>
@@ -285,7 +316,10 @@ export const DeliveryManager: React.FC = () => {
                           type="number"
                           min="0"
                           value={slab.minKm}
-                          onChange={(e) => handleSlabChange(index, 'minKm', Math.max(0, Number(e.target.value)))}
+                          onChange={(e) => handleSlabChange(index, 'minKm', e.target.value)}
+                          onBlur={() => {
+                            if (slab.minKm === '') handleSlabChange(index, 'minKm', 0);
+                          }}
                           className="w-full h-8 px-2.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#1A56DB]"
                         />
                         <span className="text-[11px] text-slate-400 font-semibold">km</span>
@@ -298,9 +332,12 @@ export const DeliveryManager: React.FC = () => {
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
-                          min="1"
+                          min="0"
                           value={slab.maxKm}
-                          onChange={(e) => handleSlabChange(index, 'maxKm', Math.max(1, Number(e.target.value)))}
+                          onChange={(e) => handleSlabChange(index, 'maxKm', e.target.value)}
+                          onBlur={() => {
+                            if (slab.maxKm === '') handleSlabChange(index, 'maxKm', Math.max(1, Number(slab.minKm) || 1));
+                          }}
                           className="w-full h-8 px-2.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#1A56DB]"
                         />
                         <span className="text-[11px] text-slate-400 font-semibold">km</span>
@@ -340,7 +377,10 @@ export const DeliveryManager: React.FC = () => {
                   min="0"
                   step="500"
                   value={freeDeliveryAbove}
-                  onChange={(e) => setFreeDeliveryAbove(Number(e.target.value))}
+                  onChange={(e) => setFreeDeliveryAbove(e.target.value)}
+                  onBlur={() => {
+                    if (freeDeliveryAbove === '') setFreeDeliveryAbove(5000);
+                  }}
                   className="w-20 font-bold text-slate-900 text-right focus:outline-none"
                 />
               </div>
