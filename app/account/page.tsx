@@ -854,9 +854,16 @@ function AccountContent() {
                                     <h4 className="font-bold text-xs sm:text-sm text-gray-900 hover:text-[#1A56DB] line-clamp-2">
                                       {item.name}
                                     </h4>
-                                    <p className="text-[11px] text-gray-500 mt-0.5">
-                                      Qty: <strong className="text-gray-800">{item.quantity}</strong> • 18% GST Invoiced
-                                    </p>
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                                      <p className="text-[11px] text-gray-500">
+                                        Qty: <strong className="text-gray-800">{item.quantity}</strong> • 18% GST Invoiced
+                                      </p>
+                                      {item.serialNumber && (
+                                        <span className="inline-flex items-center gap-1 text-[10.5px] font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+                                          S/N: {item.serialNumber}
+                                        </span>
+                                      )}
+                                    </div>
                                     <span className="text-sm font-extrabold text-[#111827] font-mono mt-1 block">
                                       ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                                     </span>

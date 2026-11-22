@@ -6,6 +6,8 @@ export interface InvoiceItem {
   productId?: string;
   productName: string;
   sku?: string;
+  serialNumber?: string;
+  serialNumbers?: string[];
   hsn: string;
   quantity: number;
   unit: string;
@@ -293,6 +295,8 @@ export function calculateInvoiceItem(params: {
   productName: string;
   category?: string;
   sku?: string;
+  serialNumber?: string;
+  serialNumbers?: string[];
   quantity: number;
   unitPrice: number;
   discount?: number;
@@ -305,6 +309,8 @@ export function calculateInvoiceItem(params: {
     productName,
     category,
     sku,
+    serialNumber,
+    serialNumbers,
     quantity,
     unitPrice,
     discount = 0,
@@ -337,11 +343,18 @@ export function calculateInvoiceItem(params: {
     sgstAmount = Math.round((totalTax - cgstAmount) * 100) / 100; // balance cent
   }
 
+  const assignedSnStr = serialNumber || (Array.isArray(serialNumbers) && serialNumbers.length > 0 ? serialNumbers.join(', ') : undefined);
+  const assignedSnList = Array.isArray(serialNumbers) && serialNumbers.length > 0
+    ? serialNumbers
+    : (assignedSnStr ? assignedSnStr.split(/[\n,;]+/).map(s => s.trim().toUpperCase()).filter(Boolean) : undefined);
+
   return {
     id,
     productId,
     productName,
     sku: sku || `LS-${Math.floor(100000 + Math.random() * 900000)}`,
+    serialNumber: assignedSnStr,
+    serialNumbers: assignedSnList,
     hsn: getHsnCodeForCategory(category),
     quantity,
     unit: 'PCS',
@@ -409,12 +422,19 @@ export function buildInvoiceFromOrder(params: {
   }
 
   const invoiceItems: InvoiceItem[] = rawItems.map((item, idx) => {
+    const rawSn = item.serialNumber || (Array.isArray(item.serialNumbers) ? item.serialNumbers.join(', ') : '') || '';
+    const rawSns = Array.isArray(item.serialNumbers) && item.serialNumbers.length > 0
+      ? item.serialNumbers
+      : (rawSn ? rawSn.split(/[\n,;]+/).map((s: string) => s.trim().toUpperCase()).filter(Boolean) : undefined);
+
     return calculateInvoiceItem({
       id: `inv-item-${idx + 1}`,
       productId: item.id || item.productId,
       productName: item.name || item.productName || 'Computer Hardware',
       category: item.category,
       sku: item.sku,
+      serialNumber: rawSn || undefined,
+      serialNumbers: rawSns,
       quantity: Number(item.quantity || 1),
       unitPrice: Number(item.price || item.unitPrice || 0),
       discount: Number(item.discount || 0),

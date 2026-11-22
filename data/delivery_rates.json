@@ -1,0 +1,53 @@
+{
+  "enabled": true,
+  "enableFreeDelivery": false,
+  "freeDeliveryAbove": 0,
+  "storeCoordinates": {
+    "lat": 24.1611,
+    "lng": 83.8055,
+    "address": "Chiniya Road, Garhwa, Jharkhand - 822114"
+  },
+  "slabs": [
+    {
+      "id": "slab-1795075969300",
+      "name": "Tier 1 (0-15 km)",
+      "minKm": 0,
+      "maxKm": 1,
+      "price": 15,
+      "estimatedTime": "Same-Day Delivery",
+      "description": "Delivery between 0 km and 15 km",
+      "popularAreas": []
+    },
+    {
+      "id": "slab-1795084099051",
+      "name": "Tier 2 (1-16 km)",
+      "minKm": 0,
+      "maxKm": 1.5,
+      "price": 100,
+      "estimatedTime": "Same-Day Delivery",
+      "description": "Delivery between 1 km and 16 km",
+      "popularAreas": []
+    },
+    {
+      "id": "slab-1795238248574",
+      "name": "Tier 3 (16-31 km)",
+      "minKm": 16,
+      "maxKm": 31,
+      "price": 100,
+      "estimatedTime": "Same-Day Delivery",
+      "description": "Delivery between 16 km and 31 km",
+      "popularAreas": []
+    },
+    {
+      "id": "slab-1795238331590",
+      "name": "Tier 4 (31-46 km)",
+      "minKm": 31,
+      "maxKm": 46,
+      "price": 100,
+      "estimatedTime": "Same-Day Delivery",
+      "description": "Delivery between 31 km and 46 km",
+      "popularAreas": []
+    }
+  ],
+  "adminKey": "Lapiez@2026#"
+}

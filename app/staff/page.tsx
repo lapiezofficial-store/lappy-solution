@@ -1765,6 +1765,11 @@ export default function StaffPage() {
                           >
                             <span className="font-extrabold text-blue-600">{item.quantity}x</span>
                             <span className="max-w-[200px] truncate">{item.name}</span>
+                            {(item as any).serialNumber && (
+                              <span className="text-[10px] bg-blue-100 text-[#1A56DB] font-mono font-bold px-1.5 py-0.2 rounded">
+                                S/N: {(item as any).serialNumber}
+                              </span>
+                            )}
                             <span className="text-slate-400 font-mono text-[11px]">
                               ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                             </span>

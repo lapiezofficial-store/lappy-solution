@@ -34,6 +34,7 @@ import { SecurityManager } from '../../components/admin/SecurityManager';
 import { DeliveryManager } from '../../components/admin/DeliveryManager';
 import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 import { BulkSerialNumberInput } from '../../components/admin/BulkSerialNumberInput';
+import BatchInvoiceModal from '../../components/admin/BatchInvoiceModal';
 
 export default function AdminPage() {
   const {
@@ -919,6 +920,8 @@ export default function AdminPage() {
   const [manualPrice, setManualPrice] = useState<number | string>(0);
   const [manualDiscount, setManualDiscount] = useState<number | string>(0);
   const [manualGstRate, setManualGstRate] = useState<number | string>(18);
+  const [manualSerialNumber, setManualSerialNumber] = useState('');
+  const [isBatchInvoiceModalOpen, setIsBatchInvoiceModalOpen] = useState(false);
 
   // Invoice Settings Form State
   const [invBizName, setInvBizName] = useState(invoiceSettings?.businessName || 'Lapiez');
@@ -1043,6 +1046,48 @@ export default function AdminPage() {
     });
     updateOrders(updated);
     showToast(`Order ${orderId} marked as ${newStatus}!`);
+  };
+
+  const handlePromptEditSerialNumber = async (order: any, itemIdx: number) => {
+    const item = order.items?.[itemIdx];
+    if (!item) return;
+    const currentSn = item.serialNumber || '';
+    const input = typeof window !== 'undefined'
+      ? window.prompt(`Enter or edit Serial Number(s) for "${item.name}" (comma-separated for bulk):`, currentSn)
+      : null;
+    if (input === null) return;
+    const cleanSn = input.trim().toUpperCase();
+
+    const updatedItems = order.items.map((it: any, idx: number) => {
+      if (idx !== itemIdx) return it;
+      const snList = cleanSn ? cleanSn.split(/[\n,;]+/).map((s: string) => s.trim().toUpperCase()).filter(Boolean) : [];
+      return {
+        ...it,
+        serialNumber: cleanSn || undefined,
+        serialNumbers: snList.length > 0 ? snList : undefined,
+      };
+    });
+
+    try {
+      const res = await fetch('/api/cms/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order.orderId,
+          items: updatedItems,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`Serial number updated for ${item.name}!`);
+        await fetchOrders();
+      } else {
+        alert(data.error || 'Failed to update serial number');
+      }
+    } catch (err) {
+      console.error('Error updating serial number:', err);
+      alert('Failed to update serial number');
+    }
   };
 
   const handleHandoverPickupOrder = (orderId: string, currentStaffName?: string, currentApprover?: string) => {
@@ -3464,11 +3509,10 @@ export default function AdminPage() {
           {/* 256-Bit Security Shortcut */}
           <button
             onClick={() => setActiveTab('security')}
-            className={`hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
-              activeTab === 'security'
+            className={`hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${activeTab === 'security'
                 ? 'bg-blue-50 text-[#1A56DB] border-blue-300 shadow-2xs'
                 : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-            }`}
+              }`}
             title="256-Bit Hardware & Device Security"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -4056,8 +4100,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'dashboard'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Dashboard"
               >
@@ -4070,8 +4114,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('security')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'security'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Hardware & Device Security"
               >
@@ -4086,8 +4130,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('delivery')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'delivery'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Delivery Charges & Distance Scale Controller"
               >
@@ -4102,8 +4146,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('scraper')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'scraper'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Live Web Scraper (Lapcare, ProDot, FINGERS)"
               >
@@ -4125,8 +4169,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('orders')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'orders'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Orders & UTR Verification"
               >
@@ -4146,8 +4190,8 @@ export default function AdminPage() {
                 <button
                   onClick={() => { setActiveTab('riders'); setRiderSubTab('all'); }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'riders'
-                      ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   title="Delivery Fleet, Live GPS & Rider Payouts"
                 >
@@ -4186,8 +4230,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('warranty')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'warranty'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Customer Warranty Claims & RMA Desk"
               >
@@ -4202,8 +4246,8 @@ export default function AdminPage() {
                 <button
                   onClick={() => { setActiveTab('staff'); setStaffSubTab('ROSTER'); }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'staff'
-                      ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   title="Manage Staff Accounts, Daily Attendance & Payroll"
                 >
@@ -4274,8 +4318,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('billing')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'billing'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="GST Invoices & Billing"
               >
@@ -4288,8 +4332,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('mybillbook')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'mybillbook'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Lapiez Billing System - POS & GST Invoicing Engine"
               >
@@ -4302,8 +4346,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('bank')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'bank'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Official Bank Accounts & Settlement"
               >
@@ -4316,8 +4360,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('coupons')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'coupons'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Coupons & Discounts"
               >
@@ -4330,8 +4374,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('leads')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'leads'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Customer Inquiries & Quotes"
               >
@@ -4353,8 +4397,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('inventory')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'inventory'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="All Products Inventory"
               >
@@ -4367,8 +4411,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('trash')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'trash'
-                    ? 'bg-rose-50 text-rose-700 font-bold border-l-4 border-rose-500'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-rose-50 text-rose-700 font-bold border-l-4 border-rose-500'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Recycle Bin (Saved for 15 Days)"
               >
@@ -4386,8 +4430,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('categories')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'categories'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Categories & Subcategories CMS"
               >
@@ -4400,8 +4444,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('brands')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'brands'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Top Brands Showcase"
               >
@@ -4423,8 +4467,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('homepage')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'homepage'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Page Builder & Sections"
               >
@@ -4435,8 +4479,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('banners')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'banners'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Hero Carousel Banners"
               >
@@ -4447,8 +4491,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('header_footer')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'header_footer'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Header Announcement & Footer Controls"
               >
@@ -4459,8 +4503,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('theme')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'theme'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Theme Colors & Branding"
               >
@@ -4480,8 +4524,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('pages')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'pages'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Custom CMS Pages"
               >
@@ -4492,8 +4536,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('blogs')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'blogs'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Tech Blogs"
               >
@@ -4504,8 +4548,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('media')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'media'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Media Library"
               >
@@ -4525,8 +4569,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('settings')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'settings'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="General Store & UPI Settings"
               >
@@ -4537,8 +4581,8 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('tools')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === 'tools'
-                    ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-50 text-[#1A56DB] font-bold border-l-4 border-[#1A56DB]'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 title="Tools & System Diagnostics"
               >
@@ -4764,6 +4808,15 @@ export default function AdminPage() {
                       <Receipt className="w-3.5 h-3.5 text-gray-500" />
                       <span>GST Billing ({invoices.length})</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsBatchInvoiceModalOpen(true)}
+                      className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all shadow-xs"
+                      title="View, batch print (A4 PDF), and download all customer bills at once"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-purple-200" />
+                      <span>🖨️ View & Download All Bills</span>
+                    </button>
                   </div>
                   <div className="flex items-center gap-3">
                     <button
@@ -4803,8 +4856,8 @@ export default function AdminPage() {
                         key={f.id}
                         onClick={() => setOrderFilter(f.id as any)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${orderFilter === f.id
-                            ? 'bg-[#1A56DB] text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-[#1A56DB] text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
                       >
                         {f.label}
@@ -4813,15 +4866,27 @@ export default function AdminPage() {
                   </div>
 
                   {/* Order Search Input */}
-                  <div className="w-full sm:w-64 relative">
-                    <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      placeholder="Search by ID, name, UTR..."
-                      value={orderSearch}
-                      onChange={(e) => setOrderSearch(e.target.value)}
-                      className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg pl-8.5 pr-3 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#1A56DB]"
-                    />
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="w-full sm:w-64 relative">
+                      <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search by ID, name, UTR..."
+                        value={orderSearch}
+                        onChange={(e) => setOrderSearch(e.target.value)}
+                        className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg pl-8.5 pr-3 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#1A56DB]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsBatchInvoiceModalOpen(true)}
+                      className="h-9 px-3.5 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-xs font-black flex items-center gap-1.5 shadow-2xs whitespace-nowrap transition-colors cursor-pointer shrink-0"
+                      title="View & Download All Customer Bills"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">All Customer Bills</span>
+                      <span className="sm:hidden">Bills</span>
+                    </button>
                   </div>
 
                 </div>
@@ -4857,8 +4922,8 @@ export default function AdminPage() {
 
                               {/* Payment Badge */}
                               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${isPaid
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
                                 }`}>
                                 {isPaid ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                                 <span>{order.paymentStatus || 'Pending'}</span>
@@ -4957,14 +5022,34 @@ export default function AdminPage() {
                               </span>
                               <div className="space-y-1.5">
                                 {order.items?.map((item: any, idx: number) => (
-                                  <div key={idx} className="flex items-center justify-between text-xs bg-white border border-gray-100 p-2 rounded-lg">
-                                    <div className="min-w-0 pr-2">
-                                      <p className="font-semibold text-gray-900 truncate">{item.name}</p>
-                                      <p className="text-[10.5px] text-gray-500">Qty: {item.quantity} × ₹{(Number(item.price) || 0).toLocaleString('en-IN')}</p>
+                                  <div key={idx} className="bg-white border border-gray-100 p-2 rounded-lg space-y-1">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <div className="min-w-0 pr-2">
+                                        <p className="font-semibold text-gray-900 truncate">{item.name}</p>
+                                        <p className="text-[10.5px] text-gray-500">Qty: {item.quantity} × ₹{(Number(item.price) || 0).toLocaleString('en-IN')}</p>
+                                      </div>
+                                      <span className="font-bold text-gray-900 text-xs flex-shrink-0">
+                                        ₹{((Number(item.price) || 0) * (Number(item.quantity) || 1)).toLocaleString('en-IN')}
+                                      </span>
                                     </div>
-                                    <span className="font-bold text-gray-900 text-xs flex-shrink-0">
-                                      ₹{((Number(item.price) || 0) * (Number(item.quantity) || 1)).toLocaleString('en-IN')}
-                                    </span>
+                                    <div className="flex items-center justify-between text-[10px] pt-1 border-t border-gray-100/80">
+                                      {item.serialNumber ? (
+                                        <span className="inline-flex items-center gap-1 font-mono font-bold text-[#1A56DB] bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded max-w-[240px] truncate">
+                                          <Tag className="w-2.5 h-2.5 text-[#1A56DB] shrink-0" />
+                                          <span className="truncate">S/N: {item.serialNumber}</span>
+                                        </span>
+                                      ) : (
+                                        <span className="text-gray-400 italic">No S/N assigned</span>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => handlePromptEditSerialNumber(order, idx)}
+                                        className="text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer shrink-0 ml-1"
+                                        title="Edit or assign serial number for this product"
+                                      >
+                                        {item.serialNumber ? 'Edit S/N' : '+ Assign S/N'}
+                                      </button>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -5281,8 +5366,8 @@ export default function AdminPage() {
                           key={st.id}
                           onClick={() => setBillingSubTab(st.id as any)}
                           className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5 ${billingSubTab === st.id
-                              ? 'bg-[#1A56DB] text-white shadow-xs'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            ? 'bg-[#1A56DB] text-white shadow-xs'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
                           <Icon className="w-3.5 h-3.5" />
@@ -5292,18 +5377,29 @@ export default function AdminPage() {
                     })}
                   </div>
 
-                  {billingSubTab === 'invoices' && (
-                    <div className="w-full sm:w-64 relative">
-                      <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        placeholder="Search invoice or customer..."
-                        value={billingSearch}
-                        onChange={(e) => setBillingSearch(e.target.value)}
-                        className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg pl-8.5 pr-3 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#1A56DB]"
-                      />
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    {billingSubTab === 'invoices' && (
+                      <div className="w-full sm:w-64 relative">
+                        <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Search invoice or customer..."
+                          value={billingSearch}
+                          onChange={(e) => setBillingSearch(e.target.value)}
+                          className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg pl-8.5 pr-3 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#1A56DB]"
+                        />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsBatchInvoiceModalOpen(true)}
+                      className="h-9 px-3.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-black flex items-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+                      title="Batch View & Download All Customer Bills"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-purple-200" />
+                      <span>🖨️ Batch All Bills</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* 2. SUBTAB: ALL INVOICES LIST */}
@@ -5368,8 +5464,8 @@ export default function AdminPage() {
                           key={st}
                           onClick={() => setBillingFilter(st)}
                           className={`px-3 py-1 rounded-md text-xs font-semibold capitalize transition-colors ${billingFilter === st
-                              ? 'bg-gray-900 text-white'
-                              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                            ? 'bg-gray-900 text-white'
+                            : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
                             }`}
                         >
                           {st === 'all' ? 'All Invoices' : `${st} Invoices`}
@@ -5449,8 +5545,8 @@ export default function AdminPage() {
                                   </td>
                                   <td className="py-3.5 px-3 text-center">
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${inv.paymentStatus === 'Paid'
-                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                      : 'bg-amber-50 text-amber-700 border border-amber-200'
                                       }`}>
                                       {inv.paymentStatus}
                                     </span>
@@ -5695,6 +5791,22 @@ export default function AdminPage() {
                           </select>
                         </div>
                       </div>
+
+                      {/* Item Serial Number Input */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1.5">
+                          <Tag className="w-3.5 h-3.5 text-[#1A56DB]" />
+                          <span>Product Serial Number(s) (S/N)</span>
+                          <span className="text-[10px] text-gray-400 font-normal">(Printed on Bill & Warranty - comma separated)</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. SN-892348, SN-892349"
+                          value={manualSerialNumber}
+                          onChange={(e) => setManualSerialNumber(e.target.value.toUpperCase())}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono uppercase focus:outline-none focus:border-[#1A56DB]"
+                        />
+                      </div>
                     </div>
 
                     {/* Real-time Calculation Summary Box */}
@@ -5768,8 +5880,8 @@ export default function AdminPage() {
                             value={manualPaymentStatus}
                             onChange={(e) => setManualPaymentStatus(e.target.value as any)}
                             className={`border rounded-lg px-3 py-1.5 text-xs font-bold ${manualPaymentStatus === 'Paid'
-                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                : 'bg-amber-50 border-amber-200 text-amber-700'
+                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                              : 'bg-amber-50 border-amber-200 text-amber-700'
                               }`}
                           >
                             <option value="Paid">✓ Paid (Settled)</option>
@@ -5798,9 +5910,15 @@ export default function AdminPage() {
                           const cgst = Math.round((tax / 2) * 100) / 100;
                           const sgst = Math.round((tax - cgst) * 100) / 100;
 
+                          const snStr = manualSerialNumber.trim().toUpperCase();
+                          const snList = snStr ? snStr.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean) : undefined;
+
                           const item = {
                             id: `item-${Date.now()}`,
                             productName: manualProductName,
+                            sku: `LS-${Math.floor(100000 + Math.random() * 900000)}`,
+                            serialNumber: snStr || undefined,
+                            serialNumbers: snList,
                             hsn: '84713010',
                             quantity: numQty,
                             unit: 'PCS',
@@ -5842,6 +5960,7 @@ export default function AdminPage() {
                           setManualBuyerEmail('');
                           setManualPoNumber('');
                           setManualProductName('');
+                          setManualSerialNumber('');
                           setManualPrice(0);
                           setManualDiscount(0);
                           setBillingSubTab('invoices');
@@ -6281,8 +6400,8 @@ export default function AdminPage() {
                           setInventorySubcategory('All');
                         }}
                         className={`w-full py-2 px-3 rounded-xl flex items-center justify-between text-xs font-bold transition-all cursor-pointer ${inventoryCategory === 'All'
-                            ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] shadow-2xs'
-                            : 'text-gray-700 hover:bg-gray-50'
+                          ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] shadow-2xs'
+                          : 'text-gray-700 hover:bg-gray-50'
                           }`}
                       >
                         <div className="flex items-center gap-2">
@@ -6314,8 +6433,8 @@ export default function AdminPage() {
                                   }
                                 }}
                                 className={`w-full py-2 px-2.5 rounded-xl flex items-center justify-between text-xs font-semibold transition-all cursor-pointer group ${isSelected
-                                    ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold border border-blue-200 shadow-2xs'
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                  ? 'bg-[#EFF6FF] text-[#1A56DB] font-bold border border-blue-200 shadow-2xs'
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                   }`}
                               >
                                 <div className="flex items-center gap-2 truncate">
@@ -6366,8 +6485,8 @@ export default function AdminPage() {
                                   <button
                                     onClick={() => setInventorySubcategory('All')}
                                     className={`w-full py-1.5 px-2 rounded-lg text-left text-[11px] flex items-center justify-between transition-colors ${inventorySubcategory === 'All'
-                                        ? 'font-bold text-[#1A56DB] bg-blue-100/60'
-                                        : 'text-gray-600 hover:bg-gray-100'
+                                      ? 'font-bold text-[#1A56DB] bg-blue-100/60'
+                                      : 'text-gray-600 hover:bg-gray-100'
                                       }`}
                                   >
                                     <span>All {cat.name}</span>
@@ -6380,8 +6499,8 @@ export default function AdminPage() {
                                         key={sub.name}
                                         onClick={() => setInventorySubcategory(sub.name)}
                                         className={`w-full py-1.5 px-2 rounded-lg text-left text-[11px] flex items-center justify-between transition-colors ${isSubSelected
-                                            ? 'font-bold text-[#1A56DB] bg-blue-100/60 shadow-2xs'
-                                            : 'text-gray-600 hover:bg-gray-100'
+                                          ? 'font-bold text-[#1A56DB] bg-blue-100/60 shadow-2xs'
+                                          : 'text-gray-600 hover:bg-gray-100'
                                           }`}
                                       >
                                         <span className="truncate">↳ {sub.name}</span>
@@ -6714,20 +6833,20 @@ export default function AdminPage() {
                                   <td className="py-3 px-3 whitespace-nowrap">
                                     <div className="space-y-1">
                                       <span className={`text-[11px] font-bold ${isOutOfStock
-                                          ? 'text-rose-600'
-                                          : isLowStock
-                                            ? 'text-amber-600'
-                                            : 'text-emerald-700'
+                                        ? 'text-rose-600'
+                                        : isLowStock
+                                          ? 'text-amber-600'
+                                          : 'text-emerald-700'
                                         }`}>
                                         {isOutOfStock ? '0 in stock' : `${qty} in stock`}
                                       </span>
                                       <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                         <div
                                           className={`h-full rounded-full transition-all ${isOutOfStock
-                                              ? 'bg-rose-500 w-0'
-                                              : isLowStock
-                                                ? 'bg-amber-500'
-                                                : 'bg-emerald-500'
+                                            ? 'bg-rose-500 w-0'
+                                            : isLowStock
+                                              ? 'bg-amber-500'
+                                              : 'bg-emerald-500'
                                             }`}
                                           style={{ width: `${Math.min(100, Math.max(isOutOfStock ? 0 : 10, (qty / 20) * 100))}%` }}
                                         />
@@ -6793,10 +6912,10 @@ export default function AdminPage() {
                                   <td className="py-3 px-3 whitespace-nowrap">
                                     <div className="flex flex-col gap-0.5">
                                       <span className={`px-2 py-0.5 rounded-md text-[10.5px] font-extrabold w-fit border ${product.gstRate === 0
-                                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                          : product.gstRate === 28
-                                            ? 'bg-rose-50 text-rose-800 border-rose-200'
-                                            : 'bg-blue-50 text-blue-800 border-blue-200'
+                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                        : product.gstRate === 28
+                                          ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                          : 'bg-blue-50 text-blue-800 border-blue-200'
                                         }`}>
                                         GST {product.gstRate ?? 18}%
                                       </span>
@@ -6849,8 +6968,8 @@ export default function AdminPage() {
                                             </span>
                                             {timing.relative !== 'Pre-existing' && (
                                               <span className={`px-1.5 py-0.2 rounded text-[9.5px] font-extrabold ${isRecent
-                                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                  : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                : 'bg-slate-100 text-slate-600 border border-slate-200'
                                                 }`}>
                                                 {timing.relative}
                                               </span>
@@ -7116,8 +7235,8 @@ export default function AdminPage() {
 
                                 {/* Banner Mode Badge */}
                                 <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded flex items-center gap-1 border ${isFullGraphic
-                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                    : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                  : 'bg-indigo-50 text-indigo-700 border-indigo-200'
                                   }`}>
                                   {isFullGraphic ? <ImageIcon className="w-3 h-3" /> : <Sliders className="w-3 h-3" />}
                                   <span>{isFullGraphic ? 'Full Graphic' : 'Text Overlay'}</span>
@@ -7136,8 +7255,8 @@ export default function AdminPage() {
                                 <button
                                   onClick={() => editBanner({ ...b, status: b.status === 'active' ? 'inactive' : 'active' })}
                                   className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors cursor-pointer ${b.status === 'active'
-                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                      : 'bg-gray-100 text-gray-500 border-gray-200'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : 'bg-gray-100 text-gray-500 border-gray-200'
                                     }`}
                                 >
                                   {b.status === 'active' ? 'Active' : 'Inactive'}
@@ -7273,11 +7392,10 @@ export default function AdminPage() {
                       <div>
                         <h4 className="font-extrabold text-sm sm:text-base text-gray-900 flex items-center gap-2">
                           <span>Brand Logos Rotation &amp; Speed Controller</span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                            activeCarouselConfig.autoScroll
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${activeCarouselConfig.autoScroll
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : 'bg-gray-100 text-gray-600 border border-gray-200'
-                          }`}>
+                            }`}>
                             {activeCarouselConfig.autoScroll ? '● Rotation Active' : '○ Static Grid (Off)'}
                           </span>
                         </h4>
@@ -7314,7 +7432,7 @@ export default function AdminPage() {
 
                   {/* Settings Control Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
-                    
+
                     {/* 1. On / Off Toggle */}
                     <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-col justify-between">
                       <div>
@@ -7329,22 +7447,20 @@ export default function AdminPage() {
                         <button
                           type="button"
                           onClick={() => handleUpdateCarouselDraft({ autoScroll: true })}
-                          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                            activeCarouselConfig.autoScroll
+                          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeCarouselConfig.autoScroll
                               ? 'bg-[#1A56DB] text-white shadow-xs'
                               : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                          }`}
+                            }`}
                         >
                           ON (Rotate)
                         </button>
                         <button
                           type="button"
                           onClick={() => handleUpdateCarouselDraft({ autoScroll: false })}
-                          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                            !activeCarouselConfig.autoScroll
+                          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${!activeCarouselConfig.autoScroll
                               ? 'bg-slate-800 text-white shadow-xs'
                               : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                          }`}
+                            }`}
                         >
                           OFF (Static)
                         </button>
@@ -7387,11 +7503,10 @@ export default function AdminPage() {
                                     speedSeconds: p.sec,
                                   })
                                 }
-                                className={`py-1.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
-                                  isSelected
+                                className={`py-1.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${isSelected
                                     ? 'bg-[#1A56DB] text-white shadow-2xs'
                                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                                }`}
+                                  }`}
                               >
                                 {p.label}
                               </button>
@@ -7445,11 +7560,10 @@ export default function AdminPage() {
                               key={d.key}
                               type="button"
                               onClick={() => handleUpdateCarouselDraft({ direction: d.key as any })}
-                              className={`py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                                (activeCarouselConfig.direction || 'dual') === d.key
+                              className={`py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${(activeCarouselConfig.direction || 'dual') === d.key
                                   ? 'bg-[#1A56DB] text-white shadow-2xs'
                                   : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                              }`}
+                                }`}
                             >
                               {d.label}
                             </button>
@@ -7492,9 +7606,8 @@ export default function AdminPage() {
                         {/* Preview Row 1 */}
                         <div className="flex overflow-hidden mb-2">
                           <div
-                            className={`flex items-center gap-2 ${
-                              activeCarouselConfig.direction === 'right' ? 'animate-marquee-right' : 'animate-marquee-left'
-                            } ${activeCarouselConfig.pauseOnHover !== false ? 'hover:[animation-play-state:paused]' : ''}`}
+                            className={`flex items-center gap-2 ${activeCarouselConfig.direction === 'right' ? 'animate-marquee-right' : 'animate-marquee-left'
+                              } ${activeCarouselConfig.pauseOnHover !== false ? 'hover:[animation-play-state:paused]' : ''}`}
                             style={{ '--marquee-duration': `${activeCarouselConfig.speedSeconds || 65}s` } as React.CSSProperties}
                           >
                             {[...brands.filter(b => b.isVisible !== false), ...brands.filter(b => b.isVisible !== false)].slice(0, 24).map((b, i) => (
@@ -7516,9 +7629,8 @@ export default function AdminPage() {
                         {/* Preview Row 2 */}
                         <div className="flex overflow-hidden">
                           <div
-                            className={`flex items-center gap-2 ${
-                              activeCarouselConfig.direction === 'left' ? 'animate-marquee-left' : 'animate-marquee-right'
-                            } ${activeCarouselConfig.pauseOnHover !== false ? 'hover:[animation-play-state:paused]' : ''}`}
+                            className={`flex items-center gap-2 ${activeCarouselConfig.direction === 'left' ? 'animate-marquee-left' : 'animate-marquee-right'
+                              } ${activeCarouselConfig.pauseOnHover !== false ? 'hover:[animation-play-state:paused]' : ''}`}
                             style={{ '--marquee-duration': `${activeCarouselConfig.speedSeconds || 65}s` } as React.CSSProperties}
                           >
                             {[...brands.filter(b => b.isVisible !== false), ...brands.filter(b => b.isVisible !== false)].slice(12, 36).map((b, i) => (
@@ -7584,8 +7696,8 @@ export default function AdminPage() {
                           <div
                             key={b.id}
                             className={`bg-white border rounded-xl p-3.5 flex flex-col justify-between gap-3 transition-all ${b.isVisible !== false
-                                ? 'border-gray-200 hover:border-blue-300 shadow-2xs'
-                                : 'border-gray-200 bg-gray-50/70 opacity-60'
+                              ? 'border-gray-200 hover:border-blue-300 shadow-2xs'
+                              : 'border-gray-200 bg-gray-50/70 opacity-60'
                               }`}
                           >
                             {/* Top Row: Index Badge & Status */}
@@ -7605,8 +7717,8 @@ export default function AdminPage() {
                                   type="button"
                                   onClick={() => handleToggleBrandVisibility(b)}
                                   className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 transition-all cursor-pointer ${b.isVisible !== false
-                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
-                                      : 'bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100'
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
+                                    : 'bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100'
                                     }`}
                                   title={b.isVisible !== false ? 'Click to Make Invisible (Hide)' : 'Click to Make Visible (Show)'}
                                 >
@@ -8051,8 +8163,8 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => setCatVisibilityFilter('all')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${catVisibilityFilter === 'all'
-                            ? 'bg-[#1A56DB] text-white shadow-xs'
-                            : 'text-gray-600 hover:text-gray-900'
+                          ? 'bg-[#1A56DB] text-white shadow-xs'
+                          : 'text-gray-600 hover:text-gray-900'
                           }`}
                       >
                         All ({categories.length})
@@ -8061,8 +8173,8 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => setCatVisibilityFilter('visible')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${catVisibilityFilter === 'visible'
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'text-emerald-700 hover:text-emerald-900'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-emerald-700 hover:text-emerald-900'
                           }`}
                       >
                         <Eye className="w-3 h-3" />
@@ -8072,8 +8184,8 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => setCatVisibilityFilter('hidden')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${catVisibilityFilter === 'hidden'
-                            ? 'bg-rose-600 text-white shadow-xs'
-                            : 'text-rose-700 hover:text-rose-900'
+                          ? 'bg-rose-600 text-white shadow-xs'
+                          : 'text-rose-700 hover:text-rose-900'
                           }`}
                       >
                         <EyeOff className="w-3 h-3" />
@@ -8185,8 +8297,8 @@ export default function AdminPage() {
                                     type="button"
                                     onClick={() => handleToggleCategoryVisibility(cat)}
                                     className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold transition-all flex items-center gap-1 cursor-pointer flex-shrink-0 ${cat.status === 'inactive'
-                                        ? 'bg-rose-100 text-rose-800 border border-rose-300 hover:bg-rose-200'
-                                        : 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
+                                      ? 'bg-rose-100 text-rose-800 border border-rose-300 hover:bg-rose-200'
+                                      : 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
                                       }`}
                                     title={cat.status === 'inactive' ? 'Click to make Visible on Homepage' : 'Click to Hide from Homepage'}
                                   >
@@ -8332,8 +8444,8 @@ export default function AdminPage() {
                               type="button"
                               onClick={() => handleToggleCategoryVisibility(cat)}
                               className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer ${cat.status === 'inactive'
-                                  ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
-                                  : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                                ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+                                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
                                 }`}
                               title={cat.status === 'inactive' ? 'Click to show on Storefront' : 'Click to hide from Storefront'}
                             >
@@ -8491,8 +8603,8 @@ export default function AdminPage() {
                               {isProductSection && (
                                 <div className="flex items-center gap-2 pt-0.5">
                                   <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1 ${productCount > 0
-                                      ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                      : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                    ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                    : 'bg-amber-50 text-amber-700 border border-amber-200'
                                     }`}>
                                     <ShoppingBag className="w-3 h-3" />
                                     <span>{productCount > 0 ? `${productCount} Custom Products Selected` : 'Using Smart Fallback (No manual products)'}</span>
@@ -8564,8 +8676,8 @@ export default function AdminPage() {
                               type="button"
                               onClick={() => handleToggleSection(section.id || section.sectionKey)}
                               className={`h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${section.isVisible
-                                  ? 'bg-gray-100 hover:bg-rose-50 text-gray-600 hover:text-rose-600 border border-gray-200 hover:border-rose-200'
-                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                                ? 'bg-gray-100 hover:bg-rose-50 text-gray-600 hover:text-rose-600 border border-gray-200 hover:border-rose-200'
+                                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
                                 }`}
                               title={section.isVisible ? "Click to hide from storefront (stays in admin)" : "Click to make visible on storefront"}
                             >
@@ -8852,10 +8964,10 @@ export default function AdminPage() {
                       <div
                         key={coupon.id}
                         className={`bg-white border rounded-2xl p-5 shadow-2xs relative flex flex-col justify-between transition-all ${coupon.isActive
-                            ? isPremium
-                              ? 'border-purple-200 ring-1 ring-purple-100 hover:shadow-md'
-                              : 'border-blue-100 hover:shadow-md'
-                            : 'border-gray-200 opacity-60 bg-gray-50/70'
+                          ? isPremium
+                            ? 'border-purple-200 ring-1 ring-purple-100 hover:shadow-md'
+                            : 'border-blue-100 hover:shadow-md'
+                          : 'border-gray-200 opacity-60 bg-gray-50/70'
                           }`}
                       >
                         <div>
@@ -8863,10 +8975,10 @@ export default function AdminPage() {
                           <div className="flex items-center justify-between gap-2 mb-3">
                             <span
                               className={`text-[10.5px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1 uppercase tracking-wider ${isPremium
-                                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                                  : isNormal
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                : isNormal
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : 'bg-blue-50 text-blue-700 border border-blue-200'
                                 }`}
                             >
                               {isPremium ? (
@@ -8884,8 +8996,8 @@ export default function AdminPage() {
 
                             <span
                               className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${coupon.isActive
-                                  ? 'bg-emerald-500/10 text-emerald-700'
-                                  : 'bg-gray-200 text-gray-600'
+                                ? 'bg-emerald-500/10 text-emerald-700'
+                                : 'bg-gray-200 text-gray-600'
                                 }`}
                             >
                               {coupon.isActive ? 'Active' : 'Paused'}
@@ -8955,8 +9067,8 @@ export default function AdminPage() {
                             type="button"
                             onClick={() => handleToggleCouponStatus(coupon)}
                             className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${coupon.isActive
-                                ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-                                : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                              ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                              : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
                               }`}
                           >
                             {coupon.isActive ? 'Pause' : 'Activate'}
@@ -9307,8 +9419,8 @@ export default function AdminPage() {
                       <div
                         key={acc.id}
                         className={`bg-white border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3 transition-all ${acc.isPrimary
-                            ? 'border-emerald-400 ring-2 ring-emerald-400/20'
-                            : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-emerald-400 ring-2 ring-emerald-400/20'
+                          : 'border-gray-200 hover:border-gray-300'
                           }`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -10155,8 +10267,8 @@ export default function AdminPage() {
                         <span className="font-bold text-gray-700 block">Password Requirements:</span>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                           <div className={`flex items-center gap-1.5 ${newAdminPassword.length >= 8 && newAdminPassword.length <= 14
-                              ? 'text-emerald-700 font-bold'
-                              : 'text-amber-700'
+                            ? 'text-emerald-700 font-bold'
+                            : 'text-amber-700'
                             }`}>
                             {newAdminPassword.length >= 8 && newAdminPassword.length <= 14 ? (
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
@@ -10167,8 +10279,8 @@ export default function AdminPage() {
                           </div>
 
                           <div className={`flex items-center gap-1.5 ${/[a-zA-Z]/.test(newAdminPassword) && /[0-9\W]/.test(newAdminPassword)
-                              ? 'text-emerald-700 font-bold'
-                              : 'text-amber-700'
+                            ? 'text-emerald-700 font-bold'
+                            : 'text-amber-700'
                             }`}>
                             {/[a-zA-Z]/.test(newAdminPassword) && /[0-9\W]/.test(newAdminPassword) ? (
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
@@ -10179,8 +10291,8 @@ export default function AdminPage() {
                           </div>
 
                           <div className={`flex items-center gap-1.5 ${confirmAdminPassword && newAdminPassword === confirmAdminPassword
-                              ? 'text-emerald-700 font-bold'
-                              : 'text-gray-500'
+                            ? 'text-emerald-700 font-bold'
+                            : 'text-gray-500'
                             }`}>
                             {confirmAdminPassword && newAdminPassword === confirmAdminPassword ? (
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
@@ -10378,8 +10490,8 @@ export default function AdminPage() {
                               <div className="text-right">
                                 <div className="font-black text-gray-900">₹{(order.total || order.amount || 0).toLocaleString('en-IN')}</div>
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${order.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
-                                    order.status === 'verified' ? 'bg-blue-100 text-blue-800' :
-                                      'bg-amber-100 text-amber-800'
+                                  order.status === 'verified' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-amber-100 text-amber-800'
                                   }`}>
                                   {order.status || 'Pending'}
                                 </span>
@@ -10453,11 +10565,10 @@ export default function AdminPage() {
                                   <div className="text-right shrink-0">
                                     {/* Mobile: Single clean pill */}
                                     <div className="sm:hidden">
-                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${
-                                        isRecent
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${isRecent
                                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                           : 'bg-slate-100 text-slate-600 border border-slate-200'
-                                      }`}>
+                                        }`}>
                                         <Clock className="w-2.5 h-2.5 shrink-0" />
                                         <span>{isRecent ? timing.relative : timing.dateOnly}</span>
                                       </span>
@@ -10473,8 +10584,8 @@ export default function AdminPage() {
                                         <span className="text-gray-400 font-mono">{timing.exactTime}</span>
                                         {timing.relative !== 'Pre-existing' && (
                                           <span className={`px-1.5 py-0.2 rounded font-extrabold ${isRecent
-                                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                              : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                            : 'bg-slate-100 text-slate-600 border border-slate-200'
                                             }`}>
                                             {timing.relative}
                                           </span>
@@ -10575,8 +10686,8 @@ export default function AdminPage() {
                       onClick={() => handleRunScraper('lapcare')}
                       disabled={isScraping}
                       className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${scraperTarget === 'lapcare'
-                          ? 'border-purple-600 bg-purple-50/70 shadow-xs ring-2 ring-purple-200'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-purple-600 bg-purple-50/70 shadow-xs ring-2 ring-purple-200'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                     >
                       <div className="font-extrabold text-xs text-gray-900">Lapcare Official</div>
@@ -10591,8 +10702,8 @@ export default function AdminPage() {
                       onClick={() => handleRunScraper('prodot')}
                       disabled={isScraping}
                       className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${scraperTarget === 'prodot'
-                          ? 'border-purple-600 bg-purple-50/70 shadow-xs ring-2 ring-purple-200'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-purple-600 bg-purple-50/70 shadow-xs ring-2 ring-purple-200'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                     >
                       <div className="font-extrabold text-xs text-gray-900">ProDot Group</div>
@@ -10607,8 +10718,8 @@ export default function AdminPage() {
                       onClick={() => handleRunScraper('fingers')}
                       disabled={isScraping}
                       className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${scraperTarget === 'fingers'
-                          ? 'border-purple-600 bg-purple-50/70 shadow-xs ring-2 ring-purple-200'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-purple-600 bg-purple-50/70 shadow-xs ring-2 ring-purple-200'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                     >
                       <div className="font-extrabold text-xs text-gray-900">FINGERS Audio</div>
@@ -10623,8 +10734,8 @@ export default function AdminPage() {
                       onClick={() => handleRunScraper('lappysolution')}
                       disabled={isScraping}
                       className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${scraperTarget === 'lappysolution'
-                          ? 'border-purple-600 bg-purple-50/70 shadow-xs ring-2 ring-purple-200'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-purple-600 bg-purple-50/70 shadow-xs ring-2 ring-purple-200'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                     >
                       <div className="font-extrabold text-xs text-gray-900">Lappy Solution</div>
@@ -11563,10 +11674,10 @@ export default function AdminPage() {
                   value={newProductName}
                   onChange={(e) => setNewProductName(e.target.value)}
                   className={`w-full h-9 bg-gray-50 border rounded-lg px-3 text-xs text-gray-900 focus:outline-none transition-colors ${duplicateCandidate?.matchType === 'exact'
-                      ? 'border-rose-400 bg-rose-50/40 text-rose-950 focus:border-rose-500'
-                      : duplicateCandidate?.matchType === 'similar'
-                        ? 'border-amber-400 bg-amber-50/40 focus:border-amber-500'
-                        : 'border-gray-200 focus:border-[#1A56DB]'
+                    ? 'border-rose-400 bg-rose-50/40 text-rose-950 focus:border-rose-500'
+                    : duplicateCandidate?.matchType === 'similar'
+                      ? 'border-amber-400 bg-amber-50/40 focus:border-amber-500'
+                      : 'border-gray-200 focus:border-[#1A56DB]'
                     }`}
                   required
                 />
@@ -11575,8 +11686,8 @@ export default function AdminPage() {
                 {duplicateCandidate && (
                   <div
                     className={`mt-2.5 p-3 rounded-xl border animate-in fade-in duration-200 ${duplicateCandidate.matchType === 'exact'
-                        ? 'bg-rose-50/90 border-rose-300 text-rose-900'
-                        : 'bg-amber-50/90 border-amber-300 text-amber-900'
+                      ? 'bg-rose-50/90 border-rose-300 text-rose-900'
+                      : 'bg-amber-50/90 border-amber-300 text-amber-900'
                       }`}
                   >
                     <div className="flex items-start gap-2.5">
@@ -11593,8 +11704,8 @@ export default function AdminPage() {
                           </span>
                           <span
                             className={`text-[9.5px] px-1.5 py-0.2 rounded font-black ${duplicateCandidate.matchType === 'exact'
-                                ? 'bg-rose-200 text-rose-900'
-                                : 'bg-amber-200 text-amber-900'
+                              ? 'bg-rose-200 text-rose-900'
+                              : 'bg-amber-200 text-amber-900'
                               }`}
                           >
                             {duplicateCandidate.reason}
@@ -11701,8 +11812,8 @@ export default function AdminPage() {
                           type="button"
                           onClick={() => setNewProductSubcategory(sub)}
                           className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all cursor-pointer ${newProductSubcategory === sub
-                              ? 'bg-[#1A56DB] text-white shadow-xs'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            ? 'bg-[#1A56DB] text-white shadow-xs'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                             }`}
                         >
                           {sub}
@@ -11789,8 +11900,8 @@ export default function AdminPage() {
                       type="button"
                       onClick={() => setNewProductGstRate(rate)}
                       className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${newProductGstRate === rate
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-100'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-100'
                         }`}
                     >
                       {rate}% {rate === 18 ? '(Standard)' : rate === 0 ? '(Exempt)' : ''}
@@ -11958,8 +12069,8 @@ export default function AdminPage() {
                   type="submit"
                   disabled={isSavingProduct}
                   className={`px-5 py-2 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all ${isSavingProduct
-                      ? 'bg-blue-400 text-white cursor-wait'
-                      : 'bg-[#1A56DB] hover:bg-[#1E40AF] text-white cursor-pointer active:scale-95'
+                    ? 'bg-blue-400 text-white cursor-wait'
+                    : 'bg-[#1A56DB] hover:bg-[#1E40AF] text-white cursor-pointer active:scale-95'
                     }`}
                   title="Save Product"
                 >
@@ -12106,8 +12217,8 @@ export default function AdminPage() {
                           type="button"
                           onClick={() => setEditSubcategory(sub)}
                           className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all cursor-pointer ${editSubcategory === sub
-                              ? 'bg-[#1A56DB] text-white shadow-xs'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            ? 'bg-[#1A56DB] text-white shadow-xs'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                             }`}
                         >
                           {sub}
@@ -12190,8 +12301,8 @@ export default function AdminPage() {
                       type="button"
                       onClick={() => setEditGstRate(rate)}
                       className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${editGstRate === rate
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-100'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-100'
                         }`}
                     >
                       {rate}% {rate === 18 ? '(Standard)' : rate === 0 ? '(Exempt)' : ''}
@@ -12236,8 +12347,8 @@ export default function AdminPage() {
                   type="button"
                   onClick={() => setEditInStock(!editInStock)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${editInStock
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                      : 'bg-rose-100 text-rose-800 border border-rose-300'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-rose-100 text-rose-800 border border-rose-300'
                     }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${editInStock ? 'bg-emerald-600' : 'bg-rose-600'}`} />
@@ -12544,8 +12655,8 @@ export default function AdminPage() {
 
                   <div className="text-right">
                     <span className={`px-2.5 py-1 rounded-full text-[10.5px] font-extrabold flex items-center gap-1.5 ${previewProduct.inStock
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-rose-50 text-rose-700 border border-rose-200'
                       }`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${previewProduct.inStock ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                       <span>{previewProduct.inStock ? `${previewProduct.stockQuantity ?? 10} In Stock` : 'Out of Stock'}</span>
@@ -13063,8 +13174,8 @@ export default function AdminPage() {
                         <button
                           onClick={() => handleToggleProductForSection(product.id)}
                           className={`h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${isSelected
-                              ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100'
-                              : 'bg-[#1A56DB] text-white hover:bg-[#1E40AF]'
+                            ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100'
+                            : 'bg-[#1A56DB] text-white hover:bg-[#1E40AF]'
                             }`}
                         >
                           {isSelected ? (
@@ -13673,8 +13784,8 @@ export default function AdminPage() {
                       type="button"
                       onClick={() => setBrandLogoType(mode.id as any)}
                       className={`py-2 px-2 text-xs font-bold rounded-xl border text-center transition-all cursor-pointer ${brandLogoType === mode.id
-                          ? 'border-[#1A56DB] bg-blue-50 text-[#1A56DB] shadow-2xs'
-                          : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                        ? 'border-[#1A56DB] bg-blue-50 text-[#1A56DB] shadow-2xs'
+                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                         }`}
                     >
                       {mode.label}
@@ -13700,8 +13811,8 @@ export default function AdminPage() {
                           if (!brandQuery) setBrandQuery(preset.defaultQuery);
                         }}
                         className={`p-2 rounded-lg border text-center flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${brandPresetKey === preset.key
-                            ? 'border-[#1A56DB] bg-white ring-2 ring-blue-200 shadow-2xs'
-                            : 'border-gray-200 bg-white hover:border-gray-300'
+                          ? 'border-[#1A56DB] bg-white ring-2 ring-blue-200 shadow-2xs'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
                           }`}
                       >
                         <div className="h-6 flex items-center justify-center scale-90">
@@ -13853,8 +13964,8 @@ export default function AdminPage() {
                   type="button"
                   onClick={() => setBrandIsVisible(!brandIsVisible)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${brandIsVisible
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                      : 'bg-rose-100 text-rose-800 border border-rose-300'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-rose-100 text-rose-800 border border-rose-300'
                     }`}
                 >
                   {brandIsVisible ? <Eye className="w-3.5 h-3.5 text-emerald-600" /> : <EyeOff className="w-3.5 h-3.5 text-rose-600" />}
@@ -14062,8 +14173,8 @@ export default function AdminPage() {
                           if (!catStartingPrice || catStartingPrice === 'Starting ₹499') setCatStartingPrice(preset.price);
                         }}
                         className={`p-1.5 rounded-lg border text-left flex items-center gap-1.5 transition-all cursor-pointer ${catImage === preset.url
-                            ? 'bg-blue-50 border-blue-500 shadow-2xs'
-                            : 'bg-white border-gray-200 hover:border-blue-300'
+                          ? 'bg-blue-50 border-blue-500 shadow-2xs'
+                          : 'bg-white border-gray-200 hover:border-blue-300'
                           }`}
                       >
                         <img src={preset.url} alt={preset.name} className="w-5 h-5 object-contain flex-shrink-0" />
@@ -14084,8 +14195,8 @@ export default function AdminPage() {
                   type="button"
                   onClick={() => setCatStatus(catStatus === 'active' ? 'inactive' : 'active')}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${catStatus === 'active'
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                      : 'bg-rose-100 text-rose-800 border border-rose-300'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-rose-100 text-rose-800 border border-rose-300'
                     }`}
                 >
                   {catStatus === 'active' ? <Eye className="w-3.5 h-3.5 text-emerald-600" /> : <EyeOff className="w-3.5 h-3.5 text-rose-600" />}
@@ -14234,6 +14345,15 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* BATCH INVOICES & ALL CUSTOMER BILLS VIEWER / DOWNLOADER MODAL */}
+      <BatchInvoiceModal
+        isOpen={isBatchInvoiceModalOpen}
+        onClose={() => setIsBatchInvoiceModalOpen(false)}
+        orders={orders}
+        invoices={invoices}
+        invoiceSettings={invoiceSettings}
+      />
 
     </div>
   );

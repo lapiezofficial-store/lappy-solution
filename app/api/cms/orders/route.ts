@@ -285,17 +285,38 @@ export async function POST(request: Request) {
       }
     }
 
-    // Recalculate trusted gross subtotal from database product prices
-    const items = products.map((product) => ({
-      id: product.id,
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      quantity: quantities.get(product.id) ?? 0,
-      image: product.image,
-      category: product.category,
-      sku: product.sku,
-    }));
+    // Recalculate trusted gross subtotal from database product prices and allocate bulk serial numbers
+    const serialAllocations = new Map<string, { assigned: string[]; remaining: string[] }>();
+    for (const product of products) {
+      const requestedQty = quantities.get(product.id) ?? 0;
+      const rawSerials = (product.serialNumber || '')
+        .split(/[\n,;]+/)
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean);
+      const assigned = rawSerials.slice(0, requestedQty);
+      const remaining = rawSerials.slice(requestedQty);
+      serialAllocations.set(product.id, { assigned, remaining });
+    }
+
+    const items = products.map((product) => {
+      const qty = quantities.get(product.id) ?? 0;
+      const allocation = serialAllocations.get(product.id);
+      const assigned = allocation?.assigned || [];
+      const assignedStr = assigned.join(', ');
+
+      return {
+        id: product.id,
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: qty,
+        image: product.image,
+        category: product.category,
+        sku: product.sku,
+        serialNumber: assignedStr || undefined,
+        serialNumbers: assigned.length > 0 ? assigned : undefined,
+      };
+    });
     const subtotalAmount = items.reduce((total, item) => total + item.price * item.quantity, 0);
 
     // Validate coupon if provided
@@ -397,15 +418,20 @@ export async function POST(request: Request) {
       : (isPickup ? 'Store Pickup (Cash at Counter)' : (isCod ? 'Cash on Delivery (COD)' : 'NetBanking'));
 
     const order = await prisma.$transaction(async (tx) => {
-      // Atomic inventory deduction with concurrency check
+      // Atomic inventory deduction with concurrency check and serial pool reduction
       for (const product of products) {
         const quantity = quantities.get(product.id) ?? 0;
         const willBeOutOfStock = product.stockQuantity === quantity;
+        const allocation = serialAllocations.get(product.id);
+        const shouldUpdateSerials = (product.serialNumber || '').trim().length > 0;
+        const remainingSerialsStr = allocation ? allocation.remaining.join(', ') : '';
+
         const updated = await tx.product.updateMany({
           where: { id: product.id, stockQuantity: { gte: quantity }, inStock: true },
           data: { 
             stockQuantity: { decrement: quantity },
             ...(willBeOutOfStock ? { inStock: false } : {}),
+            ...(shouldUpdateSerials ? { serialNumber: remainingSerialsStr } : {}),
           },
         });
         if (updated.count !== 1) {
@@ -479,13 +505,21 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
     }
 
-    const { orderId, paymentStatus, orderStatus } = body;
+    const { orderId, paymentStatus, orderStatus, items: newItems, itemsJson: newItemsJson } = body;
     const paymentStatuses = new Set(['Pending Payment', 'Verification Pending', 'Paid', 'Rejected']);
     const orderStatuses = new Set(['Confirmed', 'Packed', 'Shipped', 'Delivered', 'Cancelled']);
 
-    if (typeof orderId !== 'string' || (!paymentStatuses.has(paymentStatus) && !orderStatuses.has(orderStatus))) {
+    const hasStatusUpdate = paymentStatuses.has(paymentStatus) || orderStatuses.has(orderStatus);
+    const hasItemsUpdate = typeof newItemsJson === 'string' || Array.isArray(newItems);
+    const hasStaffUpdate = typeof body.pickupHandedBy === 'string' || typeof body.staffName === 'string' || typeof body.approvedBy === 'string';
+
+    if (typeof orderId !== 'string' || (!hasStatusUpdate && !hasItemsUpdate && !hasStaffUpdate)) {
       return NextResponse.json({ error: 'Invalid order update parameters.' }, { status: 400 });
     }
+
+    const updatedItemsJson = typeof newItemsJson === 'string'
+      ? newItemsJson
+      : (Array.isArray(newItems) ? JSON.stringify(newItems) : undefined);
 
     const updatedOrder = await prisma.$transaction(async (tx) => {
       const currentOrder = await tx.order.findUnique({
@@ -516,12 +550,26 @@ export async function PUT(request: Request) {
         for (const item of items) {
           const prodId = item.productId || item.id;
           const qty = Number(item.quantity) || 1;
+          const itemSn = (item as any).serialNumber;
           if (typeof prodId === 'string' && qty > 0) {
+            const prod = await tx.product.findUnique({
+              where: { id: prodId },
+              select: { serialNumber: true },
+            });
+            let restoredSn = prod?.serialNumber || '';
+            if (itemSn && typeof itemSn === 'string' && itemSn.trim()) {
+              const currentList = restoredSn.split(/[\n,;]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+              const toAdd = itemSn.split(/[\n,;]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+              const combined = Array.from(new Set([...currentList, ...toAdd]));
+              restoredSn = combined.join(', ');
+            }
+
             await tx.product.updateMany({
               where: { id: prodId },
               data: {
                 stockQuantity: { increment: qty },
                 inStock: true,
+                ...(itemSn ? { serialNumber: restoredSn } : {}),
               },
             });
           }
@@ -580,6 +628,7 @@ export async function PUT(request: Request) {
           ...(paymentStatuses.has(paymentStatus) ? { paymentStatus } : {}),
           ...(orderStatuses.has(orderStatus) ? { orderStatus } : {}),
           ...(staffName || approverName ? { address: updatedAddress } : {}),
+          ...(updatedItemsJson ? { itemsJson: updatedItemsJson } : {}),
           inventoryStatus: newInventoryStatus,
         },
       });

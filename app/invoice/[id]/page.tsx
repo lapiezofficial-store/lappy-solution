@@ -693,11 +693,18 @@ export default function InvoicePage() {
                       <div className="font-bold text-gray-900 leading-snug">
                         {item.productName}
                       </div>
-                      {item.sku && (
-                        <div className="text-[10px] text-gray-400 font-mono">
-                          SKU: {item.sku}
-                        </div>
-                      )}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                        {item.sku && (
+                          <span className="text-[10px] text-gray-400 font-mono">
+                            SKU: {item.sku}
+                          </span>
+                        )}
+                        {item.serialNumber && (
+                          <span className="text-[10px] text-[#1A56DB] print:text-black font-mono font-bold bg-blue-50 print:bg-transparent px-1.5 py-0.2 rounded print:px-0">
+                            S/N: {item.serialNumber}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-2 px-2 text-center font-mono text-[#1A56DB] print:text-black font-semibold">
                       {item.hsn}
