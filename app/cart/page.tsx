@@ -9,7 +9,6 @@ import {
   MapPin, ChevronRight, SlidersHorizontal
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
-import { PRODUCTS } from '../../data/products';
 
 export default function CartPage() {
   const router = useRouter();

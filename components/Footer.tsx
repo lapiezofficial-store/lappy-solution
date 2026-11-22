@@ -316,7 +316,7 @@ export const Footer: React.FC = () => {
                 Shop
               </h4>
               <ul className="space-y-2.5 text-[13px] text-slate-600">
-                <li><Link href="/shop?cat=Computer%20%26%20Laptops" className="hover:text-[#1A56DB] hover:translate-x-0.5 transition-all block">Laptops</Link></li>
+                <li><Link href="/shop?cat=Toner%20%26%20ink" className="hover:text-[#1A56DB] hover:translate-x-0.5 transition-all block">Toners & Inks</Link></li>
                 <li><Link href="/shop?cat=Printers" className="hover:text-[#1A56DB] hover:translate-x-0.5 transition-all block">Printers</Link></li>
                 <li><Link href="/shop?cat=CCTV%20%26%20Security" className="hover:text-[#1A56DB] hover:translate-x-0.5 transition-all block">CCTV</Link></li>
                 <li><Link href="/shop?cat=Storage%20%26%20Memory" className="hover:text-[#1A56DB] hover:translate-x-0.5 transition-all block">Storage</Link></li>

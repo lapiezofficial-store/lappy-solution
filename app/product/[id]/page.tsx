@@ -8,7 +8,7 @@ import {
   ShieldCheck, Truck, Store, ArrowLeft, ArrowRight, 
   Check, RefreshCw, Phone, Share2, Award, Zap
 } from 'lucide-react';
-import { PRODUCTS, Product } from '../../../data/products';
+import { Product } from '../../../data/products';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../../../data/storeData';
 import { useStore } from '../../../context/StoreContext';
 import { ProductCard } from '../../../components/ProductCard';
@@ -31,20 +31,11 @@ export default function ProductDetailPage() {
   const [isFetchingDirect, setIsFetchingDirect] = useState(false);
   const attemptedFetchRef = React.useRef<string | null>(null);
 
-  // 1. Static catalog item reference
-  const staticItem = useMemo(() => {
-    if (!productId) return undefined;
-    return PRODUCTS.find(p => p.id === productId || String(p.numericId) === productId);
-  }, [productId]);
-
-  const targetSku = staticItem?.sku?.toLowerCase();
-  const targetName = staticItem?.name?.trim().toLowerCase();
-
-  // 2. Synchronous local storage lookup (ensures instant 0ms product recovery on browser refresh)
+  // 1. Synchronous local storage lookup (ensures instant 0ms product recovery on browser refresh)
   const [cachedProduct, setCachedProduct] = useState<Product | null>(() => {
     if (typeof window === 'undefined' || !productId) return null;
     try {
-      const saved = localStorage.getItem('ls_products');
+      const saved = localStorage.getItem('ls_products_v3') || localStorage.getItem('ls_products');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -54,8 +45,7 @@ export default function ProductDetailPage() {
             p.dbId === productId ||
             p.slug?.toLowerCase() === target || 
             p.sku?.toLowerCase() === target || 
-            (targetSku && p.sku?.toLowerCase() === targetSku) ||
-            (targetName && p.name?.trim().toLowerCase() === targetName) ||
+            (p.name && p.name.trim().toLowerCase() === target) ||
             String(p.numericId) === productId
           ) || null;
         }
@@ -64,12 +54,11 @@ export default function ProductDetailPage() {
     return null;
   });
 
-  // Track whether initial checks (static, cache, or direct DB query) have resolved
+  // Track whether initial checks have resolved
   const [hasCompletedCheck, setHasCompletedCheck] = useState<boolean>(() => {
     if (typeof window !== 'undefined' && productId) {
-      if (PRODUCTS.some(p => p.id === productId || String(p.numericId) === productId)) return true;
       try {
-        const saved = localStorage.getItem('ls_products');
+        const saved = localStorage.getItem('ls_products_v3') || localStorage.getItem('ls_products');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -88,7 +77,7 @@ export default function ProductDetailPage() {
     return false;
   });
 
-  // 3. Dynamic product matching across useStore products (DB + admin added), cached items, direct DB query, and static catalog
+  // 2. Dynamic product matching across useStore products (DB + admin added), cached items, and direct DB query
   const product: Product | undefined = useMemo(() => {
     if (!productId) return undefined;
     const searchTarget = productId.toLowerCase();
@@ -99,8 +88,7 @@ export default function ProductDetailPage() {
            (p as any).dbId === productId ||
            p.slug?.toLowerCase() === searchTarget || 
            p.sku?.toLowerCase() === searchTarget || 
-           (targetSku && p.sku?.toLowerCase() === targetSku) ||
-           (targetName && p.name?.trim().toLowerCase() === targetName) ||
+           (p.name && p.name.trim().toLowerCase() === searchTarget) ||
            String(p.numericId) === productId
     );
     if (foundInStore) return foundInStore;
@@ -108,12 +96,9 @@ export default function ProductDetailPage() {
     // Check synchronous localStorage cache (prevents 1s refresh flicker)
     if (cachedProduct) return cachedProduct;
 
-    // Check static catalog fallback
-    if (staticItem) return staticItem;
-
     // Check direct database queried product
     return dbProduct || undefined;
-  }, [productId, products, cachedProduct, staticItem, dbProduct, targetSku, targetName]);
+  }, [productId, products, cachedProduct, dbProduct]);
 
   // 4. Direct database query fallback if product is not yet in memory
   React.useEffect(() => {
@@ -264,7 +249,7 @@ export default function ProductDetailPage() {
   const savings = mrpNum > priceNum ? mrpNum - priceNum : 0;
 
   // Related products from same category or brand
-  const allCatalog = products.length > 0 ? products : PRODUCTS;
+  const allCatalog = products;
   const relatedProducts = allCatalog.filter(
     p => (p.category === product.category || p.brand === product.brand) && p.id !== product.id
   ).slice(0, 4);

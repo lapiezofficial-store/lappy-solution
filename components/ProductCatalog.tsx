@@ -138,8 +138,12 @@ function normalizeToCanonicalCategory(query: string, availableCategories: string
   if (contains) return contains;
 
   // 3. Known taxonomy aliases
-  if (['laptops', 'laptop', 'notebooks', 'computer & laptops', 'computers & laptops'].includes(q)) {
-    const found = availableCategories.find(c => c.toLowerCase().includes('laptop') || c.toLowerCase().includes('computer'));
+  if (['laptops', 'laptop', 'notebooks'].includes(q)) {
+    const found = availableCategories.find(c => c.toLowerCase().includes('laptop') && !c.toLowerCase().includes('part') && !c.toLowerCase().includes('spare'));
+    if (found) return found;
+  }
+  if (['computer & laptops', 'computers & laptops'].includes(q)) {
+    const found = availableCategories.find(c => c.toLowerCase() === 'computer & laptops');
     if (found) return found;
   }
   if (['computers', 'computer', 'desktops', 'desktop', 'pc', 'custom-pcs'].includes(q)) {
@@ -266,23 +270,22 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     updateUrlFilters(selectedCategory, selectedSubcategory, brandName);
   };
 
-  // 1. Initial URL param synchronization on mount only (does not reset when products sync in background)
+  // 1. URL param and prop synchronization (always keeps category and subcategory in sync with navigation)
   useEffect(() => {
-    if (!initialMountDoneRef.current) {
-      initialMountDoneRef.current = true;
-      if (initialCategory && initialCategory !== 'All' && initialCategory !== 'All Products') {
+    if (initialCategory) {
+      if (initialCategory !== 'All' && initialCategory !== 'All Products') {
         const allCatNames = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
         const canonical = normalizeToCanonicalCategory(initialCategory, allCatNames);
         setSelectedCategory(canonical || initialCategory);
-      } else if (initialCategory) {
+      } else {
         setSelectedCategory(initialCategory);
       }
-
-      if (initialSubcategory && initialSubcategory !== 'All') {
-        setSelectedSubcategory(initialSubcategory);
-      }
     }
-  }, [initialCategory, initialSubcategory, products]);
+  }, [initialCategory, products]);
+
+  useEffect(() => {
+    setSelectedSubcategory(initialSubcategory || 'All');
+  }, [initialSubcategory]);
 
   // 2. Browser Back / Forward button support
   useEffect(() => {
@@ -384,7 +387,14 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       }
     });
 
-    return list;
+    const nonAll = list.slice(1);
+    nonAll.sort((a, b) => {
+      if (a.count > 0 && b.count === 0) return -1;
+      if (a.count === 0 && b.count > 0) return 1;
+      return 0;
+    });
+
+    return [list[0], ...nonAll];
   }, [cmsCategories, products]);
 
   // Subcategories available under currently selected category (Merged CMS + Taxonomy + Inventory counts)
@@ -444,7 +454,11 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       subItem.count = catProducts.filter(p => isProductInSubcategory(p, subItem.name)).length;
     });
 
-    return Array.from(subMap.values());
+    return Array.from(subMap.values()).sort((a, b) => {
+      if (a.count > 0 && b.count === 0) return -1;
+      if (a.count === 0 && b.count > 0) return 1;
+      return 0;
+    });
   }, [selectedCategory, cmsCategories, products]);
 
   // Derive unique brands with product count (Connected with Admin CMS Brands & Products)
@@ -804,6 +818,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                   return (
                     <div key={cat.name} className="space-y-1">
                       <button
+                        type="button"
                         onClick={() => handleCategorySelect(cat.name)}
                         className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex justify-between items-center transition-all cursor-pointer ${
                           isSelected
@@ -815,8 +830,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                           <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-[#1A56DB]' : 'text-gray-400'}`} />
                           <span className="truncate">{cat.name}</span>
                         </div>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                          isSelected ? 'bg-[#1A56DB] text-white font-bold' : 'text-gray-500 bg-gray-100 font-semibold'
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 font-bold ${
+                          isSelected ? 'bg-[#1A56DB] text-white' : 'text-gray-500 bg-gray-100'
                         }`}>
                           {cat.count}
                         </span>
@@ -826,6 +841,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                       {isSelected && cat.name !== 'All' && availableSubcategories.length > 0 && (
                         <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-blue-200 ml-2 animate-in slide-in-from-top-1">
                           <button
+                            type="button"
                             onClick={() => handleSubcategorySelect('All')}
                             className={`w-full text-left py-1 px-2 rounded-lg text-[11px] flex items-center justify-between transition-colors cursor-pointer ${
                               selectedSubcategory === 'All'
@@ -842,6 +858,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                             return (
                               <button
                                 key={sub.name}
+                                type="button"
                                 onClick={() => handleSubcategorySelect(isSubActive ? 'All' : sub.name)}
                                 className={`w-full text-left py-1.5 px-2 rounded-lg text-[11px] flex items-center justify-between transition-colors cursor-pointer ${
                                   isSubActive
@@ -850,8 +867,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                                 }`}
                               >
                                 <span className="truncate">↳ {sub.name}</span>
-                                <span className={`text-[9.5px] px-1.5 py-0.2 rounded-full font-semibold ${
-                                  isSubActive ? 'bg-[#1A56DB] text-white' : 'text-gray-400 bg-gray-100'
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold min-w-[20px] text-center ${
+                                  isSubActive ? 'bg-[#1A56DB] text-white' : 'text-gray-500 bg-gray-100'
                                 }`}>
                                   {sub.count}
                                 </span>

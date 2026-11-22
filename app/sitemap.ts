@@ -1,6 +1,5 @@
 import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/prisma';
-import { PRODUCTS } from '@/data/products';
 import { CATEGORIES } from '@/data/categories';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -47,15 +46,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const dbProds = await prisma.product.findMany({
       where: { status: 'active' },
       select: { slug: true },
-      take: 200,
+      take: 500,
     });
     if (dbProds.length > 0) {
-      productSlugs = dbProds.map((p) => p.slug);
-    } else {
-      productSlugs = PRODUCTS.map((p) => p.slug || p.id);
+      productSlugs = dbProds.map((p) => p.slug).filter(Boolean);
     }
   } catch {
-    productSlugs = PRODUCTS.map((p) => p.slug || p.id);
+    productSlugs = [];
   }
 
   const productRoutes: MetadataRoute.Sitemap = productSlugs.map((slug) => ({

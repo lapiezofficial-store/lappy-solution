@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { PRODUCTS, Product } from '../data/products';
+import { Product } from '../data/products';
 import { STORE_INFO, INITIAL_ORDERS, INITIAL_LEADS } from '../data/storeData';
 import { CartItem } from '../components/CartDrawer';
 import {
@@ -667,8 +667,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
   const [trashProducts, setTrashProducts] = useState<Product[]>([]);
   const [isLoadingTrash, setIsLoadingTrash] = useState<boolean>(false);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('ls_cart');
+        if (saved) return JSON.parse(saved);
+      } catch (e) { }
+    }
+    return [];
+  });
+  const [wishlistIds, setWishlistIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('ls_wishlist');
+        if (saved) return JSON.parse(saved);
+      } catch (e) { }
+    }
+    return [];
+  });
   const [orders, setOrders] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(defaultSiteSettings);
@@ -1181,28 +1197,43 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
           // 3. Banners
           if (initData.banners && Array.isArray(initData.banners) && initData.banners.length > 0) {
-            setBanners(initData.banners);
-            try {
-              localStorage.setItem('ls_banners', JSON.stringify(initData.banners));
-            } catch (e) { }
+            setBanners((prev) => {
+              if (prev && prev.length === initData.banners.length && prev.every((b: any, i: number) => b.id === initData.banners[i]?.id && b.imageUrl === initData.banners[i]?.imageUrl)) {
+                return prev;
+              }
+              try {
+                localStorage.setItem('ls_banners', JSON.stringify(initData.banners));
+              } catch (e) { }
+              return initData.banners;
+            });
           } else {
             setBanners((prev) => (prev && prev.length > 0 ? prev : INITIAL_BANNERS));
           }
 
           // 4. Homepage Sections
           if (initData.homepageSections && Array.isArray(initData.homepageSections) && initData.homepageSections.length > 0) {
-            setHomepageSections(initData.homepageSections);
-            try {
-              localStorage.setItem('ls_homepage_sections', JSON.stringify(initData.homepageSections));
-            } catch (e) { }
+            setHomepageSections((prev) => {
+              if (prev && prev.length === initData.homepageSections.length && prev.every((s: any, i: number) => s.id === initData.homepageSections[i]?.id && s.title === initData.homepageSections[i]?.title)) {
+                return prev;
+              }
+              try {
+                localStorage.setItem('ls_homepage_sections', JSON.stringify(initData.homepageSections));
+              } catch (e) { }
+              return initData.homepageSections;
+            });
           }
 
           // 5. Categories
           if (initData.categories && Array.isArray(initData.categories) && initData.categories.length > 0) {
-            setCategories(initData.categories);
-            try {
-              localStorage.setItem('ls_categories', JSON.stringify(initData.categories));
-            } catch (e) { }
+            setCategories((prev) => {
+              if (prev && prev.length === initData.categories.length && prev.every((c: any, i: number) => c.id === initData.categories[i]?.id && c.name === initData.categories[i]?.name)) {
+                return prev;
+              }
+              try {
+                localStorage.setItem('ls_categories', JSON.stringify(initData.categories));
+              } catch (e) { }
+              return initData.categories;
+            });
           }
 
           // 6. Products: Database is the authoritative source of truth
@@ -1342,29 +1373,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Initial Load from localStorage & trigger DB sync
   useEffect(() => {
     try {
-
-      const savedBanners = localStorage.getItem('ls_banners');
-      if (savedBanners) {
-        try {
-          const parsed = JSON.parse(savedBanners);
-          if (Array.isArray(parsed) && parsed.length > 0) setBanners(parsed);
-        } catch (e) { }
-      }
-
-      const savedSections = localStorage.getItem('ls_homepage_sections');
-      if (savedSections) {
-        try {
-          const parsed = JSON.parse(savedSections);
-          if (Array.isArray(parsed) && parsed.length > 0) setHomepageSections(parsed);
-        } catch (e) { }
-      }
-
-      const savedCart = localStorage.getItem('ls_cart');
-      if (savedCart) setCart(JSON.parse(savedCart));
-
-      const savedWishlist = localStorage.getItem('ls_wishlist');
-      if (savedWishlist) setWishlistIds(JSON.parse(savedWishlist));
-
       const savedBrands = localStorage.getItem('ls_brands');
       if (savedBrands) {
         try {
@@ -1390,22 +1398,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const parsedConfig = JSON.parse(savedBrandsConfig);
           if (parsedConfig && typeof parsedConfig.autoScroll === 'boolean') {
             setBrandsConfig(parsedConfig);
-          }
-        } catch (e) { }
-      }
-
-      const savedCats = localStorage.getItem('ls_categories');
-      if (savedCats) {
-        try {
-          const parsed = JSON.parse(savedCats);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const isStale = parsed.some((c: any) => c.id === 'cat-accessories' || c.id === 'cat-networking' || c.id === 'cat-computers') || parsed.length > 15;
-            if (!isStale) {
-              setCategories(parsed);
-            } else {
-              setCategories(DEFAULT_CMS_CATEGORIES);
-              try { localStorage.setItem('ls_categories', JSON.stringify(DEFAULT_CMS_CATEGORIES)); } catch (e) { }
-            }
           }
         } catch (e) { }
       }

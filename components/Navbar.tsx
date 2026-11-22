@@ -27,21 +27,21 @@ const FALLBACK_MEGA_MENU_COLUMNS = [
   {
     groups: [
       {
-        title: 'Computer & Laptops',
-        href: '/shop?cat=Computer%20%26%20Laptops',
+        title: 'Computer Peripherals',
+        href: '/shop?cat=Computer%20Peripherals',
         items: [
-          { label: 'Computer & Laptop', href: '/shop?search=Laptop' },
-          { label: 'Refurbished Laptops', href: '/shop?cat=Laptops&condition=refurbished' },
-          { label: 'Custom Desktop PC Rigs', href: '/shop?search=Desktop' },
+          { label: 'Mouse & Keyboard', href: '/shop?cat=Computer%20Peripherals&sub=Mouse%20%26%20Keyboard' },
+          { label: 'Monitors & Displays', href: '/shop?cat=Computer%20Peripherals&sub=Monitors%20%26%20Displays' },
+          { label: 'Cable & Connector (HDMI/VGA)', href: '/shop?cat=Computer%20Peripherals&sub=Cable%20%26%20Connector%20(HDMI%2FVGA%2FPower)' },
         ],
       },
       {
-        title: 'Printer & Spares',
-        href: '/shop?cat=Printers%20%26%20Parts',
+        title: 'Printers & All-In-Ones',
+        href: '/shop?cat=Printers',
         items: [
-          { label: 'Printers (InkTank & Laser)', href: '/shop?search=Printer' },
-          { label: 'Toner & Ink Bottles', href: '/shop?search=Toner' },
-          { label: 'Printer Spare Parts', href: '/shop?search=Printer%20Parts' },
+          { label: 'HP Laser & Smart Tank', href: '/shop?cat=Printers' },
+          { label: 'Canon & Brother Printers', href: '/shop?cat=Printers' },
+          { label: 'Multifunction Printers', href: '/shop?cat=Printers' },
         ],
       },
     ],
@@ -49,33 +49,20 @@ const FALLBACK_MEGA_MENU_COLUMNS = [
   {
     groups: [
       {
-        title: 'Computer Peripherals',
-        href: '/shop?cat=Computer%20Peripherals',
+        title: 'Toner & Inks',
+        href: '/shop?cat=Toner%20%26%20ink',
         items: [
-          { label: 'Mouse & Keyboard', href: '/shop?search=Keyboard' },
-          { label: 'Speakers & Soundbars', href: '/shop?search=Speaker' },
-          { label: 'Cable & Connector (HDMI/VGA)', href: '/shop?search=Cable' },
+          { label: 'Toner Cartridges', href: '/shop?cat=Toner%20%26%20ink' },
+          { label: 'Ink Bottles & Refills', href: '/shop?cat=Toner%20%26%20ink' },
+          { label: 'Laser Cartridge 12A / 88A', href: '/shop?cat=Toner%20%26%20ink' },
         ],
       },
       {
         title: 'Storage & Memory',
         href: '/shop?cat=Storage%20%26%20Memory',
         items: [
-          { label: 'NVMe SSD & Hard Disk', href: '/shop?search=SSD' },
-          { label: 'Pendrive & SD Card', href: '/shop?search=Pendrive' },
-        ],
-      },
-    ],
-  },
-  {
-    groups: [
-      {
-        title: 'Laptop Parts & Spares',
-        href: '/shop?cat=Laptop%20Parts%20%26%20Spares',
-        items: [
-          { label: 'Laptop Battery', href: '/shop?search=Battery' },
-          { label: 'Laptop Adapter / Charger', href: '/shop?search=Adapter' },
-          { label: 'Laptop Body & Hinges', href: '/shop?search=Body' },
+          { label: 'NVMe & SATA SSD', href: '/shop?cat=Storage%20%26%20Memory' },
+          { label: 'Pen Drive & USB 3.2', href: '/shop?cat=Storage%20%26%20Memory' },
         ],
       },
     ],
@@ -86,16 +73,9 @@ const FALLBACK_MEGA_MENU_COLUMNS = [
         title: 'CCTV & Security',
         href: '/shop?cat=CCTV%20%26%20Security',
         items: [
-          { label: 'CCTV Cameras (Dome/Bullet)', href: '/shop?search=CCTV' },
-          { label: 'Biometric Attendance & Scanners', href: '/shop?search=Biometric' },
-          { label: 'DVR/NVR & Cables', href: '/shop?search=DVR' },
-        ],
-      },
-      {
-        title: 'Antivirus & Software',
-        href: '/shop?cat=Antivirus%20%26%20Software',
-        items: [
-          { label: 'Quick Heal & Total Security', href: '/shop?search=Antivirus' },
+          { label: 'CP Plus IP Bullet & Dome Cameras', href: '/shop?cat=CCTV%20%26%20Security' },
+          { label: 'CAT6 Network Cables (305M)', href: '/shop?cat=CCTV%20%26%20Security' },
+          { label: 'BNC Wire & DC Connectors', href: '/shop?cat=CCTV%20%26%20Security' },
         ],
       },
     ],

@@ -73,7 +73,7 @@ export default function Home() {
     { name: 'Frontech Monitors', count: products.filter(p => p.name.toLowerCase().includes('monitor')).length, href: '/shop?search=Monitor' },
     { name: 'Printers & Inks', count: products.filter(p => (p.category || '').toLowerCase().includes('printer') || (p.category || '').toLowerCase().includes('ink') || (p.category || '').toLowerCase().includes('toner')).length, href: '/shop?cat=Printers' },
     { name: 'Desktop & Laptop RAM', count: products.filter(p => p.name.toLowerCase().includes('ram')).length, href: '/shop?search=RAM' },
-    { name: 'Laptops', count: products.filter(p => (p.category || '').toLowerCase().includes('laptop')).length, href: '/shop?cat=Computer%20%26%20Laptops' },
+    { name: 'Toner & Inks', count: products.filter(p => (p.category || '').toLowerCase().includes('toner') || (p.category || '').toLowerCase().includes('ink')).length, href: '/shop?cat=Toner%20%26%20ink' },
     { name: 'CCTV Security', count: products.filter(p => (p.category || '').toLowerCase().includes('cctv') || (p.category || '').toLowerCase().includes('security')).length, href: '/shop?cat=CCTV%20%26%20Security' },
   ], [products]);
 
@@ -231,7 +231,7 @@ export default function Home() {
               </h2>
 
               <Link
-                href="/shop?cat=Computers"
+                href="/shop?cat=Computer%20Peripherals"
                 className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs flex-shrink-0"
               >
                 <span>Explore All</span>
@@ -269,7 +269,7 @@ export default function Home() {
               </h2>
 
               <Link
-                href="/shop?cat=Laptops"
+                href="/shop?cat=Printers"
                 className="h-8.5 sm:h-9.5 px-4 rounded-lg bg-[#1A56DB] hover:bg-[#1E40AF] text-white text-[11.5px] sm:text-[12.5px] font-bold flex items-center gap-1.5 transition-colors w-fit shadow-xs flex-shrink-0"
               >
                 <span>View All</span>
