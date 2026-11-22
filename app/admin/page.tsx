@@ -2766,7 +2766,8 @@ export default function AdminPage() {
     const updated = [...products, ...newItems];
     updateProducts(updated);
     try {
-      localStorage.setItem('ls_products', JSON.stringify(updated));
+      localStorage.setItem('ls_products_v3', JSON.stringify(updated));
+      localStorage.removeItem('ls_products');
     } catch (e) { }
 
     showToast(`Successfully imported ${newItems.length} products! (${skippedDuplicates} duplicates filtered out)`);
@@ -2882,7 +2883,8 @@ export default function AdminPage() {
         const parsed = JSON.parse(content);
         if (parsed.products && Array.isArray(parsed.products)) {
           updateProducts(parsed.products);
-          localStorage.setItem('ls_products', JSON.stringify(parsed.products));
+          localStorage.setItem('ls_products_v3', JSON.stringify(parsed.products));
+          localStorage.removeItem('ls_products');
         }
         if (parsed.categories && Array.isArray(parsed.categories)) {
           localStorage.setItem('ls_categories', JSON.stringify(parsed.categories));
@@ -7035,9 +7037,18 @@ export default function AdminPage() {
                             {filteredInventory.length === 0 && (
                               <tr>
                                 <td colSpan={9} className="py-12 text-center text-gray-500 text-xs">
-                                  <Box className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                                  <div className="font-bold text-gray-800 text-sm">No products found</div>
-                                  <p className="text-gray-400 mt-1">Try changing category, search query, or status filters.</p>
+                                  {products.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center space-y-2 py-4">
+                                      <Loader2 className="w-8 h-8 text-[#1A56DB] animate-spin" />
+                                      <div className="font-bold text-gray-700 text-xs">Loading Live Showroom Inventory...</div>
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <Box className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                                      <div className="font-bold text-gray-800 text-sm">No products found</div>
+                                      <p className="text-gray-400 mt-1">Try changing category, search query, or status filters.</p>
+                                    </div>
+                                  )}
                                 </td>
                               </tr>
                             )}

@@ -636,23 +636,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   function safeSaveProductsToLocalStorage(productsList: Product[]) {
     if (typeof window === 'undefined') return;
     try {
-      // Safely cache up to 100 products to prevent localStorage 5MB QuotaExceededError and browser freezing when catalog scales to 10,000+ items
-      localStorage.setItem('ls_products', JSON.stringify(productsList.slice(0, 100)));
+      // Store complete, authoritative catalog cache without any truncation to prevent flickering
+      localStorage.setItem('ls_products_v3', JSON.stringify(productsList));
+      // Delete old legacy truncated cache key
+      localStorage.removeItem('ls_products');
     } catch (e) {
-      // Safely ignore QuotaExceededError
+      // Safely ignore QuotaExceededError if device disk is completely full
     }
   }
 
   const [products, setProducts] = useState<Product[]>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const hasReset = localStorage.getItem('ls_catalog_fresh_start_2026');
-        if (!hasReset) {
+        // Purge legacy truncated 100-item cache so it never causes a transient 100 -> 122 count jump
+        const oldLegacy = localStorage.getItem('ls_products');
+        if (oldLegacy) {
           localStorage.removeItem('ls_products');
-          localStorage.setItem('ls_catalog_fresh_start_2026', 'true');
-          return [];
         }
-        const saved = localStorage.getItem('ls_products');
+
+        const saved = localStorage.getItem('ls_products_v3');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -1243,7 +1245,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     item.id === nextList[i]?.id &&
                     item.price === nextList[i]?.price &&
                     item.inStock === nextList[i]?.inStock &&
-                    item.stockQuantity === nextList[i]?.stockQuantity
+                    item.stockQuantity === nextList[i]?.stockQuantity &&
+                    item.name === nextList[i]?.name &&
+                    item.serialNumber === nextList[i]?.serialNumber &&
+                    item.status === nextList[i]?.status
                   )
                 ) {
                   return prev;
@@ -1437,16 +1442,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setLeads([]);
       }
 
-      // If products state is empty for any reason, restore from localStorage or fallback
-      const savedProducts = localStorage.getItem('ls_products');
-      if (savedProducts) {
-        try {
-          const parsed = JSON.parse(savedProducts);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setProducts((prev) => (prev.length > 0 ? prev : parsed.filter((p: any) => !isDemoProduct(p)).map(normalizeProduct)));
-          }
-        } catch (e) { }
-      }
+
 
       const savedInvoices = localStorage.getItem('ls_invoices');
       if (savedInvoices) {
@@ -1546,8 +1542,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       syncWithDatabase({ forceFresh: true }).catch(() => { });
     };
 
+    let lastForegroundSyncTime = 0;
     const handleForegroundSync = () => {
-      if (document.visibilityState === 'visible') {
+      const now = Date.now();
+      if (document.visibilityState === 'visible' && now - lastForegroundSyncTime > 15000) {
+        lastForegroundSyncTime = now;
         syncWithDatabase({ forceFresh: true }).catch(() => { });
       }
     };
@@ -2487,7 +2486,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
         if (res.ok) {
           try {
-            const saved = localStorage.getItem('ls_products');
+            const saved = localStorage.getItem('ls_products_v3');
             if (saved) {
               const parsed = JSON.parse(saved);
               const filtered = parsed.filter((p: any) => p.id !== id && p.id !== targetId);
@@ -2622,7 +2621,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setProducts([]);
       setTrashProducts([]);
       try {
-        localStorage.setItem('ls_products', '[]');
+        localStorage.setItem('ls_products_v3', '[]');
+        localStorage.removeItem('ls_products');
       } catch (e) { }
 
       const res = await adminFetch('/api/cms/wipe-products', {

@@ -188,15 +188,15 @@ export async function GET(request: Request) {
       if (lastKnownGoodProducts && lastKnownGoodProducts.length > 0) {
         formattedProducts = lastKnownGoodProducts;
       } else {
-        formattedProducts = PRODUCTS.map((p) => formatProduct(p));
+        formattedProducts = [];
       }
     } else if (Array.isArray(dbProducts)) {
       if (dbProducts.length > 0) {
         formattedProducts = dbProducts.map((p) => formatProduct(p, richSkuMap.get(p.sku) || richIdMap.get(p.id)));
         lastKnownGoodProducts = formattedProducts;
       } else {
-        // If DB has 0 rows, use last known good or default catalog
-        formattedProducts = lastKnownGoodProducts || PRODUCTS.map((p) => formatProduct(p));
+        // If DB returns 0 rows during active session, retain last known good products
+        formattedProducts = lastKnownGoodProducts || [];
       }
     }
 
@@ -287,7 +287,7 @@ export async function GET(request: Request) {
         banners: INITIAL_BANNERS,
         homepageSections: [],
         categories: CATEGORIES,
-        products: lastKnownGoodProducts || PRODUCTS.map((p) => formatProduct(p)),
+        products: lastKnownGoodProducts || [],
         productsQueryFailed: true,
         customPages: [],
         blogPosts: [],
