@@ -20,6 +20,7 @@ export const TopBannerSlider: React.FC = () => {
   const { banners: cmsBanners } = useStore();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [slideAspectRatios, setSlideAspectRatios] = useState<Record<string, number>>({});
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
@@ -102,7 +103,24 @@ export const TopBannerSlider: React.FC = () => {
     touchEndX.current = null;
   };
 
+  const handleImageLoad = (id: string, e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth && img.naturalHeight) {
+      const ratio = img.naturalWidth / img.naturalHeight;
+      if (ratio > 1.2 && ratio < 4.5) {
+        setSlideAspectRatios((prev) => {
+          if (prev[id] === ratio) return prev;
+          return { ...prev, [id]: ratio };
+        });
+      }
+    }
+  };
+
   if (totalSlides === 0) return null;
+
+  const activeSlideItem = slides[currentSlide] || slides[0];
+  // Calculate natural aspect ratio: defaults to 3.0 (standard 1920x640 banner ratio)
+  const currentRatio = (activeSlideItem && slideAspectRatios[activeSlideItem.id]) || 3.0;
 
   return (
     <section 
@@ -114,8 +132,14 @@ export const TopBannerSlider: React.FC = () => {
       onTouchEnd={handleTouchEnd}
       aria-label="Promotional Banners Carousel"
     >
-      {/* Sleek, responsive Hero Slider Frame matching e-commerce standards for Web & Mobile */}
-      <div className="relative w-full max-w-[1240px] mx-auto aspect-[16/9] sm:aspect-[21/9] md:aspect-[24/9] max-h-[220px] sm:max-h-[300px] md:max-h-[360px] lg:max-h-[400px] overflow-hidden rounded-2xl md:rounded-[2rem] shadow-sm bg-[#071A33] border border-[#E5E7EB]">
+      {/* Sleek, auto-proportional Hero Slider Frame: adapts to banner dimensions so phone & web show full banner without cropping */}
+      <div 
+        className="relative w-full max-w-[1240px] mx-auto overflow-hidden rounded-2xl md:rounded-[2rem] shadow-sm bg-[#071A33] border border-[#E5E7EB] transition-all duration-300"
+        style={{
+          aspectRatio: `${currentRatio}`,
+          maxHeight: '440px',
+        }}
+      >
         
         {/* Smooth Crossfade Slide Deck: 100% active slide visible, zero half-cutoff glitches */}
         <div className="relative w-full h-full">
@@ -138,7 +162,8 @@ export const TopBannerSlider: React.FC = () => {
                     <img
                       src={slide.desktopImage}
                       alt={slide.title}
-                      className="w-full h-full object-cover object-center"
+                      onLoad={(e) => handleImageLoad(slide.id, e)}
+                      className="w-full h-full object-contain sm:object-cover object-center"
                       loading={index === 0 ? 'eager' : 'lazy'}
                       decoding="async"
                     />
@@ -176,17 +201,17 @@ export const TopBannerSlider: React.FC = () => {
 
         {/* Bottom Dots Indicator Bar */}
         {totalSlides > 1 && (
-          <div className="absolute bottom-3 left-0 right-0 z-20 flex items-center justify-center gap-1.5 pointer-events-none">
+          <div className="absolute bottom-1.5 sm:bottom-3 left-0 right-0 z-20 flex items-center justify-center gap-1.5 pointer-events-none">
             {slides.map((_, i) => (
               <button
                 type="button"
                 key={i}
                 onClick={() => setCurrentSlide(i)}
                 aria-label={`Go to slide ${i + 1}`}
-                className={`pointer-events-auto transition-all duration-300 rounded-full h-1.5 sm:h-2 cursor-pointer ${
+                className={`pointer-events-auto transition-all duration-300 rounded-full h-1 sm:h-2 cursor-pointer ${
                   currentSlide === i 
-                    ? 'w-7 sm:w-8 bg-[#FDE047] shadow-xs' 
-                    : 'w-1.5 sm:w-2 bg-white/50 hover:bg-white/80'
+                    ? 'w-5 sm:w-8 bg-[#FDE047] shadow-xs' 
+                    : 'w-1 sm:w-2 bg-white/50 hover:bg-white/80'
                 }`}
               />
             ))}

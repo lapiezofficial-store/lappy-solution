@@ -200,7 +200,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
       {/* ========================================================= */}
       <div className="lg:hidden bg-white border-b border-gray-200 shadow-2xs">
         {/* LINE 1: Top Micro Announcement Strip - Clean Delivery Location Pill */}
-        <div 
+        <div
           onClick={() => setIsLocationModalOpen(true)}
           className="bg-[#1A56DB] text-white text-[10.5px] py-1.5 px-3 flex items-center justify-between cursor-pointer hover:bg-[#1545B0] transition-colors"
         >
@@ -339,22 +339,20 @@ export const Navbar: React.FC<NavbarProps> = () => {
                                 setIsNotificationOpen(false);
                               }
                             }}
-                            className={`p-3 hover:bg-slate-50 transition-colors cursor-pointer flex items-start gap-2.5 ${
-                              isUnread ? 'bg-blue-50/30' : ''
-                            }`}
+                            className={`p-3 hover:bg-slate-50 transition-colors cursor-pointer flex items-start gap-2.5 ${isUnread ? 'bg-blue-50/30' : ''
+                              }`}
                           >
-                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border ${
-                              isPayment ? 'bg-amber-50 border-amber-200 text-amber-700' :
-                              isDeliver ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
-                              isShipped ? 'bg-indigo-50 border-indigo-200 text-indigo-700' :
-                              isPacked ? 'bg-blue-50 border-blue-200 text-blue-700' :
-                              'bg-slate-50 border-slate-200 text-slate-700'
-                            }`}>
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border ${isPayment ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                                isDeliver ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                                  isShipped ? 'bg-indigo-50 border-indigo-200 text-indigo-700' :
+                                    isPacked ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                      'bg-slate-50 border-slate-200 text-slate-700'
+                              }`}>
                               {isPayment ? <CreditCard className="w-3.5 h-3.5" /> :
-                               isDeliver ? <CheckCircle2 className="w-3.5 h-3.5" /> :
-                               isShipped ? <Truck className="w-3.5 h-3.5" /> :
-                               isPacked ? <Package className="w-3.5 h-3.5" /> :
-                               <Bell className="w-3.5 h-3.5" />}
+                                isDeliver ? <CheckCircle2 className="w-3.5 h-3.5" /> :
+                                  isShipped ? <Truck className="w-3.5 h-3.5" /> :
+                                    isPacked ? <Package className="w-3.5 h-3.5" /> :
+                                      <Bell className="w-3.5 h-3.5" />}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1">
@@ -856,22 +854,20 @@ export const Navbar: React.FC<NavbarProps> = () => {
                                   setIsNotificationOpen(false);
                                 }
                               }}
-                              className={`p-3.5 hover:bg-slate-50 transition-colors cursor-pointer flex items-start gap-3 ${
-                                isUnread ? 'bg-blue-50/30' : ''
-                              }`}
+                              className={`p-3.5 hover:bg-slate-50 transition-colors cursor-pointer flex items-start gap-3 ${isUnread ? 'bg-blue-50/30' : ''
+                                }`}
                             >
-                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 border ${
-                                isPayment ? 'bg-amber-50 border-amber-200 text-amber-700' :
-                                isDeliver ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
-                                isShipped ? 'bg-indigo-50 border-indigo-200 text-indigo-700' :
-                                isPacked ? 'bg-blue-50 border-blue-200 text-blue-700' :
-                                'bg-slate-50 border-slate-200 text-slate-700'
-                              }`}>
+                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 border ${isPayment ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                                  isDeliver ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                                    isShipped ? 'bg-indigo-50 border-indigo-200 text-indigo-700' :
+                                      isPacked ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                        'bg-slate-50 border-slate-200 text-slate-700'
+                                }`}>
                                 {isPayment ? <CreditCard className="w-4 h-4" /> :
-                                 isDeliver ? <CheckCircle2 className="w-4 h-4" /> :
-                                 isShipped ? <Truck className="w-4 h-4" /> :
-                                 isPacked ? <Package className="w-4 h-4" /> :
-                                 <Bell className="w-4 h-4" />}
+                                  isDeliver ? <CheckCircle2 className="w-4 h-4" /> :
+                                    isShipped ? <Truck className="w-4 h-4" /> :
+                                      isPacked ? <Package className="w-4 h-4" /> :
+                                        <Bell className="w-4 h-4" />}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-1">
@@ -1070,8 +1066,8 @@ export const Navbar: React.FC<NavbarProps> = () => {
                               onClick={() => setSelectedNavCategory(cat)}
                               onMouseEnter={() => setSelectedNavCategory(cat)}
                               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer ${isSelected
-                                  ? 'bg-[#1A56DB] text-white font-bold shadow-xs'
-                                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-semibold'
+                                ? 'bg-[#1A56DB] text-white font-bold shadow-xs'
+                                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-semibold'
                                 }`}
                             >
                               <div className="flex items-center gap-2.5 min-w-0">

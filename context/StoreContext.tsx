@@ -807,7 +807,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       { minKm: 35, maxKm: 100, price: 200 },
     ];
     const subtotal = cart.reduce((acc, item) => acc + (Number(item.product.price) || 0) * item.quantity, 0);
-    
+
     // Free delivery check ONLY if explicitly enabled by admin and threshold is greater than 0
     const isFreeDeliveryEnabled = Boolean(deliverySettings?.enableFreeDelivery);
     const threshold = Number(deliverySettings?.freeDeliveryAbove || 0);
@@ -818,8 +818,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const dist = customerLocation?.distanceKm ?? 0;
     const sorted = [...slabs].sort((a: any, b: any) => (Number(a.minKm) || 0) - (Number(b.minKm) || 0));
     const matched = sorted.find((s: any) => dist >= Number(s.minKm || 0) && dist <= Number(s.maxKm || 0)) ||
-                    sorted.find((s: any) => dist < Number(s.maxKm || 0)) ||
-                    sorted[sorted.length - 1];
+      sorted.find((s: any) => dist < Number(s.maxKm || 0)) ||
+      sorted[sorted.length - 1];
 
     return matched ? (Number(matched.price) || 0) : 0;
   }, [customerLocation, deliverySettings, cart]);
