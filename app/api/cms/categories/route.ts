@@ -116,6 +116,7 @@ export async function POST(request: Request) {
       },
     });
 
+    invalidateInitCache();
     return NextResponse.json({ success: true, category });
   } catch (error) {
     console.error('Error creating category:', error);

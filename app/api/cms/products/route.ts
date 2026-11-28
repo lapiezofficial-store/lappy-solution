@@ -141,7 +141,7 @@ export function formatProductPayload(p: any, rich?: any) {
     image: primaryImage,
     images: galleryImages.length > 0 ? galleryImages : (primaryImage ? [primaryImage] : []),
     reviews: rich?.reviews || p.reviews || [],
-    subcategory: rich?.subcategory || p.subcategory || p.category,
+    subcategory: rich?.subcategory || p.subcategory || '',
     isScraped: rich?.isScraped ?? p.isScraped ?? false,
     sourceUrl: rich?.sourceUrl || p.sourceUrl || '',
   };

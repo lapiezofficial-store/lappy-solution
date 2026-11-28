@@ -508,8 +508,18 @@ export const DEFAULT_SHOP_BY_CATEGORIES: CMSCategory[] = [
   },
 ];
 
-export const DEFAULT_CMS_CATEGORIES: CMSCategory[] = DEFAULT_SHOP_BY_CATEGORIES;
-export const CORE_STORE_DEPARTMENTS: CMSCategory[] = DEFAULT_SHOP_BY_CATEGORIES;
+export const DEFAULT_CMS_CATEGORIES: CMSCategory[] = DEFAULT_SHOP_BY_CATEGORIES.map((cat) => {
+  const matched = CATEGORIES.find((c) => c.id === cat.id || c.slug === cat.slug);
+  return {
+    ...cat,
+    title: matched?.title || cat.name,
+    shortDesc: matched?.shortDesc,
+    iconName: matched?.iconName,
+    startingPrice: matched?.startingPrice || cat.startingPrice,
+    subcategories: matched?.subcategories || [],
+  };
+});
+export const CORE_STORE_DEPARTMENTS: CMSCategory[] = DEFAULT_CMS_CATEGORIES;
 
 
 const defaultSiteSettings: SiteSettings = {
@@ -1226,7 +1236,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           // 5. Categories
           if (initData.categories && Array.isArray(initData.categories) && initData.categories.length > 0) {
             setCategories((prev) => {
-              if (prev && prev.length === initData.categories.length && prev.every((c: any, i: number) => c.id === initData.categories[i]?.id && c.name === initData.categories[i]?.name)) {
+              if (prev && JSON.stringify(prev) === JSON.stringify(initData.categories)) {
                 return prev;
               }
               try {

@@ -21,41 +21,89 @@ interface ProductCatalogProps {
 }
 
 // Subcategory keyword taxonomy for intelligent showroom inventory matching
+// Terms wrapped in regex boundaries or phrases prevent partial-word false positives (e.g. "ink" vs "d-link")
 const SUBCATEGORY_KEYWORDS: Record<string, string[]> = {
-  'speakers & soundbars': ['speaker', 'soundbar', 'sound bar', 'soundbox', 'sound box', 'home theatre', 'audio', 'woofer', 'subwoofer'],
-  'speakers': ['speaker', 'soundbar', 'sound bar', 'soundbox', 'audio'],
-  'mouse & keyboard': ['keyboard', 'mouse', 'combo', 'keypad', 'ft-1671', 'ft-1602a', 'optical mouse', 'gaming mouse'],
-  'monitors & displays': ['monitor', 'display', 'screen', 'curved monitor', 'led monitor', 'ips', '100hz', 'e2225hm', 'p204v', 'ek220q', 'mon-0068'],
-  'cable & connector (hdmi/vga/power)': ['cable', 'connector', 'hdmi', 'vga', 'power cord', 'patch cord', 'extender', 'splitter', 'converter', 'adapter', 'dongle', 'usb wi-fi', 'wi-fi dongle', 'bluetooth dongle', 'ft-0844'],
-  'cables-connectors': ['cable', 'connector', 'hdmi', 'vga', 'extender', 'adapter', 'converter'],
-  'computer peripherals': ['keyboard', 'mouse', 'ups', 'switch', 'dongle', 'motherboard', 'processor', 'cooler', 'fan', 'ram', 'monitor', 'scanner'],
-  'desktop & laptops': ['laptop', 'notebook', 'desktop', 'pc'],
-  'refurbished laptops': ['refurbished', 'pre-owned', 'renewed'],
-  'custom desktop pc rigs': ['motherboard', 'processor', 'core-i', 'cooler', 'fan', 'rig', 'gaming pc', 'cabinet', 'heatsink', 'h110', 'h81', 'h61'],
-  'laptop battery': ['battery', 'batt', 'mah'],
-  'laptop adaptor': ['adaptor', 'adapter', 'charger', 'power supply', 'ac adapter', '65w', '45w', '90w'],
-  'laptop body': ['body', 'casing', 'hinge', 'panel', 'base', 'top cover'],
-  'laptop keyboards': ['laptop keyboard', 'internal keyboard', 'replacement keyboard'],
-  'laptop screen': ['laptop screen', 'led screen', 'lcd panel', '15.6', '14.0', '30 pin', '40 pin', 'slim led'],
-  'laptop parts': ['part', 'cable', 'fan', 'jack', 'hinge', 'display cable'],
-  'printers (inktank & laser)': ['printer', 'inktank', 'laserjet', 'ecotank', 'all-in-one', 'pixma', 'deskjet'],
-  'toner & ink bottles': ['toner', 'ink', 'cartridge', '003', '774', '664', 'gt-52', 'gt-51', 'gt-53', '12a', '88a', 'refill', 'bottle'],
-  'paper & sticker sheets': ['paper', 'sticker', 'glossy', 'photo paper', 'a4', 'sublimation'],
-  'printer spare parts & rollers': ['roller', 'pick up roller', 'teflon', 'fuser', 'head', 'gear', 'carriage', 'encoder'],
-  'cctv cameras (dome/bullet/wi-fi)': ['camera', 'dome', 'bullet', 'wi-fi camera', 'ptz', 'cctv', 'dvr', 'nvr', 'imou', 'ezviz', 'cp-plus', 'dahua', 'hikvision', '4mp', '2mp'],
+  'speakers & soundbars': ['speaker', 'soundbar', 'sound bar', 'soundbox', 'sound box', 'home theatre', 'woofer', 'subwoofer'],
+  'speakers': ['speaker', 'soundbar', 'sound bar', 'soundbox'],
+  'mouse & keyboard': ['keyboard', '\\bmouse\\b', 'keypad'],
+  'monitors & displays': ['monitor', 'display', 'curved monitor', 'led monitor', 'ips monitor', '\\bips\\b', '100hz', 'e2225hm', 'p204v', 'ek220q', 'mon-0068'],
+  'cable & connector (hdmi/vga/power)': ['\\bcable\\b', 'connector', '\\bhdmi\\b', '\\bvga\\b', 'power cord', 'patch cord', 'extender', 'splitter', 'converter', '\\bhub\\b', 'usb wi-fi', 'wi-fi dongle', 'bluetooth dongle', 'ft-0844'],
+  'cables-connectors': ['\\bcable\\b', 'connector', '\\bhdmi\\b', '\\bvga\\b', 'extender', 'converter', '\\bhub\\b'],
+  'computer peripherals': ['webcam', 'biometric', 'fingerprint', '\\bups\\b', 'switch', 'dongle', 'motherboard', 'processor', 'cooler', '\\bfan\\b', '\\bram\\b', 'scanner', 'pen drive'],
+  'computer & laptop': ['\\blaptop\\b', '\\bnotebook\\b', '\\bdesktop\\b', '\\bpc\\b'],
+  'desktop & laptops': ['\\blaptop\\b', '\\bnotebook\\b', '\\bdesktop\\b', '\\bpc\\b'],
+  'refurbished laptops': ['refurbished', 'pre-owned', 'renewed', 'latitude', 'thinkpad', 'elitebook'],
+  'custom desktop pc rigs': ['motherboard', 'processor', 'core-i', 'cooler', 'heatsink', 'gaming pc', 'cabinet', 'h110', 'h81', 'h61'],
+  'laptop battery': ['\\bbattery\\b', '\\bbatt\\b', '\\bmah\\b', '\\bcmos\\b'],
+  'laptop adaptor': ['adaptor', 'adapter', 'charger', 'power supply', 'ac adapter', '\\b65w\\b', '\\b45w\\b', '\\b90w\\b'],
+  'laptop body': ['\\bbody\\b', 'casing', '\\bbase\\b', 'top cover', 'palmrest', 'back panel', 'bezel'],
+  'laptop screen cable': ['screen cable', 'display cable', 'lvds', '\\bedp\\b', 'flex cable'],
+  'laptop keyboards': ['keyboard', 'keypad'],
+  'laptop screen': ['laptop screen', 'led screen', 'lcd screen', 'led panel', 'lcd panel', 'paper led', 'ips led', 'slim led'],
+  'laptop parts': ['dc jack', 'dc jac', 'cooling fan', 'cpu fan', 'display cable', 'screen cable', 'hinge', 'screw', 'power switch', 'speaker', 'motherboard', 'spare part'],
+  'laptop motherboard': ['motherboard', 'mainboard', 'logic board'],
+  'laptop dc jac': ['dc jack', 'dc jac', 'charging port', 'power jack'],
+  'laptop fan': ['cooling fan', 'cpu fan', '\\bfan\\b', 'heatsink'],
+  'laptop ic': ['\\bic\\b', 'chipset', 'mosfet', 'regulator'],
+  'laptop ram': ['\\bram\\b', '\\bddr3\\b', '\\bddr4\\b', '\\bddr5\\b', 'sodimm', 'memory module'],
+  'laptop hing': ['hinge', 'hinges', '\\bhing\\b'],
+  'laptop screws': ['screw', 'screws'],
+  'laptop power switch': ['power switch', 'power button', 'on/off board'],
+  'laptop speaker': ['speaker', 'speakers', 'audio module'],
+  'printers (inktank & laser)': ['printer', 'inktank', 'ink tank', 'laserjet', 'ecotank', 'all-in-one', 'multifunction', 'multi-function', 'pixma', 'deskjet'],
+  'toner & ink bottles': ['toner bottle', 'ink bottle', 'ink bottel', '\\b003\\b', '\\b001\\b', '\\b057\\b', '\\bt673\\b', 'gt-52', 'gt53', '\\b664\\b', 'gi-790', 'btd', 'bt5000', 'refill'],
+  'paper & sticker sheets': ['paper', 'sticker', 'glossy', 'photo paper', 'thermal paper', 'sublimation'],
+  'printer spare parts & rollers': ['roller', 'pick up roller', 'teflon', 'fuser', 'printhead', 'print head', '\\bgear\\b', 'carriage', 'encoder'],
+  'cctv cameras (dome/bullet/wi-fi)': ['camera', '\\bdome\\b', '\\bbullet\\b', '\\bptz\\b', '\\bdvr\\b', '\\bnvr\\b', 'wi-fi camera'],
   'biometric attendance & scanners': ['biometric', 'fingerprint', 'scanner', 'attendance', 'mantra', 'morpho', 'mfs110', 'rd service'],
-  'ssd & hard disk': ['ssd', 'hard disk', 'hdd', 'sata', 'nvme', 'm.2', 'internal ssd', 'external ssd'],
-  'pendrive & sd card': ['pen drive', 'pendrive', 'usb drive', 'flash drive', 'sd card', 'micro sd', 'memory card', 'otg', 'metal pen drive'],
-  'antivirus (quick heal / total security)': ['antivirus', 'quick heal', 'total security', 'internet security', 'kaspersky', 'k7', 'license'],
-  'toner cartridges': ['toner', 'cartridge', '12a', '88a'],
-  'ink bottles & refills': ['ink', 'bottle', 'refill', '003', 'gt-52', 'gt-51', '664'],
-  'opc drum & doctor blade': ['drum', 'blade', 'opc', 'wiper blade', 'doctor blade'],
-  'screens-displays': ['screen', 'display', 'panel', 'led', 'lcd'],
+  'ssd & hard disk': ['\\bssd\\b', 'hard disk', '\\bhdd\\b', '\\bsata\\b', '\\bnvme\\b', 'm\\.2'],
+  'pendrive & sd card': ['pen drive', 'pendrive', 'usb.*drive', 'flash drive', '\\bsd card\\b', 'micro sd', 'memory card', '\\botg\\b'],
+  'antivirus (quick heal / total security)': ['antivirus', 'quick heal', 'total security', 'internet security', 'kaspersky', '\\bk7\\b', 'license'],
+  'electronics & gadgets': ['electronic', 'gadget', 'led', 'display', 'speaker', '\\bhub\\b', 'converter'],
+  'ink': ['\\bink\\b'],
+  'toner cartridge': ['toner', 'cartridge'],
+  'toner cartridges': ['toner', 'cartridge'],
+  'ink bottles & refills': ['\\bink\\b', 'bottle', 'bottel', 'refill', '\\b003\\b', 'gt-52', 'gt53', '\\b664\\b'],
+  'opc drum & doctor blade': ['\\bdrum\\b', 'blade', '\\bopc\\b', 'wiper blade', 'doctor blade'],
+  'screens-displays': ['screen', 'display', 'panel', '\\bled\\b', '\\blcd\\b'],
   'audio-modules': ['speaker', 'audio', 'sound', 'woofer'],
-  'certified refurbished laptops': ['refurbished', 'pre-owned', 'renewed'],
+  'certified refurbished laptops': ['refurbished', 'pre-owned', 'renewed', 'latitude', 'thinkpad', 'elitebook'],
   'refurbished desktop pcs': ['refurbished desktop', 'renewed pc', 'desktop rig'],
   'refurbished hd monitors': ['refurbished monitor', 'used monitor', 'hd monitor'],
 };
+
+// Multi-condition subcategory rules where EVERY group must match (e.g. brand + product type)
+const SUBCATEGORY_MATCH_GROUPS: Record<string, string[][]> = {
+  'hp keyboard': [['\\bhp\\b'], ['keyboard', 'keypad']],
+  'dell keyboard': [['\\bdell\\b'], ['keyboard', 'keypad']],
+  'lenovo keyboard': [['\\blenovo\\b'], ['keyboard', 'keypad']],
+  'acer keyboard': [['\\bacer\\b'], ['keyboard', 'keypad']],
+  'dell adapter': [['\\bdell\\b'], ['adapter', 'adaptor', 'charger']],
+  'hp adapter': [['\\bhp\\b'], ['adapter', 'adaptor', 'charger']],
+  'acer adapter': [['\\bacer\\b'], ['adapter', 'adaptor', 'charger']],
+  'dell laptop battery': [['\\bdell\\b'], ['\\bbattery\\b', '\\bbatt\\b']],
+  'hp laptop battery': [['\\bhp\\b'], ['\\bbattery\\b', '\\bbatt\\b']],
+  'lenovo & acer battery': [['\\blenovo\\b', '\\bacer\\b'], ['\\bbattery\\b', '\\bbatt\\b']],
+};
+
+const GENERIC_SUBCATEGORY_WORDS = new Set([
+  'and', 'for', 'with', 'the', 'all',
+  'laptop', 'laptops', 'computer', 'computers', 'printer', 'printers',
+  'cctv', 'electronic', 'electronics', 'part', 'parts', 'spare', 'spares',
+  'accessory', 'accessories', 'product', 'products', 'device', 'devices',
+]);
+
+function matchesTerm(text: string, term: string): boolean {
+  if (!term) return false;
+  if (term.includes('\\b') || term.includes('.*') || term.includes('\\.')) {
+    try {
+      return new RegExp(term, 'i').test(text);
+    } catch {
+      return text.includes(term.replace(/\\b/g, ''));
+    }
+  }
+  return text.includes(term);
+}
 
 // Robust Category Matcher
 export function isProductInCategory(p: Product, targetCategory: string): boolean {
@@ -94,31 +142,43 @@ export function isProductInCategory(p: Product, targetCategory: string): boolean
 // Robust Subcategory Matcher
 export function isProductInSubcategory(p: Product, subcategoryName: string): boolean {
   if (!subcategoryName || subcategoryName === 'All') return true;
-  const subLower = subcategoryName.trim().toLowerCase();
+  const subLower = subcategoryName.trim().replace(/\s+/g, ' ').toLowerCase();
   if (!subLower) return true;
 
-  // 1. Direct match on product's explicit subcategory field if present
-  const pSub = (p.subcategory || (p as any).subCategory || '').trim().toLowerCase();
-  if (pSub) {
+  // 1. Direct match on product's explicit subcategory field if present (and distinct from parent category)
+  const pSub = (p.subcategory || (p as any).subCategory || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  const pCat = (p.category || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  if (pSub && pSub !== pCat) {
     if (pSub === subLower) return true;
     if (pSub.includes(subLower) || subLower.includes(pSub)) return true;
+    return false;
   }
 
-  // 2. Keyword dictionary lookup
-  const keywords = SUBCATEGORY_KEYWORDS[subLower];
   const pText = `${p.name} ${p.specs || ''} ${p.description || ''} ${p.brand || ''}`.toLowerCase();
-  if (keywords && keywords.length > 0) {
-    return keywords.some(kw => pText.includes(kw));
+
+  // 2. Multi-group rules (e.g. brand + device type)
+  const requiredGroups = SUBCATEGORY_MATCH_GROUPS[subLower];
+  if (requiredGroups && requiredGroups.length > 0) {
+    return requiredGroups.every(group => group.some(term => matchesTerm(pText, term)));
   }
 
-  // 3. Fallback: Check if subcategory keywords appear in product text (ignoring common stop words)
-  const subWords = subLower
+  // 3. Keyword dictionary lookup
+  const keywords = SUBCATEGORY_KEYWORDS[subLower];
+  if (keywords && keywords.length > 0) {
+    return keywords.some(kw => matchesTerm(pText, kw));
+  }
+
+  // 4. Strict fallback for custom subcategories: require ALL specific words (excluding generic category words)
+  const rawWords = subLower
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
-    .filter(w => w.length > 2 && !['and', 'for', 'with', 'the', 'all'].includes(w));
+    .filter(w => w.length > 1 && !['and', 'for', 'with', 'the', 'all'].includes(w));
 
-  if (subWords.length > 0) {
-    return subWords.some(w => pText.includes(w));
+  const specificWords = rawWords.filter(w => !GENERIC_SUBCATEGORY_WORDS.has(w));
+  const targetWords = specificWords.length > 0 ? specificWords : rawWords;
+
+  if (targetWords.length > 0) {
+    return targetWords.every(w => matchesTerm(pText, `\\b${w}`));
   }
 
   return false;
@@ -274,14 +334,17 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   useEffect(() => {
     if (initialCategory) {
       if (initialCategory !== 'All' && initialCategory !== 'All Products') {
-        const allCatNames = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+        const allCatNames = Array.from(new Set([
+          ...products.map(p => p.category).filter(Boolean),
+          ...(cmsCategories || []).filter(c => !c.parentId).map(c => c.name).filter(Boolean),
+        ]));
         const canonical = normalizeToCanonicalCategory(initialCategory, allCatNames);
         setSelectedCategory(canonical || initialCategory);
       } else {
         setSelectedCategory(initialCategory);
       }
     }
-  }, [initialCategory, products]);
+  }, [initialCategory, products, cmsCategories]);
 
   useEffect(() => {
     setSelectedSubcategory(initialSubcategory || 'All');
@@ -421,22 +484,26 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
 
     if (matched && Array.isArray(matched.subcategories)) {
       matched.subcategories.forEach((s) => {
-        const sName = (s.name || '').trim();
+        if (s.status === 'inactive') return;
+        const sName = (s.name || '').replace(/\s+/g, ' ').trim();
         if (sName) {
-          subMap.set(sName.toLowerCase(), {
-            name: sName,
-            slug: s.slug || sName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-            count: 0,
-          });
+          const key = sName.toLowerCase();
+          if (!subMap.has(key)) {
+            subMap.set(key, {
+              name: sName,
+              slug: s.slug || key.replace(/[^a-z0-9]+/g, '-'),
+              count: 0,
+            });
+          }
         }
       });
     }
 
-    // 2. Also include any extra subcategories stored explicitly in product data
+    // 2. Also include any extra subcategories stored explicitly in product data (excluding parent category fallback)
     products.forEach((p) => {
       if (!isProductInCategory(p, selectedCategory)) return;
-      const pSub = (p.subcategory || (p as any).subCategory || '').trim();
-      if (pSub) {
+      const pSub = (p.subcategory || (p as any).subCategory || '').replace(/\s+/g, ' ').trim();
+      if (pSub && pSub.toLowerCase() !== (p.category || '').trim().toLowerCase() && pSub.toLowerCase() !== catLower) {
         const key = pSub.toLowerCase();
         if (!subMap.has(key)) {
           subMap.set(key, {
@@ -853,7 +920,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                             <span className="text-[9.5px] text-gray-400 font-semibold">{cat.count}</span>
                           </button>
                           {availableSubcategories.map((sub) => {
-                            const isSubActive = selectedSubcategory.toLowerCase() === sub.name.toLowerCase();
+                            const isSubActive = selectedSubcategory.replace(/\s+/g, ' ').trim().toLowerCase() === sub.name.toLowerCase();
 
                             return (
                               <button
@@ -1234,7 +1301,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                       All {selectedCategory}
                     </button>
                     {availableSubcategories.map((sub) => {
-                      const isSubSelected = selectedSubcategory.toLowerCase() === sub.name.toLowerCase();
+                      const isSubSelected = selectedSubcategory.replace(/\s+/g, ' ').trim().toLowerCase() === sub.name.toLowerCase();
                       return (
                         <button
                           key={sub.name}

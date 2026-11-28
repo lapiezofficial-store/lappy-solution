@@ -12,7 +12,7 @@ import {
   Bell, Smartphone, Download, Package, Truck, Sparkles, CreditCard
 } from 'lucide-react';
 import { STORE_INFO, getCleanWhatsAppNumber } from '../data/storeData';
-import { useStore, DEFAULT_SHOP_BY_CATEGORIES, CMSCategory } from '../context/StoreContext';
+import { useStore, DEFAULT_CMS_CATEGORIES, CMSCategory } from '../context/StoreContext';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import { GooglePlayIcon } from './GooglePlayIcon';
 import { formatEnterpriseNotification } from '../lib/notificationService';
@@ -164,24 +164,40 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
   // Main Parent categories (excluding child subcategories & inactive)
   const parentCategories = useMemo(() => {
-    const list = (categories || []).filter((c) => c.status !== 'inactive' && !c.parentId);
-    if (list.length > 0) {
-      return [...list].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-    }
-    return DEFAULT_SHOP_BY_CATEGORIES;
+    const rawList = (categories || []).filter((c) => c.status !== 'inactive' && !c.parentId);
+    const list = rawList.length > 0 ? rawList : DEFAULT_CMS_CATEGORIES;
+
+    return [...list]
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .map((cat) => {
+        if (!Array.isArray(cat.subcategories) || cat.subcategories.length === 0) {
+          return cat;
+        }
+        // Deduplicate subcategories by normalized name and exclude inactive ones
+        const seenSubs = new Set<string>();
+        const uniqueSubs = cat.subcategories.filter((sub) => {
+          if (sub.status === 'inactive') return false;
+          const key = (sub.name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+          if (!key || seenSubs.has(key)) return false;
+          seenSubs.add(key);
+          return true;
+        });
+        return { ...cat, subcategories: uniqueSubs };
+      });
   }, [categories]);
 
-  const [selectedNavCategory, setSelectedNavCategory] = useState<CMSCategory | null>(null);
+  const [selectedNavCategoryId, setSelectedNavCategoryId] = useState<string | null>(null);
   const [mobileExpandedCatId, setMobileExpandedCatId] = useState<string | null>(null);
 
-  // Auto-select first category when opened or changed
-  useEffect(() => {
-    if (parentCategories.length > 0) {
-      if (!selectedNavCategory || !parentCategories.some(c => c.id === selectedNavCategory.id)) {
-        setSelectedNavCategory(parentCategories[0]);
-      }
+  // Always resolve the live category object by ID so newly synced subcategories appear immediately
+  const selectedNavCategory = useMemo(() => {
+    if (parentCategories.length === 0) return null;
+    if (selectedNavCategoryId) {
+      const matched = parentCategories.find((c) => c.id === selectedNavCategoryId);
+      if (matched) return matched;
     }
-  }, [parentCategories, selectedNavCategory]);
+    return parentCategories[0];
+  }, [parentCategories, selectedNavCategoryId]);
 
   // Instant Search Suggestions
   const searchResults = searchQuery.trim().length > 1
@@ -1063,8 +1079,8 @@ export const Navbar: React.FC<NavbarProps> = () => {
                             <button
                               key={cat.id}
                               type="button"
-                              onClick={() => setSelectedNavCategory(cat)}
-                              onMouseEnter={() => setSelectedNavCategory(cat)}
+                              onClick={() => setSelectedNavCategoryId(cat.id)}
+                              onMouseEnter={() => setSelectedNavCategoryId(cat.id)}
                               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer ${isSelected
                                 ? 'bg-[#1A56DB] text-white font-bold shadow-xs'
                                 : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-semibold'
@@ -1293,7 +1309,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                             {(cat.subcategories || []).map((sub) => (
                               <Link
                                 key={sub.id || sub.slug}
-                                href={`/shop?cat=${encodeURIComponent(cat.name)}&subcat=${encodeURIComponent(sub.name)}`}
+                                href={`/shop?cat=${encodeURIComponent(cat.name)}&sub=${encodeURIComponent(sub.name)}`}
                                 onClick={() => setMobileMenuOpen(false)}
                                 className="block py-1 text-xs text-[#2563EB] hover:text-[#1D4ED8] font-semibold"
                               >
